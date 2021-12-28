@@ -9,8 +9,8 @@ nohup python -u $proj_home/main.py \
 --hidden_channels=256 \
 --dropout=0.3 \
 --lr=0.003 \
---epochs=400 \
+--epochs=200 \
 --log_steps=1 \
 --eval_steps=1 \
+--runs=10 \
 > $proj_home/ppi_20211228.log 2>&1 &
-

@@ -245,17 +245,18 @@ def main(jupyter=False):
                 for key, result in results.items():
                     loggers[key].add_result(run, result)
 
-                if epoch % args.log_steps == 0:
-                    for key, result in results.items():
-                        valid_hits, test_hits = result
+                for key, result in results.items():
+                    valid_hits, test_hits = result
+                    if epoch % args.log_steps == 0:
                         print(key)
                         print(f'Run: {run + 1:02d}, '
-                              f'Epoch: {epoch:02d}, '
-                              f'Loss: {loss:.4f}, '
-                              f'Valid: {100 * valid_hits:.2f}%, '
-                              f'Test: {100 * test_hits:.2f}%')
-                        writer.add_scalars(f'run_{run}/epoch/loss', {'Train_loss': loss, 'Val': valid_hits, 'Test':test_hits}, epoch)
-                    print('---')
+                                f'Epoch: {epoch:02d}, '
+                                f'Loss: {loss:.4f}, '
+                                f'Valid: {100 * valid_hits:.2f}%, '
+                                f'Test: {100 * test_hits:.2f}%')
+                        print('---')
+                    if run < 2:
+                        writer.add_scalars(f'run_{run}/epoch/loss/{key.strip()}', {'Train_loss': loss, 'Val': valid_hits, 'Test':test_hits}, epoch)
 
         for key in loggers.keys():
             print(key)
