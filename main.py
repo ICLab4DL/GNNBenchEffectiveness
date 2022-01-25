@@ -32,7 +32,7 @@ import configparser
 from model import *
 
 
-def train(model, predictor, edge_attr, node_emb, emb_ea, adj_t, split_edge, optimizer, batch_size):
+def train(model, predictor, edge_attr, node_emb, emb_ea, adj_t, split_edge, optimizer, batch_size, num_negsample=1):
     edge_index = adj_t
 
     model.train()
@@ -48,14 +48,38 @@ def train(model, predictor, edge_attr, node_emb, emb_ea, adj_t, split_edge, opti
 
         edge = pos_train_edge[perm].t()
 
+        # print('h shape:', h.shape)
+        # print('edge 0 shape:', edge[0].shape)
+        # print('h edge[0 shape:', h[edge[0]].shape)
+
+        """
+        h shape: torch.Size([4267, 256])
+        edge 0 shape: torch.Size([65536])
+        h edge[0 shape: torch.Size([65536, 256])
+        """
+        def hasNan(x):
+            return torch.isnan(x).any()
+            
         pos_out = predictor(h[edge[0]], h[edge[1]])
-        pos_loss = -torch.log(pos_out + 1e-15).mean()
+        if hasNan(pos_out):
+            print('hasNan: pos_out', pos_out)
+        pos_loss = - torch.log(pos_out + 1e-15).mean()
 
         edge = negative_sampling(edge_index, num_nodes=node_emb.size(0),
-                                 num_neg_samples=perm.size(0), method='dense')
+                                 num_neg_samples= int(num_negsample * perm.size(0)), method='dense')
+
+        if hasNan(pos_loss):
+            print('hasNan: pos_loss, pos_out shape:', pos_out.shape)
+            print('hasNan: pos_loss, pos_out:', pos_out)
+
+            print('hasNan: pos_loss', pos_loss)
+            exit()
 
         neg_out = predictor(h[edge[0]], h[edge[1]])
         neg_loss = -torch.log(1 - neg_out + 1e-15).mean()
+        if hasNan(neg_loss):
+            print('hasNan: neg_loss', neg_loss)
+            exit()
 
         loss = pos_loss + neg_loss
         loss.backward()
@@ -68,6 +92,7 @@ def train(model, predictor, edge_attr, node_emb, emb_ea, adj_t, split_edge, opti
 
         num_examples = pos_out.size(0)
         total_loss += loss.item() * num_examples
+        # print(f'pos_loss:{pos_loss.item()}, neg_loss:{neg_loss.item()}, total_loss:{total_loss}')
         total_examples += num_examples
 
     return total_loss / total_examples
@@ -129,6 +154,10 @@ def test(model, predictor, edge_attr, x, emb_ea, adj_t, split_edge, evaluator, b
 def main(jupyter=False):
 
     parser = argparse.ArgumentParser(description='Link_Pred_DDI')
+    parser.add_argument('--num_gumbels', type=int, default=100)
+    parser.add_argument('--emperical', action='store_true', help='emperical')
+    parser.add_argument('--mypredictor', action='store_true', help='mypredictor')
+
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--num_layers', type=int, default=2)
     parser.add_argument('--num_samples', type=int, default=5)
@@ -173,15 +202,35 @@ def main(jupyter=False):
     edge_index = data.edge_index.to(device)
     split_edge = dataset.get_edge_split()
 
+    pos_train_edge = split_edge['train']['edge']
+    print('------------------')
+    print(f'train statistics: num_pos_neg_edge: {pos_train_edge.shape}')
+
+
+    pos_valid_edge = split_edge['valid']['edge']
+    neg_valid_edge = split_edge['valid']['edge_neg']
+
+    print('------------------')
+    print(f'validation statistics: num_pos_edge: {pos_valid_edge.shape},num_neg_edge: {pos_valid_edge.shape}')
+
+
+    pos_test_edge = split_edge['test']['edge']
+    neg_test_edge = split_edge['test']['edge_neg']
+    print(f'--------------\n test statistics: num_pos_edge: {pos_test_edge.shape},num_neg_edge: {neg_test_edge.shape}')
+
+
+
     # init model:
-    # model = GraphSAGE(args.node_emb, args.hidden_channels, args.hidden_channels, args.num_layers, args.dropout).to(device)
+    model = GraphSAGE(args.node_emb, args.hidden_channels, args.hidden_channels, args.num_layers, args.dropout).to(device)
     
-    model = MultiGCN(args.node_emb, args.hidden_channels, args.hidden_channels, args.num_layers).to(device)
+    # model = MultiGCN(args.node_emb, args.hidden_channels, args.hidden_channels, args.num_layers).to(device)
     
     emb = torch.nn.Embedding(data.num_nodes, args.node_emb).to(device)
     emb_ea = torch.nn.Embedding(args.num_samples, args.node_emb).to(device)
-    predictor = LinkPredictor(args.hidden_channels, args.hidden_channels, 1,
-                              args.num_layers+1, args.dropout).to(device)
+    if args.mypredictor:
+        predictor = LinkPredictorMy(args.hidden_channels, args.hidden_channels, num_gumbels=args.num_gumbels, emperical=args.emperical).to(device)
+    else:
+        predictor = LinkPredictor(args.hidden_channels, args.hidden_channels, 1, args.num_layers+1, args.dropout).to(device)
 
     print('Number of parameters:',
           sum(p.numel() for p in list(model.parameters()) +
@@ -222,7 +271,7 @@ def main(jupyter=False):
         'Hits@50': Logger(args.runs, args),
         'Hits@100': Logger(args.runs, args),
     }
-
+    nums_negsample = [i/2 for i in range(1, args.runs+1)]
     for run in range(args.runs):
         random.seed(run)
         torch.manual_seed(run)
@@ -237,7 +286,7 @@ def main(jupyter=False):
 
         for epoch in range(1, 1 + args.epochs):
             loss = train(model, predictor, edge_attr, emb.weight, emb_ea.weight, edge_index, split_edge,
-                         optimizer, args.batch_size)
+                         optimizer, args.batch_size, num_negsample=nums_negsample[run])
 
             if epoch % args.eval_steps == 0:
                 results = test(model, predictor, edge_attr, emb.weight, emb_ea.weight, edge_index, split_edge,
@@ -255,8 +304,7 @@ def main(jupyter=False):
                                 f'Valid: {100 * valid_hits:.2f}%, '
                                 f'Test: {100 * test_hits:.2f}%')
                         print('---')
-                    if run < 2:
-                        writer.add_scalars(f'run_{run}/epoch/loss/{key.strip()}', {'Train_loss': loss, 'Val': valid_hits, 'Test':test_hits}, epoch)
+                    writer.add_scalars(f'run_{run}/epoch/loss/{key.strip()}', {'Train_loss': loss, 'Val': valid_hits, 'Test':test_hits}, epoch)
 
         for key in loggers.keys():
             print(key)

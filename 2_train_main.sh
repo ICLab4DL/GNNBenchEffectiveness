@@ -3,7 +3,8 @@ proj_home=/li_zhengdao/github/GenerativeGNN
 
 nohup python -u $proj_home/main.py \
 --mypredictor \
---server_tag=torch17 \
+--server_tag=2_clone \
+--num_gumbels=1 \
 --device=0 \
 --num_layers=2 \
 --num_samples=5 \
@@ -15,4 +16,4 @@ nohup python -u $proj_home/main.py \
 --log_steps=10 \
 --eval_steps=1 \
 --runs=10 \
-> $proj_home/ppi_20220123.log 2>&1 &
+> $proj_home/ppi_20220124_2.log 2>&1 &
