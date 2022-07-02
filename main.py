@@ -122,6 +122,8 @@ def test(model, predictor, edge_attr, x, emb_ea, adj_t, split_edge, evaluator, b
         neg_valid_preds += [predictor(h[edge[0]], h[edge[1]]).squeeze().cpu()]
     neg_valid_pred = torch.cat(neg_valid_preds, dim=0)
 
+    print(f'pos_valida_pre shape:{pos_valid_pred.shape}, neg_valid_preds: {pos_valid_pred.shape}')
+
     pos_test_preds = []
     for perm in DataLoader(range(pos_test_edge.size(0)), batch_size):
         edge = pos_test_edge[perm].t()
@@ -255,7 +257,12 @@ def main(jupyter=False):
     print('num of node: ', nx_graph.number_of_nodes())
     spd = get_spd_matrix(G=nx_graph, S=node_subset, max_spd=5)
     spd = torch.Tensor(spd).to(device)
+    print('spd shape:', spd.shape)
+    print('edge_index shape:', edge_index.shape)
+
     edge_attr = spd[edge_index, :]
+    print('edge_attr spd shape:', edge_attr.shape)
+    
     edge_attr = edge_attr.mean(0)[:, node_mask].mean(2)
     # normalize:
     a_max = torch.max(edge_attr, dim=0, keepdim=True)[0]
@@ -271,7 +278,8 @@ def main(jupyter=False):
         'Hits@50': Logger(args.runs, args),
         'Hits@100': Logger(args.runs, args),
     }
-    nums_negsample = [i/2 for i in range(1, args.runs+1)]
+    nums_negsample = [i * 0.5 for i in range(1, args.runs+1)]
+    print('nums_negsample:', nums_negsample)
     for run in range(args.runs):
         random.seed(run)
         torch.manual_seed(run)

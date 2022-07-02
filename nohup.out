@@ -1,0 +1,8 @@
+args:  Namespace(batch_size=65536, device=0, dropout=0.3, emperical=False, epochs=400, eval_steps=1, hidden_channels=256, log_steps=1, lr=0.003, mypredictor=False, node_emb=256, num_gumbels=100, num_layers=2, num_samples=5, runs=1, server_tag='torch17')
+tensorboard path: ./tboard/torch17/01_30_03_47
+Traceback (most recent call last):
+  File "/li_zhengdao/github/GenerativeGNN/main.py", line 322, in <module>
+    main()
+  File "/li_zhengdao/github/GenerativeGNN/main.py", line 204, in main
+    edge_index = data.edge_index.to(device)
+KeyboardInterrupt
