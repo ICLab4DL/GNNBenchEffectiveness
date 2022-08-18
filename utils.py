@@ -17,13 +17,16 @@ import torch.nn.functional as F
 
 def get_common_args():
     parser = argparse.ArgumentParser()
-    
     parser.add_argument('--seed', type=int, default=98, help='seed')
     parser.add_argument('--server_tag', type=str, default='seizure', help='server_tag')
     parser.add_argument('--out_middle_features', action='store_true', help='out_middle_features')
     parser.add_argument('--debug', action='store_true', help='debug mode')
+    parser.add_argument('--class_num', type=int, default=-1, help='class_num')
+    parser.add_argument('--model_name', type=str, default='gnn', help='model_name')
+    
     
     # position encoding
+    parser.add_argument('--pos_en', type=str, default='none', help='pos_en')
     parser.add_argument('--pe_init', type=str, default='none', help='pe_init')
     parser.add_argument('--pos_en_dim', type=int, default=8, help='position encoding dim')
     
@@ -178,6 +181,14 @@ def normalize(data):
     '''
         only norm numpy type data with last dimension.
     '''
+    if isinstance(data, list):
+        cur_data = np.concatenate(data, axis=0)
+        mean = np.mean(cur_data)
+        std = np.std(cur_data)
+        return [(d - mean)/std for d in data]
+    
+    if not isinstance(data, np.ndarray):
+        data = data.cpu().numpy()
     mean = np.mean(data)
     std = np.std(data)
     return (data - mean) / std
@@ -185,9 +196,11 @@ def normalize(data):
 from torch.utils.data import Dataset
 
 
-def flatten(nest_list:list):
-    return [j for i in nest_list for j in flatten(i)] if isinstance(nest_list, list) else [nest_list]
+def flatten_list(nest_list:list):
+    return [j for i in nest_list for j in flatten_list(i)] if isinstance(nest_list, list) else [nest_list]
 
+def append_tag(ori_tag, tag, sep='_'):
+    return f'{ori_tag}{sep}{tag}'
 
 def random_split_dataset(torch_dataset:Dataset, ratios: list, classification=True):
     """input: ratios: [prop_train, prop_val, prop_test] or [prop_train, prop_teset], sum is 1.
@@ -215,9 +228,9 @@ def random_split_dataset(torch_dataset:Dataset, ratios: list, classification=Tru
                 val_dataset_y.append(torch.from_numpy(np.repeat(np.array([k]), len(v)-train_num)).long())
                 
                 
-            train_x = flatten(train_dataset_x)
+            train_x = flatten_list(train_dataset_x)
             train_y = torch.cat(train_dataset_y, dim=0).squeeze()
-            val_x = flatten(val_dataset_x)
+            val_x = flatten_list(val_dataset_x)
             val_y = torch.cat(val_dataset_y, dim=0).squeeze()
             return train_x, train_y, val_x, val_y
         
@@ -244,11 +257,11 @@ def random_split_dataset(torch_dataset:Dataset, ratios: list, classification=Tru
                 test_dataset_y.append(torch.from_numpy(np.repeat(np.array([k]), len(test_x))).long())
                 
                 
-            train_x = flatten(train_dataset_x)
+            train_x = flatten_list(train_dataset_x)
             train_y = torch.cat(train_dataset_y, dim=0).squeeze()
-            val_x = flatten(val_dataset_x)
+            val_x = flatten_list(val_dataset_x)
             val_y = torch.cat(val_dataset_y, dim=0).squeeze()
-            test_x = flatten(test_dataset_x)
+            test_x = flatten_list(test_dataset_x)
             test_y = torch.cat(test_dataset_y, dim=0).squeeze()
             return train_x, train_y, val_x, val_y, test_x, test_y
     else:
@@ -406,6 +419,27 @@ def calculate_scaled_laplacian(adj_mx, lambda_max=2, undirected=True):
     return L.astype(np.float32).todense()
 
 
+class StandardScaler():
+
+    def __init__(self, mean, std, fill_zeroes=False):
+        self.mean = mean
+        self.std = std
+        self.fill_zeroes = fill_zeroes
+
+    def transform(self, data):
+        if self.fill_zeroes:
+            mask = (data == 0)
+            data[mask] = self.mean
+            
+        if isinstance(data, list):
+            return [(d - self.mean)/self.std for d in data]
+        
+        return (data - self.mean) / self.std
+
+    def inverse_transform(self, data):
+        return (data * self.std) + self.mean
+
+
 def load_pickle(pickle_file):
     try:
         with open(pickle_file, 'rb') as f:
@@ -480,6 +514,7 @@ def calc_metrics(preds, labels, null_val=0.):
     mask /= torch.mean(mask)
     # handle all zeros.
     mask = torch.where(torch.isnan(mask), torch.zeros_like(mask), mask)
+
     mse = (preds - labels) ** 2
     mae = torch.abs(preds - labels)
     mape = mae / labels
@@ -548,11 +583,12 @@ def load_eeg_adj(adj_filename, adjtype=None):
 
 
 class Trainer:
-    def __init__(self, model, optimizer=None, loss_cal=None, sched=None):
+    def __init__(self, model, optimizer=None, loss_cal=None, sched=None, scaler:StandardScaler=None):
         self.model = model
         self.optimizer = optimizer
         self.loss_cal = loss_cal
         self.scheduler = sched
+        self.scaler = scaler
 
     def lr_schedule(self):
         self.scheduler.step()
@@ -565,6 +601,9 @@ class Trainer:
         output = self.model(input_data)
 
         output = output.squeeze()
+        if self.scaler is not None:
+            output = self.scaler.inverse_transform(output)
+            
         loss = self.loss_cal(output, target)
         loss.backward(retain_graph=True)
         self.optimizer.step()

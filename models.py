@@ -1,23 +1,27 @@
-# using GCN to predict:
+from typing import Callable, Union, Optional
+
 
 import numpy as np
 import networkx as nx
 
+import scipy.sparse as sp
+
 import torch
-from torch import nn
+from torch import nn, sparse_coo
 import torch.nn.functional as F
 from torch import Tensor
 from torch.utils.data import Dataset
 from torch.nn import Linear
 from typing import Union, Tuple
 from torch_sparse import SparseTensor
+import torch_sparse
 
 from torch_geometric.typing import OptPairTensor, Adj, OptTensor, Size
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn import GINConv
 from torch_geometric.data import Data as pyg_Data
 from torch_geometric.data import Batch as pyg_Batch
-
+from torch_geometric.utils import add_self_loops, degree
 
 import math
 
@@ -35,34 +39,45 @@ def get_spd_matrix(G, S, max_spd=5):
     return spd_matrix
 
 
-
 class BaseGraph(object):
     """
         all properties should be torch tensor type.
     """
-    def __init__(self, graph_type='default', adj_type='dense', batch=False, batch_num=None, pyg_graph=None):
+    def __init__(self, graph_type='default', adj_type='dense', batch=False, batch_num=None, pyg_graph:pyg_Data=None):
         self.graph_type = graph_type
+        self.adj_type = adj_type
+        self.pyg_graph = pyg_graph
+        
         self.ndata = {}  # store node related features.
         self.edata = {}
         self.batch = batch
+        self.edge_index = None
         self.batch_num = batch_num
+        
         self.A = None
         self.label = None
         self.coo = None
-        self.graph_type = None
         self.node_num = None
-        self.pyg_graph = pyg_graph
-        self.adj_type = adj_type
         
-    def cuda(self):
+    def cuda(self, device='cuda:0'):
+        self.device = device
+        self.is_cuda = True
         if self.adj_type == 'dense':
             self.A = self.A.cuda()
         
         for k, v in self.ndata.items():
-            self.ndata[k] = v.cuda()
+            if v is not None:
+                self.ndata[k] = v.cuda()
             
         for k, v in self.edata.items():
-            self.edata[k] = v.cuda()
+            if v is not None:
+                self.edata[k] = v.cuda()
+        
+        
+        if self.edge_index is not None:
+            self.edge_index = self.edge_index.cuda()
+        
+        self.pyg_graph.to(device)
             
         return self
     
@@ -75,8 +90,11 @@ class BaseGraph(object):
     def _set_graph_type(self, g_type):
         self.graph_type = g_type
         
-    def set_coo(self, coo_m):
+    def _set_coo(self, coo_m):
         self.coo = coo_m
+            
+    def _set_edge_index(self, edge_index):
+        self.edge_index = edge_index
         
     def set_label(self, label:torch.Tensor):
         """for graph level task, classification or regression.
@@ -84,21 +102,32 @@ class BaseGraph(object):
         self.label = label
     
     def get_node_features(self):
-        return self.ndata['nfeat']
+        if 'nfeat' in self.ndata:
+            return self.ndata['nfeat']
+        return None
     
     def get_edge_features(self):
-        return self.edata['efeat']
+        if 'efeat' in self.edata:
+            return self.edata['efeat']
+        else:
+            return None
+        
+    def get_edge_index(self):
+        return self.edge_index
     
     def set_node_feat(self, node_feat):
-        assert not self.batch and node_feat.shape[0] == self.node_num or \
-            (self.batch and node_feat.shape[0] == self.batch_num and node_feat.shape[1] == self.node_num)
-        
         node_feat = torch.from_numpy(node_feat) if isinstance(node_feat, np.ndarray) else node_feat
+        if node_feat.dim() == 2:
+            assert node_feat.shape[0] == self.node_num
+        
         self.ndata['nfeat'] = node_feat.float()
     
     def set_edge_feat(self, edge_feat):
-        edge_feat = torch.from_numpy(edge_feat) if isinstance(edge_feat, np.ndarray) else edge_feat
-        self.edata['efeat'] = edge_feat.float()
+        if edge_feat is None:
+            self.edata['efeat'] = None
+        else:
+            edge_feat = torch.from_numpy(edge_feat) if isinstance(edge_feat, np.ndarray) else edge_feat
+            self.edata['efeat'] = edge_feat.float()
         
         
 class BaseGraphUtils:
@@ -111,8 +140,20 @@ class BaseGraphUtils:
         g._set_node_num(A.shape[0])
         g._set_A(A.float())
         return g
+    
+    def from_scipy_coo(A:sp.coo.coo_matrix):
+        data = A.data
         
-    def from_numpy(A:np.ndarray):
+        idx_t = torch.LongTensor(np.vstack((A.row, A.col)))
+        data_t = torch.FloatTensor(data)
+        coo_a = torch.sparse_coo_tensor(idx_t, data_t, A.shape)
+        g = BaseGraph(adj_type='coo')
+        g._set_node_num(A.shape[0])
+        g._set_coo(coo_a)
+        return g
+
+        
+    def from_numpy(A:np.ndarray) -> BaseGraph:
         """
             A is an adjacency matrix.
             Stored as torch tensor.
@@ -122,43 +163,60 @@ class BaseGraphUtils:
         g._set_A(torch.from_numpy(A).float())
         return g
     
-    def from_pyg_graph(graph:pyg_Data):
+    def edge_index_to_coo(edge_index:torch.Tensor, N:int, device='cuda:0'):
+        v = torch.ones(edge_index.size(1)).to(device)
+        edge_index = edge_index.to(device)
+        s = torch.sparse_coo_tensor(edge_index, v, (N, N))
+        return s
+    
+    def dense_to_coo(a:torch.Tensor, device='cuda:0'):
+        idx = torch.nonzero(a).to(device).T
+        data = a[idx[0],idx[1]]
+        coo = torch.sparse_coo_tensor(idx, data, a.shape)
+        return coo
+    
+    def from_pyg_graph(graph:pyg_Data, sparse=False):
         N = graph.num_nodes
-        v = torch.ones(graph.num_edges)
-        s = torch.sparse_coo_tensor(graph.edge_index, v, (N, N))
-        A = s.to_dense()
         
-        g = BaseGraph(graph_type='pyg', adj_type='both', pyg_graph=graph)
-        g.A = A
-        g._set_node_num(graph.num_nodes())
-        g.set_coo(s)
+        g = BaseGraph(graph_type='pyg', adj_type='coo' if sparse else 'both', pyg_graph=graph)
+        
+        if sparse:
+            s = BaseGraphUtils.edge_index_to_coo(graph.edge_index, N)
+            g._set_coo(s)
+            g._set_edge_index(graph.edge_index.long())
+        else:
+            A = s.to_dense()
+            g.A = A
+            
+        g._set_node_num(N)
         g.set_node_feat(graph.x)
         g.set_edge_feat(graph.edge_attr)
         if hasattr(graph, 'y'):
             g.set_label(graph.y)
-        
         return g
     
     
-    def init_batch_graph(graphs : Sequence[BaseGraph]):
+    def init_batch_graph(graphs : Sequence[BaseGraph], sparse=False):
         assert len(graphs) > 0
         # TODO: if same node_num then use BaseGraphBatch.
-        same_node_num = True
             
         g1 = graphs[0]
-        g1_node_num = g1.node_num
-        for g in graphs:
-            if g1_node_num != g.node_num:
-                same_node_num = False
-                break
         
-        if g1.graph_type == 'pyg' and not same_node_num:
+        if g1.graph_type == 'pyg':
             pyg_b_graph = pyg_Batch.from_data_list([g.pyg_graph for g in graphs])
-            batched_g = BaseGraphUtils.from_pyg_graph(pyg_b_graph)
+            batched_g = BaseGraphUtils.from_pyg_graph(pyg_b_graph, sparse)
+            batched_g.set_node_feat(pyg_b_graph.x)
+            
+            batched_g.batch_num = len(graphs)
+            batched_g.adj_type = 'coo'
+            if g1.is_cuda:
+                batched_g.cuda()
+                
             return batched_g
         else:
             batched_g = BaseGraph(batch=True, batch_num=len(graphs))
             batched_g._set_graph_type(g1.graph_type)
+            batched_g.adj_type=g1.adj_type
             
             if batched_g.adj_type in ['dense','both']:
                 
@@ -200,7 +258,13 @@ class BaseGraphUtils:
                     batched_g.set_label(batch_labels)
                 
             elif batched_g.adj_type == 'coo':
-                pass
+                pyg_graphs = [pyg_Data(x=g.get_node_features(), edge_index=g.coo.coalesce().indices()) for g in graphs]
+                pyg_b_graph = pyg_Batch.from_data_list(pyg_graphs)
+                
+                batched_g = BaseGraphUtils.from_pyg_graph(pyg_b_graph, sparse=True)
+                batched_g.batch_num = len(graphs)
+                
+                return batched_g
             else:
                 raise NotImplementedError
             
@@ -247,7 +311,7 @@ class GraphDataset(Dataset):
     def collate(self, samples):
         # The input samples is a list of pairs (graph, label).
         graphs, labels = map(list, zip(*samples))
-        labels = torch.stack(labels, dim=0).long()
+        labels = torch.stack(labels, dim=0)
         # NOTE: batched_graph is a tensor
         batched_graph = BaseGraphUtils.init_batch_graph(graphs)
         
@@ -373,6 +437,66 @@ class SAGEConv(MessagePassing):
                                    self.out_channels)
 
 
+
+
+
+class LSDGINConv(MessagePassing):
+    def __init__(self, pre_nn: Callable, eps: float = 0., train_eps: bool = False, device='cuda:0',
+                 **kwargs):
+        kwargs.setdefault('aggr', 'add')
+        super().__init__(**kwargs)
+        self.pre_nn = pre_nn
+        self.initial_eps = eps
+        if train_eps:
+            self.eps = torch.nn.Parameter(torch.Tensor([eps]))
+        else:
+            self.eps = torch.Tensor([eps])
+        self.eps = self.eps.to(device)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.eps.data.fill_(self.initial_eps)
+
+    def forward(self, x: Union[Tensor, OptPairTensor], edge_index: Adj, edge_index_opt: Adj=None,
+                size: Size = None) -> Tensor:
+        if isinstance(x, Tensor):
+            x: OptPairTensor = (x, x)
+        # propagate_type: (x: OptPairTensor)
+        if edge_index.dim() > 2:
+            # same node batch input.
+            out = torch.matmul(edge_index_opt, x[0])
+            if edge_index_opt is not None:
+                out_opt = torch.matmul(edge_index_opt, x[1])
+                out = torch.cat([out, out_opt], dim=-1)
+            
+        else:
+            out = self.propagate(edge_index, x=x, size=size)
+            
+            if edge_index_opt is not None:
+                out_opt = self.propagate(edge_index_opt, x=x, size=size)
+                out = torch.cat([out, out_opt], dim=-1)
+                
+        if edge_index_opt is None:
+            out += (1 + self.eps) * x[0]
+        else:
+            out += (1 + self.eps) * torch.cat([x[0], x[1]], dim=-1)
+        out = self.pre_nn(out)
+        
+        return out
+
+    def message(self, x_j: Tensor) -> Tensor:
+        return x_j
+
+    def message_and_aggregate(self, adj_t: SparseTensor,
+                              x: OptPairTensor) -> Tensor:
+        adj_t = adj_t.set_value(None, layout=None)
+        return torch_sparse.matmul(adj_t, x[0], reduce=self.aggr)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(nn={self.nn})'
+
+
+
 class MyDiGINConv(nn.Module):
     def __init__(self, ln):
         super(MyDiGINConv, self).__init__()
@@ -393,7 +517,52 @@ class MyDiGINConv(nn.Module):
         
         return out
         
+        
+        
+class GCNConv(MessagePassing):
+    def __init__(self, in_channels, out_channels):
+        super().__init__(aggr='add')  # "Add" aggregation (Step 5).
+        self.lin = nn.Linear(in_channels, out_channels, bias=False)
+        self.bias = nn.Parameter(torch.Tensor(out_channels))
 
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        self.lin.reset_parameters()
+        self.bias.data.zero_()
+
+    def forward(self, x, edge_index):
+        # x has shape [N, in_channels]
+        # edge_index has shape [2, E]
+
+        # Step 1: Add self-loops to the adjacency matrix.
+        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
+
+        # Step 2: Linearly transform node feature matrix.
+        x = self.lin(x)
+
+        # Step 3: Compute normalization.
+        row, col = edge_index
+        deg = degree(col, x.size(0), dtype=x.dtype)
+        deg_inv_sqrt = deg.pow(-0.5)
+        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
+        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col]
+
+        # Step 4-5: Start propagating messages.
+        out = self.propagate(edge_index, x=x, norm=norm)
+        # propagate: ['message', 'aggregate', 'message_and_aggregate', 'update']
+
+        # Step 6: Apply a final bias vector.
+        out += self.bias
+
+        return out
+
+    def message(self, x_j, norm):
+        # x_j has shape [E, out_channels]
+        # Step 4: Normalize node features.
+        return norm.view(-1, 1) * x_j  # (Nx1) * (NxC)
+    
+    
 class MyGINConv(nn.Module):
     def __init__(self, ln):
         super(MyGINConv, self).__init__()
@@ -402,16 +571,74 @@ class MyGINConv(nn.Module):
         
     def forward(self, x, adj, graphs=None):
         # x and adj are batch-wise.
+        print('x shape', x.shape)
+        print('adj shape', adj.shape)
         x_r = x
         out = torch.matmul(adj, x)
         
         out += (1 + self.eps) * x_r
         
         out = self.ln(out)
-        
         return out
         
+      
+
+class LSDGINNet(nn.Module):
+    def __init__(self, args, in_dim, hid_dim, out_dim, layer_num, dropout=0.6, last_linear=True,
+                 device='cuda:0',  bi=True):
+        super(LSDGINNet, self).__init__()
         
+        self.args = args
+        self.device = device
+        self.pe_init = args.pe_init
+        self.bi = bi
+        
+        if self.pe_init == 'lap_pe':
+            self.embedding_p = nn.Linear(args.pos_en_dim, hid_dim)
+            in_dim += hid_dim    # cat the pos_fea and node_fea
+            
+        self.convs = nn.ModuleList()
+        
+        if self.bi:
+            in_dim *= 2
+        ln_init = MLP(in_dim, hid_dim, out_dims=hid_dim, layer_nums=2)
+            
+        self.convs.append(LSDGINConv(ln_init, device=device))
+        
+        for _ in range(layer_num - 2):
+            ln_mid = MLP(hid_dim, hid_dim, hid_dim, layer_nums=2)
+            self.convs.append(LSDGINConv(ln_mid, device=device))
+            
+        self.out_dim = out_dim
+        if self.bi:
+            ln_last = nn.Linear(2*hid_dim, out_dim)
+        else:
+            ln_last = nn.Linear(hid_dim, out_dim)
+            
+        if not last_linear:
+            ln_last = nn.Sequential(ln_last, nn.ReLU)
+        self.convs.append(LSDGINConv(ln_last, device=device))
+        
+    def forward(self, x, edge_index, edge_index_opt=None, graphs:BaseGraph=None):
+        if self.pe_init == 'lap_pe':
+            # not batch?
+            batch_pos_enc = graphs.ndata['pos_enc']
+            # print('input x shape ', x.shape, ' pos_en shape:', batch_pos_enc.shape)
+            sign_flip = torch.rand(batch_pos_enc.shape).to(self.device)
+            sign_flip[sign_flip>=0.5] = 1.0
+            sign_flip[sign_flip<0.5] = -1.0
+            
+            batch_pos_enc = batch_pos_enc * sign_flip
+     
+            p = batch_pos_enc
+            p = self.embedding_p(p)
+            x = torch.cat([x, p], dim=-1)
+            p = None
+        for conv in self.convs:
+            x = conv(x, edge_index, edge_index_opt)
+        return x
+    
+    
 
 class DiGINNet(nn.Module):
     def __init__(self, args, in_dim, hid_dim, out_dim, layer_num, dropout=0.6, last_linear=True):
@@ -467,7 +694,41 @@ class DiGINNet(nn.Module):
             
         return x
     
-    
+
+
+
+class GCNO(torch.nn.Module):
+    def __init__(self, in_dim, hid_dim, class_num):
+        super(GCNO, self).__init__()
+        torch.manual_seed(12345)
+        self.conv1 = GCNConv(in_dim, hid_dim)
+        self.conv2 = GCNConv(hid_dim, hid_dim)
+        self.conv3 = GCNConv(hid_dim, hid_dim)
+        self.lin = Linear(hid_dim, class_num)
+
+    def forward(self, graphs:BaseGraph):
+        x = graphs.get_node_features()
+            
+        if graphs.graph_type == 'pyg':
+            edge_index = graphs.pyg_graph.edge_index
+            
+        # 1. Obtain node embeddings 
+        x = self.conv1(x, edge_index)
+        x = x.relu()
+        x = self.conv2(x, edge_index)
+        x = x.relu()
+        x = self.conv3(x, edge_index)
+
+        # 2. Readout layer
+        x = global_mean_pool(x, graphs.pyg_graph.batch)  # [batch_size, hidden_channels]
+
+        # 3. Apply a final classifier
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = self.lin(x)
+        
+        return x
+
+
 class GINNet(nn.Module):
     def __init__(self, args, in_dim, hid_dim, out_dim, layer_num, dropout, last_linear=True):
         super(GINNet, self).__init__()
@@ -479,7 +740,6 @@ class GINNet(nn.Module):
         if self.pos_en == 'lap_pe':
             self.embedding_p = nn.Linear(args.pos_en_dim, hid_dim)
             in_dim += hid_dim    # cat the pos_fea and node_fea
-            
         
         self.convs = nn.ModuleList()
 
@@ -1083,46 +1343,76 @@ class WalkPooling(MessagePassing):
     def message(self, x_j, norm):
         return norm.view(-1, 1) * x_j  
     
+class GCNM(torch.nn.Module):
+    def __init__(self, in_dim, hid_dim):
+        super(GCNM, self).__init__()
+        self.conv1 = GCNConv(in_dim, hid_dim)
+        self.conv2 = GCNConv(hid_dim, hid_dim)
+        self.conv3 = GCNConv(hid_dim, hid_dim)
+        self.out_dim = hid_dim
 
-class GraphConv(nn.Module):
-    def __init__(self, N, in_dim, out_dim, dropout):
-        super(GraphConv, self).__init__()
-        self.N = N
-        self.dropout = dropout
-        self.lin = nn.Linear(in_dim, out_dim)
-        self.dropout = nn.Dropout(dropout)
-        self.reset_parameters()
-        
-    def forward(self, x, adj=None):
-        # x shape is B*NC
-        x = torch.matmul(adj, x)
-        x = self.dropout(F.relu(self.lin(x)))
+    def forward(self, x, edge_index, graphs:BaseGraph=None):
+        # 1. Obtain node embeddings 
+        x = self.conv1(x, edge_index)
+        x = x.relu()
+        x = self.conv2(x, edge_index)
+        x = x.relu()
+        x = self.conv3(x, edge_index)
+        # 3. Apply a final classifier
+        x = F.dropout(x, p=0.5, training=self.training)
         return x
-
-    def reset_parameters(self):
-        pass
-        # nn.init.kaiming_normal_(self.adj_w)
+    
+    
+class GraphConv(MessagePassing):
+    def __init__(self, in_dim, out_dim, dropout, act=nn.ReLU, norm=False):
+        super(GraphConv, self).__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.dropout = dropout
+        self.ln = nn.Linear(in_dim, out_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.norm = norm
+        self.act = act()
         
+    def forward(self, x: Union[Tensor, OptPairTensor], edge_index: Adj,
+                edge_index_opt=None, edge_attr: OptTensor=None, 
+                graphs:BaseGraph=None, size=None):
+        # x shape is B*NC
+        out = self.propagate(edge_index, x=x, edge_attr=edge_attr, size=size)
+        out = self.ln(out)
+        
+        if self.norm:
+            out = F.normalize(out, p=2., dim=-1)
+
+        return out
+
+    def message(self, x_j: Tensor, edge_attr: Tensor) -> Tensor:
+        if edge_attr is not None:
+            return self.act(x_j + edge_attr)
+        else:
+            return self.act(x_j)
+
+    def __repr__(self):
+        return '{}({}, {})'.format(self.__class__.__name__, self.in_dim,
+                                   self.out_dim)
 
 class MultilayerGNN(nn.Module):
-    def __init__(self, N, layer_num, pooling, in_dim, hid_dim, out_dim, dropout=0.5):
+    def __init__(self, layer_num, in_dim, hid_dim, out_dim, dropout=0.5):
         super(MultilayerGNN, self).__init__()
         self.gnns = nn.ModuleList()
 
-        self.gnns.append(GraphConv(N, in_dim, hid_dim, dropout))
+        self.gnns.append(GraphConv(in_dim, hid_dim, dropout))
         for _ in range(layer_num-2):
-            self.gnns.append(GraphConv(N, hid_dim, hid_dim, dropout))
-        self.gnns.append(GraphConv(N, hid_dim, out_dim, dropout))
+            self.gnns.append(GraphConv(hid_dim, hid_dim, dropout))
+        self.gnns.append(GraphConv(hid_dim, out_dim, dropout))
         self.out_dim = out_dim
 
-        # self.g_pooling = pooling
-        
-    def forward(self, x, adj):
+    def forward(self, x, edge_index, edge_index_opt=None, graphs:BaseGraph=None):
         """
         input x shape: B*NC
         """
         for gnn in self.gnns:
-            x = gnn(x, adj)
+            x = gnn(x, edge_index)
         return x
 
 
@@ -1140,12 +1430,45 @@ class CompactPooling(nn.Module):
         DLog.debug('out CompactPooling shape:', x.shape)
         return x
 
+
+class LinearGraphPooling(nn.Module):
+    def __init__(self, in_dim, hid_dim=32):
+        super(LinearGraphPooling, self).__init__()
+        self.ln = nn.Linear(in_dim, hid_dim)
+        
+    def forward(self, x:torch.Tensor):
+        # input x shape: BNC, or BTNC
+        # out shape: BK
+        x = self.ln(x) # BNC -> BNK -> BK
+        x = torch.sum(x, dim=-2)
+        return x
+    
+
+    
+class MeanPooling(nn.Module):
+    def __init__(self, args=None):
+        super(MeanPooling, self).__init__()
+        self.args = args
+        
+    def forward(self, x):
+        """ignore the following dimensions after the 3rd one.
+        Args:
+            x (tensor): shape: B, ..., N,C
+        Returns:
+            x shape: B,C
+        """
+        x = torch.mean(x, dim=-2)
+        return x
+    
+    
+    
 class GateGraphPooling(nn.Module):
     def __init__(self, args=None, N=20):
         super(GateGraphPooling, self).__init__()
         self.args = args
         self.N = N
         self.gate =nn.Parameter(torch.FloatTensor(self.N))
+        # Cx\\
         self.reset_parameters()
         
         
@@ -1343,5 +1666,26 @@ if __name__ == '__main__':
 
 
 
+def global_mean_pool(x: Tensor, batch: Optional[Tensor],
+                     size: Optional[int] = None) -> Tensor:
+    r"""Returns batch-wise graph-level-outputs by averaging node features
+    across the node dimension, so that for a single graph
+    :math:`\mathcal{G}_i` its output is computed by
 
+    .. math::
+        \mathbf{r}_i = \frac{1}{N_i} \sum_{n=1}^{N_i} \mathbf{x}_n
+
+    Args:
+        x (Tensor): Node feature matrix
+            :math:`\mathbf{X} \in \mathbb{R}^{(N_1 + \ldots + N_B) \times F}`.
+        batch (LongTensor, optional): Batch vector
+            :math:`\mathbf{b} \in {\{ 0, \ldots, B-1\}}^N`, which assigns each
+            node to a specific example.
+        size (int, optional): Batch-size :math:`B`.
+            Automatically calculated if not given. (default: :obj:`None`)
+    """
+    if batch is None:
+        return x.mean(dim=-2, keepdim=x.dim() == 2)
+    size = int(batch.max().item() + 1) if size is None else size
+    return scatter(x, batch, dim=-2, dim_size=size, reduce='mean')
 
