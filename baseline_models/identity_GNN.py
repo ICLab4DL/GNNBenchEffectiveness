@@ -116,3 +116,4 @@ class IDGNN(nn.Module):
         out = torch.stack(out, dim=0)
         return out
     
+
