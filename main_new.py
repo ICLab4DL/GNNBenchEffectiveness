@@ -359,7 +359,7 @@ if __name__ == '__main__':
     print('node feature shape:', x.get_node_features().shape)
     node_feature_dim = x.get_node_features().shape[-1]
     
-    
+
     gnn_model_task12 = []
     cc_gnn_evls_train = []
     cc_gnn_evls_test = []

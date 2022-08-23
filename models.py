@@ -17,7 +17,7 @@ from torch_sparse import SparseTensor
 import torch_sparse
 
 from torch_geometric.typing import OptPairTensor, Adj, OptTensor, Size
-from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.nn.conv import MessagePassing, GCNConv
 from torch_geometric.nn import GINConv
 from torch_geometric.data import Data as pyg_Data
 from torch_geometric.data import Batch as pyg_Batch
@@ -901,6 +901,8 @@ class LinkPredictor(torch.nn.Module):
         return torch.sigmoid(x)
 
 
+
+
 class GCN(MessagePassing):
     def __init__(self, in_channel, out_channel, aggr="add", flow: str = "source_to_target", node_dim: int = -2):
         super().__init__(aggr=aggr, flow=flow, node_dim=node_dim)
@@ -909,7 +911,7 @@ class GCN(MessagePassing):
     def reset_parameters(self):
         self.lin.reset_parameters()
 
-    def forward(self, x, edge_index, edge_attr):
+    def forward(self, x, edge_index, edge_attr=None):
         # x has shape [N, in_channels]
         # edge_index has shape [2, E]
 
@@ -935,32 +937,38 @@ class GCN(MessagePassing):
         
         return out
 
-    def message(self, x_j, edge_attr, norm):
+    def message(self, x_j, norm, edge_attr=None):
         # x_j has shape [E, out_channels]
         # Step 4: Normalize node features.
-        return norm.view(-1, 1) * (x_j + edge_attr)
+        if edge_attr is not None:
+            return norm.view(-1, 1) * (x_j + edge_attr)
+        return norm.view(-1, 1) * x_j
         
 class MultiGCN(nn.Module):
-    def __init__(self, dim_in, dim_hidden, dim_out, num_layers):
+    def __init__(self, in_dim, hid_dim, out_dim, num_layers):
         super(MultiGCN,self).__init__()
         self.convs = nn.ModuleList()
-
-        self.convs.append(GCN(dim_in, dim_hidden))
+        self.out_dim = out_dim
+        self.convs.append(GCN(in_dim, hid_dim))
         for _ in range(num_layers - 2):
-            self.convs.append(GCN(dim_hidden, dim_hidden))
-        self.convs.append(GCN(dim_hidden, dim_out))
+            self.convs.append(GCN(hid_dim, hid_dim))
+        self.convs.append(GCN(hid_dim, out_dim))
 
     def reset_parameters(self):
         for conv in self.convs:
             conv.reset_parameters()
 
-    def forward(self, x, adj_t, edge_attr, emb_ea):
-        edge_attr = torch.mm(edge_attr, emb_ea)
+    def forward(self, x, edge_index, edge_index_opt=None, graphs:BaseGraph=None,
+                edge_attr=None, emb_ea=None) -> Tensor:
+        
+        if emb_ea is not None and edge_attr is not None:
+            edge_attr = torch.mm(edge_attr, emb_ea)
+            
         for conv in self.convs[:-1]:
-            x = conv(x, adj_t, edge_attr)
+            x = conv(x, edge_index, edge_attr)
             x = F.relu(x)
             x = F.dropout(x, training=self.training)
-        x = self.convs[-1](x, adj_t, edge_attr)  # no nonlinearity
+        x = self.convs[-1](x, edge_index, edge_attr)  # no nonlinearity
         return x     
 
 

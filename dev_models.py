@@ -48,10 +48,9 @@ class KGIN(nn.Module):
         k_adj = sp_index
         for _ in range(self.K-1):
             k_adj = matmul(k_adj, sp_index)
+            
+        # TODO: Take k_adj as the features. not sparse adj.
         
-
-
-
 
 
 class GINConv(MessagePassing):
