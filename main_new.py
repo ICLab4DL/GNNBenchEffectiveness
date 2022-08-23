@@ -339,7 +339,7 @@ if __name__ == '__main__':
 
     args = args.parse_args()
     args.cuda = True
-    args.batch_size = 32
+    args.batch_size = 1
     args.tag = 'unit_test'
     args.fig_filename= f'/li_zhengdao/github/GenerativeGNN/results/{args.tag}'
     
@@ -347,7 +347,7 @@ if __name__ == '__main__':
     
     # args.pos_en = 'lap_pe'
     # args.pos_en_dim = 8
-
+    print(vars(args))
 
     train_dataloader, test_dataloader = load_cc_degree_free_dataloaders()
     

@@ -55,7 +55,7 @@ def get_common_args():
     parser.add_argument('--dev_size', type=int, default=1000, help='dev_sample_size')
     parser.add_argument('--best_model_save_path', type=str, default='.best_model', help='best_model')
     parser.add_argument('--pre_model_path', type=str, default='./best_models/seed_pretrain_08021405', help='pre_model_path')
-    parser.add_argument('--batch_size', type=int, default=32, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=1, help='batch size')
     parser.add_argument('--epochs', type=int, default=10, help='epochs')
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
     parser.add_argument('--lr_decay_rate', type=float, default=0.92, help='lr_decay_rate')

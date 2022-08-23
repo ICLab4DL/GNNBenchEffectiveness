@@ -99,15 +99,13 @@ class IDGNN(nn.Module):
         self.convs.append(IDGINConv(ln_last0, ln_last1))
         
     def forward(self, x, adj1, adj2=None, graphs:models.BaseGraph=None):
-        
         sp_index = SparseTensor.from_edge_index(adj1)
         sp_index.set_value(None)
         
         k_adj = sp_index
         for _ in range(self.K-1):
             k_adj = matmul(k_adj, sp_index)
-        dense_k_adj = k_adj.to_dense()
-        print(type(dense_k_adj[0]))
+        dense_k_adj = k_adj.to_dense().long()
         out = []
         N = x.shape[0]
         for i in range(N):
