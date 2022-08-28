@@ -189,12 +189,8 @@ def normalize(data):
     
     if not isinstance(data, np.ndarray):
         data = data.cpu().numpy()
-    print(data[0])
-    print(data.shape)
     mean = np.mean(data)
     std = np.std(data)
-    print('mean:', mean)
-    print('std:', std)
     scaler = StandardScaler(mean=mean, std=std)
     normed_data = scaler.transform(data)
                 
