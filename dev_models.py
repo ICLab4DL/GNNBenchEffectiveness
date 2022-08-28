@@ -44,14 +44,16 @@ class KGIN(nn.Module):
         # NOTE: select k neighbors:
         sp_index = SparseTensor.from_edge_index(adj1)
         sp_index.set_value(None)
-
+        # NOTE: if 2th hop neighbors exist in 1st hop neighbors, then circles exist.
+        # check from the A^2 ?.
+        
         k_adj = sp_index
         for _ in range(self.K-1):
             k_adj = matmul(k_adj, sp_index)
-            
-        # TODO: Take k_adj as the features. not sparse adj.
         
-
+        # TODO: Take k_adj as the features. not sparse adj.
+        x.index_add_(0, id, x_id)
+        
 
 class GINConv(MessagePassing):
     def __init__(self, pre_nn: Callable, eps: float = 0., train_eps: bool = False, device='cuda:0',

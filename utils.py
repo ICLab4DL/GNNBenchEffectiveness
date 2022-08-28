@@ -184,14 +184,21 @@ def normalize(data):
     if isinstance(data, list):
         cur_data = np.concatenate(data, axis=0)
         mean = np.mean(cur_data)
-        std = np.std(cur_data)
+        std = np.std(cur_data) + 0.001
         return [(d - mean)/std for d in data]
     
     if not isinstance(data, np.ndarray):
         data = data.cpu().numpy()
+    print(data[0])
+    print(data.shape)
     mean = np.mean(data)
     std = np.std(data)
-    return (data - mean) / std
+    print('mean:', mean)
+    print('std:', std)
+    scaler = StandardScaler(mean=mean, std=std)
+    normed_data = scaler.transform(data)
+                
+    return normed_data, scaler
 
 from torch.utils.data import Dataset
 
