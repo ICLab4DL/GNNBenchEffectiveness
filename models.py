@@ -585,13 +585,14 @@ class MyGINConv(nn.Module):
 
 class LSDGINNet(nn.Module):
     def __init__(self, args, in_dim, hid_dim, out_dim, layer_num, dropout=0.6, last_linear=True,
-                 device='cuda:0',  bi=True):
+                 device='cuda:0',  bi=True, neighbor_k=1):
         super(LSDGINNet, self).__init__()
         
         self.args = args
         self.device = device
         self.pe_init = args.pe_init
         self.bi = bi
+        self,neighbor_k = neighbor_k
         
         if self.pe_init == 'lap_pe':
             self.embedding_p = nn.Linear(args.pos_en_dim, hid_dim)
@@ -618,8 +619,13 @@ class LSDGINNet(nn.Module):
         if not last_linear:
             ln_last = nn.Sequential(ln_last, nn.ReLU)
         self.convs.append(LSDGINConv(ln_last, device=device))
-        
+
+
     def forward(self, x, edge_index, edge_index_opt=None, graphs:BaseGraph=None):
+
+        # NOTE: pre process edge_index:
+
+
         if self.pe_init == 'lap_pe':
             # not batch?
             batch_pos_enc = graphs.ndata['pos_enc']
@@ -634,6 +640,7 @@ class LSDGINNet(nn.Module):
             p = self.embedding_p(p)
             x = torch.cat([x, p], dim=-1)
             p = None
+
         for conv in self.convs:
             x = conv(x, edge_index, edge_index_opt)
         return x
