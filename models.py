@@ -585,14 +585,13 @@ class MyGINConv(nn.Module):
 
 class LSDGINNet(nn.Module):
     def __init__(self, args, in_dim, hid_dim, out_dim, layer_num, dropout=0.6, last_linear=True,
-                 device='cuda:0',  bi=True, neighbor_k=1):
+                 device='cuda:0',  bi=True):
         super(LSDGINNet, self).__init__()
         
         self.args = args
         self.device = device
         self.pe_init = args.pe_init
         self.bi = bi
-        self,neighbor_k = neighbor_k
         
         if self.pe_init == 'lap_pe':
             self.embedding_p = nn.Linear(args.pos_en_dim, hid_dim)
