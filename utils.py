@@ -184,7 +184,8 @@ def normalize(data):
     if isinstance(data, list):
         cur_data = np.concatenate(data, axis=0)
         mean = np.mean(cur_data)
-        std = np.std(cur_data) + 0.001
+        std = np.std(cur_data)
+        
         return [(d - mean)/std for d in data]
     
     if not isinstance(data, np.ndarray):
