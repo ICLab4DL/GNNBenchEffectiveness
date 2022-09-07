@@ -592,7 +592,6 @@ class LSDGINNet(nn.Module):
         self.device = device
         self.pe_init = args.pe_init
         self.bi = bi
-        
         if self.pe_init == 'lap_pe':
             self.embedding_p = nn.Linear(args.pos_en_dim, hid_dim)
             in_dim += hid_dim    # cat the pos_fea and node_fea

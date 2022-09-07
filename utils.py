@@ -17,13 +17,15 @@ import torch.nn.functional as F
 class DaoArgs(object):
     def __init__(self, args=None) -> None:
         if args is None:
-            args = get_common_args()
-            
-        self.args = args
-    
-    
-    
+            args = get_common_args().parse_args({})
+        self.base_args = args
+        for k, v in vars(self.base_args).items():
+            self.set_args(k, v)
+
+    def set_attr(self, attr_name, attr_value):
+        setattr(self, attr_name, attr_value)
         
+
 
 def get_common_args():
     parser = argparse.ArgumentParser()
@@ -144,6 +146,9 @@ def get_common_args():
     
     parser.add_argument('--predictor_num', type=int, default=3, help='predictor_num')
     parser.add_argument('--predictor_hid_dim', type=int, default=512, help='predictor_hid_dim')
+
+    parser.add_argument('--rep_fea_dim', type=int, default=64, help='representation dimension')
+
 
     #NOTE: LatentGraphGenerator:
     parser.add_argument('--em_train', action='store_true', help='em_train, alternatively update grad')
