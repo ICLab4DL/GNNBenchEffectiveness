@@ -20,7 +20,7 @@ class DaoArgs(object):
             args = get_common_args().parse_args({})
         self.base_args = args
         for k, v in vars(self.base_args).items():
-            self.set_args(k, v)
+            self.set_attr(k, v)
 
     def set_attr(self, attr_name, attr_value):
         setattr(self, attr_name, attr_value)
