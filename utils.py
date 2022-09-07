@@ -14,6 +14,16 @@ from torch import  nn
 import torch.nn.functional as F
 
 
+class DaoArgs(object):
+    def __init__(self, args=None) -> None:
+        if args is None:
+            args = get_common_args()
+            
+        self.args = args
+    
+    
+    
+        
 
 def get_common_args():
     parser = argparse.ArgumentParser()
