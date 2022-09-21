@@ -9,7 +9,9 @@ import pandas as pd
 import scipy.sparse as sp
 import torch
 from scipy.sparse import linalg
-
+from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix
+    
 from torch import  nn
 import torch.nn.functional as F
 
@@ -174,6 +176,30 @@ def freeze_module(m):
 
 def unfreeze_module(m):
     set_grad(m, True)
+
+
+def fill_nan_inf(a:np.ndarray):
+    a[np.isnan(a)] = 0
+    a[np.isinf(a)] = 0
+    return a
+    
+def matrix_power(m:coo_matrix, pow=1):
+    if pow==1:
+        return m
+    ori_A = m
+    for _ in range(pow-1):
+        m = m @ ori_A
+    m[m>1]=1
+    return m
+
+
+
+def numpy_to_csr(m) -> csr_matrix:
+    row, col = np.nonzero(m)
+    values = m[row, col]
+    csr_m = csr_matrix((values, (row, col)), shape=m.shape)
+    return csr_m
+
 
 class DaoLogger:
     def __init__(self) -> None:

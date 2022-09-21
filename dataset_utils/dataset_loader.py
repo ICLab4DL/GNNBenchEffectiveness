@@ -14,6 +14,7 @@ def assemble_dataloader(batch_size, train_dataset: GraphDataset, test_dataset: G
 
 
 def load_data(data_name, args):
+    
     if data_name == 'AIDS':
         tudataset = pygdataset.tu_dataset.TUDataset(root='/li_zhengdao/github/GenerativeGNN/dataset/', name='MUTAG')
 
