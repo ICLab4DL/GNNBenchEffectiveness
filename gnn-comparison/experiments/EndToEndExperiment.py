@@ -22,7 +22,7 @@ class EndToEndExperiment(Experiment):
             dataset = dataset_class(dense=self.model_config.dense)
         else:
             dataset = dataset_class()
-
+        
         model_class = self.model_config.model
         loss_class = self.model_config.loss
         optim_class = self.model_config.optimizer
@@ -34,7 +34,8 @@ class EndToEndExperiment(Experiment):
 
         train_loader, val_loader = dataset_getter.get_train_val(dataset, self.model_config['batch_size'],
                                                                 shuffle=shuffle)
-
+        print('dataset dim features', dataset.dim_features)
+        
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target, config=self.model_config)
         net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'])
 

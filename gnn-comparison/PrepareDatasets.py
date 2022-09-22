@@ -16,6 +16,10 @@ DATASETS = {
     "MUTAG": Mutag
 }
 
+SYN_DATASETS = {
+    'CSL': CSL
+}
+
 
 def get_args_dict():
     parser = argparse.ArgumentParser()
@@ -23,7 +27,7 @@ def get_args_dict():
     parser.add_argument('DATA_DIR',
                         help='where to save the datasets')
     parser.add_argument('--dataset-name', dest='dataset_name',
-                        choices=DATASETS.keys(), default='all', help='dataset name [Default: \'all\']')
+                        choices=list(DATASETS.keys())+list(SYN_DATASETS.keys()), default='all', help='dataset name [Default: \'all\']')
     parser.add_argument('--outer-k', dest='outer_k', type=int,
                         default=10, help='evaluation folds [Default: 10]')
     parser.add_argument('--inner-k', dest='inner_k', type=int,
@@ -48,14 +52,17 @@ def get_args_dict():
                         default=False, help='use deepwalk embeddings as feature')
     parser.add_argument('--no-kron', dest='precompute_kron_indices', action='store_false',
                         default=True, help='don\'t precompute kron reductions')
-
+    
     return vars(parser.parse_args())
 
 
 def preprocess_dataset(name, args_dict):
-    dataset_class = DATASETS[name]
+    
+    dataset_class = DATASETS[name] if name in DATASETS else SYN_DATASETS[name]
+    
     if name == 'ENZYMES':
         args_dict.update(use_node_attrs=True)
+    
     dataset_class(**args_dict)
 
 

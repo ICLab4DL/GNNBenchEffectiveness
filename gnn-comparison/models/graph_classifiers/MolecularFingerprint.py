@@ -8,7 +8,9 @@ class MolecularFingerprint(torch.nn.Module):
     def __init__(self, dim_features, dim_target, config):
         super(MolecularFingerprint, self).__init__()
         hidden_dim = config['hidden_units']
-
+        print(dim_features)
+        print(hidden_dim)
+        print(dim_target)
         self.mlp = torch.nn.Sequential(torch.nn.Linear(dim_features, hidden_dim), ReLU(),
                                        torch.nn.Linear(hidden_dim, dim_target), ReLU())
 

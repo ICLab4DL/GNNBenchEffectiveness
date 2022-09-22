@@ -18,7 +18,7 @@ l2:
   - 0.001
   - 0.01
 classifier_epochs:
-  - 5000
+  - 200
 optimizer:
   - Adam
 scheduler:

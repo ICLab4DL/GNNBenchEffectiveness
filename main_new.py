@@ -1,7 +1,7 @@
 import utils
 from models import *
 import models
-import dataset_loader
+import dataset_utils.dataset_loader as dataset_loader
 import training
 from torch.utils.data import DataLoader
 

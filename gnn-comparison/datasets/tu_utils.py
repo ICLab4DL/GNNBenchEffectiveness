@@ -37,7 +37,7 @@ def parse_tu_data(name, raw_dir):
     num_nodes = num_nodes_map[name]
     nodes = np.arange(1, num_nodes+1)
     
-    G = nx.Graph()
+    G = nx.Graph() # NOTE: holistic graph combined all graphs.
     G.add_nodes_from(nodes)
 
     with open(indicator_path, "r") as f:
@@ -131,6 +131,20 @@ def parse_tu_data(name, raw_dir):
     }, num_node_labels, num_edge_labels, G
 
 
+def create_graph_from_nx(nx_graph:nx.Graph, label) -> Graph:
+    G = Graph(target=label)
+    
+    for n in nx_graph.nodes:
+        G.add_node(n, label=None, attrs=None)
+    
+    for (n1, n2) in nx_graph.edges:
+        G.add_edge(n1, n2, label=None, attrs=None)
+    
+    #TODO: if has node attr or edge attr:
+    
+    return G
+    
+    
 def create_graph_from_tu_data(graph_data, target, num_node_labels, num_edge_labels, Graph_whole):
     # Graph is the networks graph containing all nodes and edges in the dataset
     nodes = graph_data["graph_nodes"]

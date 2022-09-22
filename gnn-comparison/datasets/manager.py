@@ -8,6 +8,8 @@ import networkx as nx
 from networkx import normalized_laplacian_matrix
 import torch.nn as nn
 from numpy import linalg as LA
+import pickle as pk
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -17,11 +19,13 @@ from torch.nn import functional as F
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
 from utils.utils import NumpyEncoder
+
+from .synthetic_dataset_generator import *
 from .data import Data
 from .dataloader import DataLoader
 from .dataset import GraphDataset, GraphDatasetSubset
 from .sampler import RandomSampler
-from .tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num
+from .tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
 
 
 class GraphDatasetManager:
@@ -67,6 +71,7 @@ class GraphDatasetManager:
             self._download()
 
         self.processed_dir = self.root_dir / "processed"
+        print('processed_dir: ', self.processed_dir)
         if not (self.processed_dir / f"{self.name}.pt").exists():
             if not self.processed_dir.exists():
                 os.makedirs(self.processed_dir)
@@ -74,7 +79,7 @@ class GraphDatasetManager:
 
         self.dataset = GraphDataset(torch.load(
             self.processed_dir / f"{self.name}.pt"))
-
+        print(len(self.dataset))
         splits_filename = self.processed_dir / f"{self.name}_splits.json"
         if not splits_filename.exists():
             self.splits = []
@@ -103,7 +108,6 @@ class GraphDatasetManager:
     def dim_features(self):
         # best for feature initialization based on the current implementation
         self._dim_features = self.dataset.data[0].x.size(1)
-
         # if not hasattr(self, "_dim_features") or self._dim_features is None:
             # not very elegant, but it works
             # todo not general enough, we may just remove it
@@ -306,12 +310,14 @@ class TUDatasetManager(GraphDatasetManager):
         elif self.use_random_normal:
             num_of_nodes = self.Graph_whole.number_of_nodes()
             self.Graph_whole_embedding = np.random.normal(0, 1, (num_of_nodes, 50))
+        else:
+            print('use other base node features! e.g., degree')
 
         # dynamically set maximum num nodes (useful if using dense batching, e.g. diffpool)
         max_num_nodes = max([len(v) for (k, v) in graphs_data['graph_nodes'].items()])
         setattr(self, 'max_num_nodes', max_num_nodes)
 
-        dataset = [] 
+        dataset = []
         for i, target in enumerate(targets, 1):
             graph_data = {k: v[i] for (k, v) in graphs_data.items()}
             G = create_graph_from_tu_data(graph_data, target, num_node_labels, num_edge_labels, Graph_whole)
@@ -324,7 +330,7 @@ class TUDatasetManager(GraphDatasetManager):
             if G.number_of_nodes() > 1 and G.number_of_edges() > 0:
                 data = self._to_data(G)
                 dataset.append(data)
-
+                G.__class__()
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
 
     def _to_data(self, G):
@@ -453,6 +459,131 @@ class TUDatasetManager(GraphDatasetManager):
         print("finished loading deepwalk embeddings")
         return feat_data
 
+class SyntheticManager(TUDatasetManager):
+    
+    def _download(self):
+        graphs = generate_CSL(each_class_num=150, N=41, S=[2,3,4,7])
+        labels = []
+        G = []
+        for (g, y) in graphs:
+            G.append(g)
+            labels.append(y)
+        print('dataset name:', self.name, 'len of samples:', len(G))
+        # TODO: save G only, test the pickle file size:
+        pk.dump(G, open(f'{self.raw_dir}/{self.name}_graph.pkl', 'wb'))
+        pk.dump(labels, open(f'{self.raw_dir}/{self.name}_label.pkl', 'wb'))
+        print('saved pkl data')
+        
+    def _process(self):
+        
+        graph_nodes = defaultdict(list)
+        graph_edges = defaultdict(list)
+        node_labels = defaultdict(list)
+        node_attrs = defaultdict(list)
+        edge_labels = defaultdict(list)
+        edge_attrs = defaultdict(list)
+        
+        graphs = pk.load(open(f'{self.raw_dir}/{self.name}_graph.pkl', 'rb'))
+        graph_labels = pk.load(open(f'{self.raw_dir}/{self.name}_label.pkl', 'rb'))
+        
+        for i, g in enumerate(graphs):
+            graph_nodes[i]=g.nodes
+            graph_edges[i]=g.edges
+            
+        
+        graphs_data = {
+            "graph_nodes": graph_nodes,
+            "graph_edges": graph_edges,
+            "graph_labels": graph_labels,
+            "node_labels": node_labels,
+            "node_attrs": node_attrs,
+            "edge_labels": edge_labels,
+            "edge_attrs": edge_attrs
+        }
+        
+        print("in _process")
+
+        if self.use_pagerank:
+        # TODO: create whole graphs:
+            Graph_whole = nx.disjoint_union_all(graphs)
+            self.Graph_whole = Graph_whole
+            self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
+        elif self.use_eigen or self.use_eigen_norm:
+            try:
+                print("{name}".format(name=self.name))
+                if self.use_eigen:
+                    self.Graph_whole_eigen = np.load("DATA/{name}_eigenvector.npy".format(name=self.name))
+                else:
+                    self.Graph_whole_eigen = np.load("DATA/{name}_eigenvector_degree_normalized.npy".format(name=self.name))
+                print(self.Graph_whole_eigen.shape)
+            except:
+                num_node = get_dataset_node_num(self.name)
+                adj_matrix = nx.to_numpy_array(self.Graph_whole)
+                if self.use_eigen_norm:
+                    # normalize adjacency matrix with degree
+                    sum_of_rows = adj_matrix.sum(axis=1)
+                    normalized_adj_matrix = np.zeros((num_node, num_node))
+                    # deal with edge case of disconnected node:
+                    for i in range(num_node):
+                        if sum_of_rows[i] != 0:
+                            normalized_adj_matrix[i, :] = adj_matrix[i, :] / sum_of_rows[i, None]
+                    adj_matrix = normalized_adj_matrix
+                print("start computing eigen vectors")
+                w, v = LA.eig(adj_matrix)
+                indices = np.argsort(w)[::-1]
+                v = v.transpose()[indices]
+                # only save top 200 eigenvectors
+                if self.use_eigen:
+                    np.save("DATA/{name}_eigenvector".format(name=self.name), v[:200])
+                else:
+                    np.save("DATA/{name}_eigenvector_degree_normalized".format(name=self.name), v[:200])
+                self.Graph_whole_eigen = v
+            
+            print(self.Graph_whole_eigen)
+            print(np.count_nonzero(self.Graph_whole_eigen==0))
+            node_num = get_dataset_node_num(self.name)
+            embedding = np.zeros((node_num, 50))
+            for i in range(node_num):
+                for j in range(50):
+                    embedding[i, j] = self.Graph_whole_eigen[j, i]
+            self.Graph_whole_eigen = embedding
+            print(self.Graph_whole_eigen)
+        elif self.use_1hot:
+            # TODO: create whole graphs:
+            Graph_whole = nx.disjoint_union_all(graphs)
+            self.Graph_whole = Graph_whole
+            
+            self.Graph_whole_embedding = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
+        elif self.use_deepwalk:
+            self.Graph_whole_deepwalk = self.extract_deepwalk_embeddings("DATA/proteins.embeddings")
+        elif self.use_random_normal:
+            # TODO: create whole graphs:
+            Graph_whole = nx.disjoint_union_all(graphs)
+            self.Graph_whole = Graph_whole
+            num_of_nodes = self.Graph_whole.number_of_nodes()
+            self.Graph_whole_embedding = np.random.normal(0, 1, (num_of_nodes, 50))
+        else:
+            print('use other base node features! e.g., degree')
+
+        # dynamically set maximum num nodes (useful if using dense batching, e.g. diffpool)
+        max_num_nodes = max([len(v) for (k, v) in graphs_data['graph_nodes'].items()])
+        setattr(self, 'max_num_nodes', max_num_nodes)
+
+        dataset = []
+        for i, g in enumerate(graphs):
+            G = create_graph_from_nx(g, graph_labels[i])
+            if self.precompute_kron_indices:
+                laplacians, v_plus_list = self._precompute_kron_indices(G)
+                G.laplacians = laplacians
+                G.v_plus = v_plus_list
+
+            if G.number_of_nodes() > 1 and G.number_of_edges() > 0:
+                data = self._to_data(G)
+                dataset.append(data)
+                G.__class__()
+        torch.save(dataset, self.processed_dir / f"{self.name}.pt")
+
+
 class NCI1(TUDatasetManager):
     name = "NCI1"
     _dim_features = 37
@@ -521,3 +652,10 @@ class Mutag(TUDatasetManager):
     _dim_features = 71
     _dim_target = 2
     max_num_nodes = 100
+    
+    
+class CSL(SyntheticManager):
+    name = "CSL"
+    _dim_features = 0
+    _dim_target = 1
+    max_num_nodes = 1000
