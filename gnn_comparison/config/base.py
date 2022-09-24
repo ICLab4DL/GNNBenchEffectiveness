@@ -36,7 +36,8 @@ class Config:
         'PROTEINS': Proteins,
         'ENZYMES': Enzymes,
         'DD': DD,
-        'MUTAG': Mutag
+        'MUTAG': Mutag,
+        "CSL": CSL
     }
 
     models = {

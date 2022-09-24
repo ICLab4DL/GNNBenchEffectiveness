@@ -1,3 +1,6 @@
+import sys 
+sys.path.append("..")
+
 import io
 import os
 import json
@@ -18,7 +21,7 @@ from torch.nn import functional as F
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
-from utils.utils import NumpyEncoder
+from ..utils.encode_utils import NumpyEncoder
 
 from .synthetic_dataset_generator import *
 from .data import Data
@@ -656,6 +659,6 @@ class Mutag(TUDatasetManager):
     
 class CSL(SyntheticManager):
     name = "CSL"
-    _dim_features = 0
-    _dim_target = 1
-    max_num_nodes = 1000
+    _dim_features = 1
+    _dim_target = 4
+    max_num_nodes = 41

@@ -1,19 +1,20 @@
 import argparse
 
-from datasets import *
+from .datasets import *
 
 
 DATASETS = {
-    'REDDIT-BINARY': RedditBinary,
-    'REDDIT-MULTI-5K': Reddit5K,
-    'COLLAB': Collab,
+    # 'REDDIT-BINARY': RedditBinary,
+    # 'REDDIT-MULTI-5K': Reddit5K,
+    # 'COLLAB': Collab,
     'IMDB-BINARY': IMDBBinary,
     'IMDB-MULTI': IMDBMulti,
-    'NCI1': NCI1,
+    # 'NCI1': NCI1,
     'ENZYMES': Enzymes,
     'PROTEINS': Proteins,
     'DD': DD,
-    "MUTAG": Mutag
+    "MUTAG": Mutag,
+    'CSL': CSL
 }
 
 SYN_DATASETS = {
@@ -27,7 +28,7 @@ def get_args_dict():
     parser.add_argument('DATA_DIR',
                         help='where to save the datasets')
     parser.add_argument('--dataset-name', dest='dataset_name',
-                        choices=list(DATASETS.keys())+list(SYN_DATASETS.keys()), default='all', help='dataset name [Default: \'all\']')
+                        choices=list(DATASETS.keys())+list(SYN_DATASETS.keys())+['all'], default='all', help='dataset name [Default: \'all\']')
     parser.add_argument('--outer-k', dest='outer_k', type=int,
                         default=10, help='evaluation folds [Default: 10]')
     parser.add_argument('--inner-k', dest='inner_k', type=int,

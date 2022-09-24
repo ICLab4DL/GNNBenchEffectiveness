@@ -1,5 +1,6 @@
 import argparse
 from EndToEnd_Evaluation import main as endtoend
+from PrepareDatasets import DATASETS
 
 
 def get_args():
@@ -19,11 +20,13 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    if args.dataset_name != 'none':
+    if args.dataset_name not in ['all','none']:
         datasets = [args.dataset_name]
     else:
-        datasets = ['IMDB-MULTI', 'IMDB-BINARY', 'PROTEINS', 'NCI1', 'ENZYMES', 'DD',
-                    'REDDIT-BINARY', 'REDDIT-MULTI-5K', 'COLLAB', 'REDDIT-MULTI-12K']
+        datasets = list(DATASETS.keys())
+        
+        # ['IMDB-MULTI', 'IMDB-BINARY', 'PROTEINS', 'NCI1', 'ENZYMES', 'DD',
+                    # 'REDDIT-BINARY', 'REDDIT-MULTI-5K', 'COLLAB', 'REDDIT-MULTI-12K']
 
     config_file = args.config_file
     experiment = args.experiment

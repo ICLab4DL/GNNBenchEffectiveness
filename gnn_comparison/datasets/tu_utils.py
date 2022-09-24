@@ -3,7 +3,7 @@ import numpy as np
 import networkx as nx
 
 from .graph import Graph
-from utils.utils import one_hot
+from ..utils.encode_utils import one_hot
 
 
 def parse_tu_data(name, raw_dir):
@@ -32,7 +32,9 @@ def parse_tu_data(name, raw_dir):
         "IMDB-BINARY": 19773, 
         "IMDB-MULTI": 19502, 
         "DD": 334925,
-        "PROTEINS_full": 43471
+        "PROTEINS_full": 43471,
+        "REDDIT-BINARY":3782,
+        'REDDIT-MULTI-5K':3648
     }
     num_nodes = num_nodes_map[name]
     nodes = np.arange(1, num_nodes+1)

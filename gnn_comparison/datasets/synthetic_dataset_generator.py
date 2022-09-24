@@ -38,7 +38,7 @@ def random_connect_graph(graph_list:list):
 
 def generate_CSL(each_class_num:int, N:int, S:list):
     samples = []
-    for s in S:
+    for y, s in enumerate(S):
         g = nx.circulant_graph(N, [1, s])
         # pers = set()
         # if each_class_num < math.factorial(N):
@@ -55,7 +55,7 @@ def generate_CSL(each_class_num:int, N:int, S:list):
             A_per = A_g[per, :]
             A_per = A_per[:, per]
             # NOTE: set cycle length or skip length as label.
-            samples.append((nx.from_numpy_array(A_per), s))
+            samples.append((nx.from_numpy_array(A_per), y))
     
     return samples
 
