@@ -269,7 +269,7 @@ def get_corrs(normed_vars, cate="all"):
 
 
         
-def normalize(data):
+def normalize(data, along_axis=None):
     '''
         only norm numpy type data with last dimension.
     '''
@@ -284,7 +284,20 @@ def normalize(data):
     
     if not isinstance(data, np.ndarray):
         data = data.cpu().numpy()
-        
+    if along_axis is not None:
+        if along_axis == -1:
+            print('normalize along each axis')
+            # along all axis separately. data shape:(NxC) along each C_i
+            for ax in range(data.shape[-1]):
+                mean = np.mean(data[:, ax])
+                std = np.std(data[:, ax])
+                scaler = StandardScaler(mean=mean, std=std)
+                data[:, ax] = scaler.transform(data[:, ax])
+            return data
+        else:
+            print('norm along ', along_axis)
+            pass
+            
     mean = np.mean(data)
     std = np.std(data)
     scaler = StandardScaler(mean=mean, std=std)
@@ -535,6 +548,8 @@ class StandardScaler():
                 return [0 for d in data]
             
             return [(d - self.mean)/self.std for d in data]
+        if self.std == 0:
+            return np.zeros_like(data)
         
         return (data - self.mean) / self.std
 
