@@ -217,20 +217,74 @@ class DaoLogger:
 
 DLog = DaoLogger()
 
+
+
+# Plot Correlation:
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from scipy.stats import norm
+from minepy import pstats, cstats
+
+
+def get_corrs(normed_vars, cate="all"):
+    
+    def make_adj(array):
+        y = len(array)
+        n = int((1+np.sqrt(1+8*y))/2)
+        adj = np.ones((n,n))
+        arr_index = 0
+        for i in range(n):
+            for j in range(i, n):
+                if i==j:
+                    continue
+                adj[i, j] = array[j + arr_index - i -1]
+                adj[j, i] = adj[i, j]
+            arr_index += n - i - 1
+        return adj
+
+    corrs = {}
+    
+    # Pearson:
+    corrs_p = pd.DataFrame(normed_vars).corr(method='pearson')
+    corrs['pearson'] = corrs_p
+    # Spearman:
+    corrs_s = pd.DataFrame(normed_vars).corr(method='spearman')
+    corrs['spearman'] = corrs_s
+    
+        # MIC:
+    if cate in ['all', 'MIC']:
+        if not isinstance(normed_vars, np.ndarray):
+            normed_vars = pd.DataFrame(normed_vars).values
+        normed_vars = normed_vars.transpose()
+        mic_p, tic_p =  pstats(normed_vars, alpha=0.6, c=5, est="mic_e")
+        cr = np.array(make_adj(tic_p))
+        corrs['MIC'] = cr
+    
+    if cate == "all":
+        return corrs
+
+    return corrs[cate]
+
+
         
 def normalize(data):
     '''
         only norm numpy type data with last dimension.
     '''
     if isinstance(data, list):
-        cur_data = np.concatenate(data, axis=0)
+        cur_data = np.concatenate(np.array(data).reshape(-1, 1), axis=0)
         mean = np.mean(cur_data)
         std = np.std(cur_data)
-        
+        if std == 0:
+            print('std: ', std)
+            return [0 for _ in data]
         return [(d - mean)/std for d in data]
     
     if not isinstance(data, np.ndarray):
         data = data.cpu().numpy()
+        
     mean = np.mean(data)
     std = np.std(data)
     scaler = StandardScaler(mean=mean, std=std)
@@ -477,6 +531,9 @@ class StandardScaler():
             data[mask] = self.mean
             
         if isinstance(data, list):
+            if self.std == 0:
+                return [0 for d in data]
+            
             return [(d - self.mean)/self.std for d in data]
         
         return (data - self.mean) / self.std
