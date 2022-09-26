@@ -248,10 +248,10 @@ def get_corrs(normed_vars, cate="all"):
     
     # Pearson:
     corrs_p = pd.DataFrame(normed_vars).corr(method='pearson')
-    corrs['pearson'] = corrs_p
+    corrs['pearson'] = corrs_p.values
     # Spearman:
     corrs_s = pd.DataFrame(normed_vars).corr(method='spearman')
-    corrs['spearman'] = corrs_s
+    corrs['spearman'] = corrs_s.values
     
         # MIC:
     if cate in ['all', 'MIC']:
