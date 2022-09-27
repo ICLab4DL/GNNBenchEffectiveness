@@ -10,10 +10,11 @@
 #         REDDIT-BINARY
 #         REDDIT-MULTI-5K
 #         COLLAB
-
 dat="PROTEINS"
 dat="CSL"
 dat='all'
+dat='NCI1'
+dat='COLLAB'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal

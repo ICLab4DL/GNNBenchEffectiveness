@@ -245,18 +245,26 @@ def get_corrs(normed_vars, cate="all"):
         return adj
 
     corrs = {}
+    # fill nan with zeros:
+    pd_na = pd.DataFrame(normed_vars)
+    
+    pd_na.fillna(0.01)
     
     # Pearson:
-    corrs_p = pd.DataFrame(normed_vars).corr(method='pearson')
+    corrs_p = pd_na.corr(method='pearson')
     corrs['pearson'] = corrs_p.values
+    
     # Spearman:
-    corrs_s = pd.DataFrame(normed_vars).corr(method='spearman')
+    corrs_s = pd_na.corr(method='spearman')
     corrs['spearman'] = corrs_s.values
     
         # MIC:
     if cate in ['all', 'MIC']:
         if not isinstance(normed_vars, np.ndarray):
-            normed_vars = pd.DataFrame(normed_vars).values
+            pd_na = pd.DataFrame(normed_vars)
+            pd_na.fillna(0)
+            normed_vars = pd_na.values
+            
         normed_vars = normed_vars.transpose()
         mic_p, tic_p =  pstats(normed_vars, alpha=0.6, c=5, est="mic_e")
         cr = np.array(make_adj(tic_p))
@@ -279,14 +287,15 @@ def normalize(data, along_axis=None):
         std = np.std(cur_data)
         if std == 0:
             print('std: ', std)
-            return [0 for _ in data]
+            return [0.01 for _ in data]
         return [(d - mean)/std for d in data]
     
     if not isinstance(data, np.ndarray):
         data = data.cpu().numpy()
+        
     if along_axis is not None:
         if along_axis == -1:
-            print('normalize along each axis')
+            print('normalize along each axis, shape:', data.shape)
             # along all axis separately. data shape:(NxC) along each C_i
             for ax in range(data.shape[-1]):
                 mean = np.mean(data[:, ax])
@@ -545,11 +554,12 @@ class StandardScaler():
             
         if isinstance(data, list):
             if self.std == 0:
-                return [0 for d in data]
+                return [0.01 for d in data]
             
             return [(d - self.mean)/self.std for d in data]
+        
         if self.std == 0:
-            return np.zeros_like(data)
+            return np.zeros_like(data) + 0.01
         
         return (data - self.mean) / self.std
 

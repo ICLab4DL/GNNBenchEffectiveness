@@ -1,15 +1,15 @@
 import argparse
 
 from .datasets import *
-
+from .datasets.manager import *
 
 DATASETS = {
     # 'REDDIT-BINARY': RedditBinary,
     # 'REDDIT-MULTI-5K': Reddit5K,
-    # 'COLLAB': Collab,
+    'COLLAB': Collab,
     'IMDB-BINARY': IMDBBinary,
     'IMDB-MULTI': IMDBMulti,
-    # 'NCI1': NCI1,
+    'NCI1': NCI1,
     'ENZYMES': Enzymes,
     'PROTEINS': Proteins,
     'DD': DD,

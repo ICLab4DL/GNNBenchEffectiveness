@@ -3,7 +3,7 @@ import numpy as np
 import networkx as nx
 
 from .graph import Graph
-from ..utils.encode_utils import one_hot
+from gnn_comparison.utils.encode_utils import one_hot
 
 
 def parse_tu_data(name, raw_dir):
@@ -26,7 +26,23 @@ def parse_tu_data(name, raw_dir):
     edge_labels = defaultdict(list)
     node_attrs = defaultdict(list)
     edge_attrs = defaultdict(list)
+    
+    total_nodes_num = 0
+    with open(indicator_path, "r") as f:
+        for i, line in enumerate(f.readlines(), 1):
+            if len(line.strip()) < 1:
+                continue
+            line = line.rstrip("\n")
+            graph_id = int(line)
+            indicator.append(graph_id)
+            graph_nodes[graph_id].append(i)
+            total_nodes_num += 1
+    print('total node num:', total_nodes_num)
+    
+    
     num_nodes_map = {
+        "COLLAB": 372474,
+        "NCI1": 122747,
         "MUTAG": 3371,
         "ENZYMES": 19580, 
         "IMDB-BINARY": 19773, 
@@ -36,19 +52,15 @@ def parse_tu_data(name, raw_dir):
         "REDDIT-BINARY":3782,
         'REDDIT-MULTI-5K':3648
     }
-    num_nodes = num_nodes_map[name]
+    
+    
+    # num_nodes = num_nodes_map[name] 
+    num_nodes = total_nodes_num
     nodes = np.arange(1, num_nodes+1)
     
     G = nx.Graph() # NOTE: holistic graph combined all graphs.
     G.add_nodes_from(nodes)
-
-    with open(indicator_path, "r") as f:
-        for i, line in enumerate(f.readlines(), 1):
-            line = line.rstrip("\n")
-            graph_id = int(line)
-            indicator.append(graph_id)
-            graph_nodes[graph_id].append(i)
-
+    
     with open(edges_path, "r") as f:
         for i, line in enumerate(f.readlines(), 1):
             line = line.rstrip("\n")
