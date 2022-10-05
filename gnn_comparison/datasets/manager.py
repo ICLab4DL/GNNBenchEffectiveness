@@ -30,12 +30,13 @@ from .dataset import GraphDataset, GraphDatasetSubset
 from .sampler import RandomSampler
 from .tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
 
+from dataset_utils import node_feature_utils
 
 class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
-                 use_deepwalk=False, precompute_kron_indices=False,
+                 use_deepwalk=False, precompute_kron_indices=False, additional_features=False,
                  max_reductions=10, DATA_DIR='DATA'):
 
         self.root_dir = Path(DATA_DIR) / self.name
@@ -54,6 +55,9 @@ class GraphDatasetManager:
         self.precompute_kron_indices = precompute_kron_indices
         self.KRON_REDUCTIONS = max_reductions  # will compute indices for 10 pooling layers --> approximately 1000 nodes
 
+        # 2022.10.02
+        self.additional_features = additional_features
+        
         self.Graph_whole = None
         self.Graph_whole_pagerank = None
         self.Graph_whole_eigen = None
@@ -80,6 +84,14 @@ class GraphDatasetManager:
                 os.makedirs(self.processed_dir)
             self._process()
 
+        # TODO: if add more node features:
+        if self.additional_feature:
+            # TODO: pass node function?
+            node_feature_utils.
+            
+            pass
+            
+        
         self.dataset = GraphDataset(torch.load(
             self.processed_dir / f"{self.name}.pt"))
         print(len(self.dataset))
@@ -118,6 +130,9 @@ class GraphDatasetManager:
         # feature initialization
         return self._dim_features
 
+    def _add_features(self):
+        
+        
     def _process(self):
         raise NotImplementedError
 

@@ -3,6 +3,12 @@ import networkx as nx
 
 # node or edge feature generation:
 
+NODE_FEATURES = {
+    ''
+    
+    
+}
+
 def xargs(f):
     def wrap(**xargs):
         return f(**xargs)
@@ -168,8 +174,10 @@ def get_features_by_ids(*indices, cur_features, pad=None):
     test_fea = composite_node_features(*tuple([cur_features[i][1] for i in indices]), padding=pad)
     return (train_fea, test_fea)
 
+def gen_node_features(adjs, sparse, node)
+
 def generate_node_feature(all_data, sparse, node_cons_func, **xargs) -> tuple:
-    train_adj ,_, test_adj, _ = all_data
+    train_adj, _, test_adj, _ = all_data
     if sparse:
         train_node_feas = [node_cons_func(adj=adj, **xargs) for adj in train_adj]
         test_node_feas = [node_cons_func(adj=adj, **xargs) for adj in test_adj]

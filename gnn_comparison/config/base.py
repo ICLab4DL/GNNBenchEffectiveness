@@ -1,7 +1,7 @@
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
-from datasets import *
+from gnn_comparison.datasets.manager import *
 from models.graph_classifiers.DGCNN import DGCNN
 from models.graph_classifiers.DeepMultisets import DeepMultisets
 from models.graph_classifiers.MolecularFingerprint import MolecularFingerprint
