@@ -36,7 +36,7 @@ class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
-                 use_deepwalk=False, precompute_kron_indices=False, additional_features=False,
+                 use_deepwalk=False, precompute_kron_indices=False, additional_features:str=None,
                  max_reductions=10, DATA_DIR='DATA'):
 
         self.root_dir = Path(DATA_DIR) / self.name
@@ -85,10 +85,20 @@ class GraphDatasetManager:
             self._process()
 
         # TODO: if add more node features:
-        if self.additional_feature:
+        if self.additional_features is not None:
             # TODO: pass node function?
-            node_feature_utils.
-            
+            # node register
+            self.additional_features = self.additional_features.strip().split(',')
+            node_fea_reg = node_feature_utils.NodeFeaRegister()
+            for name in self.additional_features:
+                # format: name;key:value;key:value....
+                
+            node_fea_reg.register('degree')
+            node_fea_reg.register('allone')
+            node_fea_reg.register('guassian', dim=41)
+            node_fea_reg.register('tri_cycle')
+            node_fea_reg.register('kadj', k=2)
+            self.node_feature_register.register()
             pass
             
         
@@ -132,6 +142,7 @@ class GraphDatasetManager:
 
     def _add_features(self):
         
+        node_feature_utils.construct_node_features(self.dataset, self.)
         
     def _process(self):
         raise NotImplementedError

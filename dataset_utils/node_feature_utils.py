@@ -174,8 +174,15 @@ def get_features_by_ids(*indices, cur_features, pad=None):
     test_fea = composite_node_features(*tuple([cur_features[i][1] for i in indices]), padding=pad)
     return (train_fea, test_fea)
 
-def gen_node_features(adjs, sparse, node)
 
+def gen_node_features(adjs, sparse, node_cons_func, **xargs) -> tuple:
+    if sparse:
+        node_features = [node_cons_func(adj=adj, **xargs) for adj in adjs]
+    else:
+        node_features = np.stack([node_cons_func(adj=adj, **xargs) for adj in adjs], axis=0)
+    return node_features
+
+    
 def generate_node_feature(all_data, sparse, node_cons_func, **xargs) -> tuple:
     train_adj, _, test_adj, _ = all_data
     if sparse:
@@ -222,6 +229,13 @@ class NodeFeaRegister(object):
         for i, (name, _, arg) in enumerate(self.registered):
             print('index:', i, name, ' args: ',arg)
 
+
+def register_node_features(adjs, fea_register:NodeFeaRegister):
+    node_feature_list = []
+    for fea_reg in fea_register.get_registered():
+        node_feature_list.append(gen_node_features(adjs, sparse=True, node_cons_func=fea_reg[1], **fea_reg[2]))
+    return node_feature_list
+    
 def construct_node_features(alldata, fea_register:NodeFeaRegister):
     node_feature_list = []
     for fea_reg in fea_register.get_registered():
