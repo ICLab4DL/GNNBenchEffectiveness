@@ -197,6 +197,13 @@ def generate_node_feature(all_data, sparse, node_cons_func, **xargs) -> tuple:
  # Shuffle, and then split.
 # cc_train_adjs, cc_train_y, cc_test_adjs, cc_test_y
 
+def to_dict(var_str:str):
+    d = {}
+    for i in var_str.split(';'):
+        kv = i.split(':')
+        d[kv[0]] = kv[1]
+    return d
+
 
 class NodeFeaRegister(object):
     def __init__(self, file_path=None):
@@ -216,10 +223,19 @@ class NodeFeaRegister(object):
                 "rand_id":node_random_id_feature
                 }
         self.registered = []
+
+    def register(self, arg_str:str=None):
+        # arg_str format: name@key:value;key:value....
+        args = arg_str.split("@")
+        if len(args)>1:
+            self.register(args[0], to_dict(args[1]))
+        else:
+            self.register(args[0])
         
     def register(self, func_name, **xargs):
         if func_name not in self.funcs:
             raise NotImplementedError
+        
         self.registered.append((func_name, self.funcs[func_name], xargs))
     
     def get_registered(self):

@@ -84,23 +84,6 @@ class GraphDatasetManager:
                 os.makedirs(self.processed_dir)
             self._process()
 
-        # TODO: if add more node features:
-        if self.additional_features is not None:
-            # TODO: pass node function?
-            # node register
-            self.additional_features = self.additional_features.strip().split(',')
-            node_fea_reg = node_feature_utils.NodeFeaRegister()
-            for name in self.additional_features:
-                # format: name;key:value;key:value....
-                
-            node_fea_reg.register('degree')
-            node_fea_reg.register('allone')
-            node_fea_reg.register('guassian', dim=41)
-            node_fea_reg.register('tri_cycle')
-            node_fea_reg.register('kadj', k=2)
-            self.node_feature_register.register()
-            pass
-            
         
         self.dataset = GraphDataset(torch.load(
             self.processed_dir / f"{self.name}.pt"))
@@ -111,6 +94,13 @@ class GraphDatasetManager:
             self._make_splits()
         else:
             self.splits = json.load(open(splits_filename, "r"))
+            
+        # TODO: if add more node features:
+        if self.additional_features is not None:
+            # TODO: pass node function?
+            # node register
+            self._add_features()
+           
 
     @property
     def init_method(self):
@@ -141,8 +131,15 @@ class GraphDatasetManager:
         return self._dim_features
 
     def _add_features(self):
-        
-        node_feature_utils.construct_node_features(self.dataset, self.)
+        self.additional_features = self.additional_features.strip().split(',')
+        node_fea_reg = node_feature_utils.NodeFeaRegister()
+        for feature_arg in self.additional_features:
+            node_fea_reg.register(feature_arg)
+        self.node_fea_reg = node_fea_reg
+        adjs = [nx.to_numpy_array(d) for d in self.dataset.data]
+        node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
+        for i, d in enumerate(self.dataset.data):
+            
         
     def _process(self):
         raise NotImplementedError
@@ -360,6 +357,7 @@ class TUDatasetManager(GraphDatasetManager):
                 data = self._to_data(G)
                 dataset.append(data)
                 G.__class__()
+                
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
 
     def _to_data(self, G):
