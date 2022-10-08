@@ -139,7 +139,12 @@ class GraphDatasetManager:
         adjs = [nx.to_numpy_array(d) for d in self.dataset.data]
         node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
         for i, d in enumerate(self.dataset.data):
-            
+            # concatenate with pre features.
+            pre_x = d.x
+            print('prex shape:', pre_x.shape)
+            new_x = np.concatenate([pre_x, node_features[i]], axis=-1)
+            print('node_features shape:', node_features[i].shape)
+            break
         
     def _process(self):
         raise NotImplementedError
