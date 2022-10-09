@@ -47,3 +47,6 @@ python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/con
 
 
 
+
+# cat result_1009/pre_results/GraphSAGE_IMDB-BINARY_assessment/10_NESTED_CV/OUTER_FOLD_*/outer_results.json 
+# cat result_1009/GraphSAGE_IMDB-BINARY_assessment/10_NESTED_CV/OUTER_FOLD_*/outer_results.json 
