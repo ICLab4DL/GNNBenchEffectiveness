@@ -22,6 +22,6 @@ dat='COLLAB'
 # cp -r DATA/SYNTHETIC/${dat}/ DATA/
 
 
-python3 gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1009 --debug 
+python3 gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name COLLAB --result-folder result_1009 --debug 
 
 # python3 Launch_Experiments.py --config-file config_GraphSAGE.yml --dataset-name ${dat} --result-folder lzd --debug

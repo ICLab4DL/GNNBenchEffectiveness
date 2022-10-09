@@ -1,5 +1,5 @@
 from torch_geometric import data
-
+import numpy as np
 
 class Data(data.Data):
     def __init__(self,
@@ -26,7 +26,13 @@ class Data(data.Data):
         }
         super().__init__(x, edge_index, edge_attr, y, **additional_fields)
 
-
+    def to_numpy_array(self):
+        N = self.x.shape[0]
+        m = np.ones((N, N))
+        m[self.edge_index[0], self.edge_index[1]] = 1
+        return m
+        
+        
 class Batch(data.Batch):
     @staticmethod
     def from_data_list(data_list, follow_batch=[]):

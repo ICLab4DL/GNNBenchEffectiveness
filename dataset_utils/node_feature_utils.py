@@ -144,6 +144,24 @@ def add_graph_features(graph_features, cons_fea_func, c_dim=0):
     return graph_features
 
 
+
+def composite_node_feature_list(node_features:list, padding=False, padding_len=128, pad_value=0):
+    """node_features: list of list, e.g., [fea1, fea2, ...], fea1:[node1, node2,...]
+    """
+    feas = []
+    for i in range(len(node_features[0])):
+        each_node = []
+        for fea in node_features:
+            each_node.append(fea[i])
+        each_fea = np.concatenate(each_node, axis=-1)
+        if padding:
+            each_fea = np.pad(each_fea, ((0,0),(0, padding_len-each_fea.shape[-1])), mode='constant', constant_values=pad_value)
+        feas.append(each_fea)
+        
+    return feas
+
+
+
 def composite_node_features(*node_features, padding=False, padding_len=128, pad_value=0):
     """ just concatenate the new_node_features with the cur_node_features (N, C1)
         output new node features: (N, C1+C2)
@@ -175,8 +193,9 @@ def get_features_by_ids(*indices, cur_features, pad=None):
     return (train_fea, test_fea)
 
 
-def gen_node_features(adjs, sparse, node_cons_func, **xargs) -> tuple:
+def gen_node_features(adjs, sparse, node_cons_func, **xargs):
     if sparse:
+        # NOTE: the numbers of Node are different, so need sparse.
         node_features = [node_cons_func(adj=adj, **xargs) for adj in adjs]
     else:
         node_features = np.stack([node_cons_func(adj=adj, **xargs) for adj in adjs], axis=0)
@@ -249,7 +268,8 @@ class NodeFeaRegister(object):
 def register_node_features(adjs, fea_register:NodeFeaRegister):
     node_feature_list = []
     for fea_reg in fea_register.get_registered():
-        node_feature_list.append(gen_node_features(adjs, sparse=True, node_cons_func=fea_reg[1], **fea_reg[2]))
+        node_fea = gen_node_features(adjs, sparse=True, node_cons_func=fea_reg[1], **fea_reg[2])
+        node_feature_list.append(node_fea)
     return node_feature_list
     
 def construct_node_features(alldata, fea_register:NodeFeaRegister):

@@ -132,20 +132,22 @@ class GraphDatasetManager:
         return self._dim_features
 
     def _add_features(self):
+        print('adding additional features --')
         self.additional_features = self.additional_features.strip().split(',')
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in self.additional_features:
             node_fea_reg.register(feature_arg)
         self.node_fea_reg = node_fea_reg
-        adjs = [nx.to_numpy_array(d) for d in self.dataset.data]
+        adjs = [d.to_numpy_array() for d in self.dataset.data] # TODO: to torch tensor, cuda, faster.
         node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
+        node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
             pre_x = d.x
-            print('prex shape:', pre_x.shape)
-            new_x = np.concatenate([pre_x, node_features[i]], axis=-1)
-            print('node_features shape:', node_features[i].shape)
-            break
+            # TODO: composite features
+            new_x = torch.cat([pre_x, torch.FloatTensor(node_features[i])], axis=-1)
+            d.x=new_x
+        print('added feature done!')        
         
     def _process(self):
         raise NotImplementedError
