@@ -1,7 +1,7 @@
 model:
   - GraphSAGE
 device:
-  - cpu
+  - gpu
 batch_size:
   - 32
 learning_rate:
@@ -38,3 +38,19 @@ num_layers:
 aggregation:
   # - mean
   - sum
+additional_features:
+  - tri_cycle,index_id
+
+# Followings are all additional feature names:
+#                "degree":node_degree_feature,
+    #             "allone":node_allone_feature,
+    #             "index_id":node_index_feature,
+    #             "guassian":node_gaussian_feature,
+    #             "tri_cycle":node_tri_cycles_feature,
+    #             "kadj": node_k_adj_feature,
+    #             "rand_id":node_random_id_feature
+    #             }
+    #     self.registered = []
+
+    # def register(self, arg_str:str=None):
+        # arg_str format: name@key:value;key:value....

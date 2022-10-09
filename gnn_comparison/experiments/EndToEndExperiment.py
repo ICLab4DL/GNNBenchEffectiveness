@@ -20,6 +20,9 @@ class EndToEndExperiment(Experiment):
 
         if 'dense' in self.model_config:
             dataset = dataset_class(dense=self.model_config.dense)
+        elif 'additional_features' in self.model_config:
+            print(self.model_config.additional_features)
+            dataset = dataset_class(additional_features = self.model_config.additional_features)
         else:
             dataset = dataset_class()
         

@@ -8,3 +8,11 @@ File lzd/GraphSAGE_PROTEINS_assessment/10_NESTED_CV/OUTER_FOLD_7/outer_results.j
 File lzd/GraphSAGE_PROTEINS_assessment/10_NESTED_CV/OUTER_FOLD_8/outer_results.json already present! Shutting down to prevent loss of previous experiments
 File lzd/GraphSAGE_PROTEINS_assessment/10_NESTED_CV/OUTER_FOLD_9/outer_results.json already present! Shutting down to prevent loss of previous experiments
 File lzd/GraphSAGE_PROTEINS_assessment/10_NESTED_CV/OUTER_FOLD_10/outer_results.json already present! Shutting down to prevent loss of previous experiments
+Traceback (most recent call last):
+  File "Launch_Experiments.py", line 2, in <module>
+    from EndToEnd_Evaluation import main as endtoend
+  File "/li_zhengdao/github/GenerativeGNN/gnn_comparison/EndToEnd_Evaluation.py", line 4, in <module>
+    from config.base import Grid, Config
+  File "/li_zhengdao/github/GenerativeGNN/gnn_comparison/config/base.py", line 4, in <module>
+    from gnn_comparison.datasets.manager import *
+ModuleNotFoundError: No module named 'gnn_comparison'

@@ -1,7 +1,7 @@
 import argparse
 
-from .datasets import *
-from .datasets.manager import *
+from gnn_comparison.datasets import *
+from gnn_comparison.datasets.manager import *
 
 DATASETS = {
     # 'REDDIT-BINARY': RedditBinary,

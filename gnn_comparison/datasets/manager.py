@@ -21,7 +21,7 @@ from torch.nn import functional as F
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
-from gnn_comparison.utils.encode_utils import NumpyEncoder
+from utils.encode_utils import NumpyEncoder
 
 from .synthetic_dataset_generator import *
 from .data import Data
@@ -29,6 +29,7 @@ from .dataloader import DataLoader
 from .dataset import GraphDataset, GraphDatasetSubset
 from .sampler import RandomSampler
 from .tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
+
 
 from dataset_utils import node_feature_utils
 
