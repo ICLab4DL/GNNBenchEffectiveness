@@ -23,7 +23,7 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    if args.dataset_name not in ['all','none']:
+    if args.dataset_name not in ['all', 'none']:
         datasets = [args.dataset_name]
     else:
         datasets = list(DATASETS.keys())

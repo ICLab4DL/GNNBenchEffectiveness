@@ -23,3 +23,11 @@ def get_max_num_nodes(dataset_str):
     for d in dataset.dataset:
         max_num_nodes = max(max_num_nodes, d.num_nodes)
     return max_num_nodes
+
+def fill_nan_inf(a):
+    a[np.isnan(a)] = 0
+    a[np.isinf(a)] = 0
+    return a
+    
+    
+    

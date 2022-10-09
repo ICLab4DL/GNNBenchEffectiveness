@@ -124,6 +124,7 @@ class GraphDatasetManager:
     def dim_features(self):
         # best for feature initialization based on the current implementation
         self._dim_features = self.dataset.data[0].x.size(1)
+        print('input feature dimension: ', self._dim_features)
         # if not hasattr(self, "_dim_features") or self._dim_features is None:
             # not very elegant, but it works
             # todo not general enough, we may just remove it
@@ -136,11 +137,24 @@ class GraphDatasetManager:
         self.additional_features = self.additional_features.strip().split(',')
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in self.additional_features:
-            node_fea_reg.register(feature_arg)
+            node_fea_reg.register_by_str(feature_arg)
         self.node_fea_reg = node_fea_reg
-        adjs = [d.to_numpy_array() for d in self.dataset.data] # TODO: to torch tensor, cuda, faster.
+        
+        adjs = []
+        max_N = 0
+        for d in self.dataset.data:
+            adjs.append(d.to_numpy_array())
+            if max_N < d.N:
+                max_N = d.N
+                
+        # get maximum node num:
         node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
-        node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
+        if self.node_fea_reg.contains('kadj'):
+            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
+        else:
+            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
+            
+        
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
             pre_x = d.x

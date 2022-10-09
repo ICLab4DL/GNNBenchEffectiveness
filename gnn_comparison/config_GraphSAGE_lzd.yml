@@ -39,7 +39,7 @@ aggregation:
   # - mean
   - sum
 additional_features:
-  - tri_cycle,index_id
+  - degree,tri_cycle,kadj@k:3
 
 # Followings are all additional feature names:
 #                "degree":node_degree_feature,

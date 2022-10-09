@@ -25,10 +25,12 @@ class Data(data.Data):
 
         }
         super().__init__(x, edge_index, edge_attr, y, **additional_fields)
+        self.N = self.x.shape[0]
+        
 
     def to_numpy_array(self):
-        N = self.x.shape[0]
-        m = np.ones((N, N))
+        self.N = self.x.shape[0]
+        m = np.ones((self.N, self.N))
         m[self.edge_index[0], self.edge_index[1]] = 1
         return m
         

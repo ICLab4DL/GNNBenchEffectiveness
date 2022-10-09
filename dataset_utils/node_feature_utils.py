@@ -3,11 +3,8 @@ import networkx as nx
 
 # node or edge feature generation:
 
-NODE_FEATURES = {
-    ''
-    
-    
-}
+from gnn_comparison.utils import utils
+
 
 def xargs(f):
     def wrap(**xargs):
@@ -30,6 +27,9 @@ def node_k_adj_feature(adj, k=2):
         
     """ A^k as node features. so the dim of feature equals to the number of nodes.
     """
+    if not isinstance(k, int):
+        k = int(k)
+        
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
     ori_adj = adj
@@ -119,7 +119,6 @@ def node_cc_feature(adj):
 
 # TODO, d), graph feature pipeline.
 
-
 def add_graph_features(graph_features, cons_fea_func, c_dim=0):
     """input:
             by default, the graph feature at dim=0 of graph_features (numpy) is the original adj matrix.
@@ -197,8 +196,12 @@ def gen_node_features(adjs, sparse, node_cons_func, **xargs):
     if sparse:
         # NOTE: the numbers of Node are different, so need sparse.
         node_features = [node_cons_func(adj=adj, **xargs) for adj in adjs]
+        for i in range(len(node_features)):
+            node_features[i] = utils.fill_nan_inf(node_features[i])
     else:
         node_features = np.stack([node_cons_func(adj=adj, **xargs) for adj in adjs], axis=0)
+        node_features = utils.fill_nan_inf(node_features)
+    
     return node_features
 
     
@@ -243,16 +246,27 @@ class NodeFeaRegister(object):
                 }
         self.registered = []
 
-    def register(self, arg_str:str=None):
+    def register_by_str(self, arg_str:str=None):
         # arg_str format: name@key:value;key:value....
+        print('argstr:', arg_str)
         args = arg_str.split("@")
+        print('args:', args)
+        
         if len(args)>1:
-            self.register(args[0], to_dict(args[1]))
+            self.register(args[0], **to_dict(args[1]))
         else:
             self.register(args[0])
         
+    def contains(self, name:str) -> bool:
+        for i in self.registered:
+            if i[0] == name:
+                return True
+        return False
+    
+    
     def register(self, func_name, **xargs):
         if func_name not in self.funcs:
+            print('func_name:', func_name)
             raise NotImplementedError
         
         self.registered.append((func_name, self.funcs[func_name], xargs))

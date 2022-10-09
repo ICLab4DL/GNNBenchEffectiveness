@@ -8,6 +8,10 @@ dataset/
 *.log
 *.pkl
 
+result*/
+nohup*
+*.out
+
 *gnn_lsp*
 
 # C extensions

@@ -52,3 +52,6 @@ shuffle:
   - True
 resume:
   - False
+
+additional_features:
+  - degree,tri_cycle
