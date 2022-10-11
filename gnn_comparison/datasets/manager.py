@@ -1,5 +1,3 @@
-import sys 
-sys.path.append("..")
 
 import io
 import os
@@ -21,7 +19,7 @@ from torch.nn import functional as F
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
-from utils.encode_utils import NumpyEncoder
+from gnn_comparison.utils.encode_utils import NumpyEncoder
 
 from .synthetic_dataset_generator import *
 from .data import Data

@@ -36,10 +36,11 @@ num_layers:
   - 3
   # - 5
 aggregation:
-  # - mean
-  - sum
+  - mean
+  # - sum
 additional_features:
-  - degree,tri_cycle,kadj@k:3
+  # - degree
+  - degree,tri_cycle
 
 # Followings are all additional feature names:
 #                "degree":node_degree_feature,

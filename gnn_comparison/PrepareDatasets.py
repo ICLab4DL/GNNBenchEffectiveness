@@ -1,3 +1,6 @@
+import sys,os
+sys.path.append(os.getcwd())
+
 import argparse
 
 from gnn_comparison.datasets import *
