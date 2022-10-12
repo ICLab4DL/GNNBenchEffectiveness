@@ -1,5 +1,6 @@
 import numpy as np
 import networkx as nx
+from collections import defaultdict
 
 # node or edge feature generation:
 
@@ -10,6 +11,22 @@ def xargs(f):
     def wrap(**xargs):
         return f(**xargs)
     return wrap
+
+
+@xargs
+def node_cycle_feature(adj, k=4):
+    
+    nx_g = nx.from_numpy_array(adj)
+    cycles = nx.cycle_basis(nx_g)
+
+    # collect all len 4 sets.
+    node_fea = np.zeros((adj.shape[0], 1))
+    for c in cycles:
+        if len(c) == k:
+            for id in c:
+                node_fea[id] += 1
+        
+    return node_fea.astype(np.float32)
 
 @xargs
 def node_tri_cycles_feature(adj, k=2):
@@ -241,6 +258,7 @@ class NodeFeaRegister(object):
                 "index_id":node_index_feature,
                 "guassian":node_gaussian_feature,
                 "tri_cycle":node_tri_cycles_feature,
+                "cycle":node_cycle_feature,
                 "kadj": node_k_adj_feature,
                 "rand_id":node_random_id_feature
                 }

@@ -18,6 +18,7 @@ dat='MUTAG'
 dat='COLLAB'
 dat='IMDB-BINARY'
 dat='ENZYMES'
+dat='DD'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal
@@ -29,7 +30,7 @@ dat='ENZYMES'
 
 # python3 Launch_Experiments.py --config-file config_GraphSAGE.yml --dataset-name ${dat} --result-folder lzd --debug
 
-python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1011 --debug 
+python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1012 --debug 
 
 # TODO: test all datasets using all models.
 
