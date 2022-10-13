@@ -15,6 +15,7 @@ def xargs(f):
 
 @xargs
 def node_cycle_feature(adj, k=4):
+    # TODO: make it only calculate once for the same dataset?
     
     nx_g = nx.from_numpy_array(adj)
     cycles = nx.cycle_basis(nx_g)

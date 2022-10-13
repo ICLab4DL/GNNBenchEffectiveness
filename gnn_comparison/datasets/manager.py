@@ -145,14 +145,25 @@ class GraphDatasetManager:
             if max_N < d.N:
                 max_N = d.N
                 
-        # get maximum node num:
-        node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
-        if self.node_fea_reg.contains('kadj'):
-            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
+        # TODO: load from file if exist, if not exist, then save if it's the first fold test.
+        add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_features.pkl')
+        if os.path.exists(add_features_path):
+            with open(add_features_path, 'rb') as f:
+                node_features = pk.load(f)
+                print('load node_features!')
         else:
-            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
+            # get maximum node num:
+            node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
+            if self.node_fea_reg.contains('kadj'):
+                node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
+            else:
+                node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
             
-        
+            # save to file:
+            with open(add_features_path, 'wb') as f:
+                pk.dump(node_features, f)
+                print('dump node_features!')
+            
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
             pre_x = d.x

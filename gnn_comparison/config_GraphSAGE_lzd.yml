@@ -40,7 +40,7 @@ aggregation:
   - sum
 additional_features:
   # - degree
-  - degree,cycle@k:4
+  - degree,cycle@k:8
 
 # Followings are all additional feature names:
 #                "degree":node_degree_feature,
