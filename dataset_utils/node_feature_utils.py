@@ -21,6 +21,7 @@ def node_cycle_feature(adj, k=4):
     cycles = nx.cycle_basis(nx_g)
 
     # collect all len 4 sets.
+    # 
     node_fea = np.zeros((adj.shape[0], 1))
     for c in cycles:
         if len(c) == k:

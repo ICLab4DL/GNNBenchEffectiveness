@@ -146,6 +146,7 @@ class GraphDatasetManager:
                 max_N = d.N
                 
         # TODO: load from file if exist, if not exist, then save if it's the first fold test.
+        # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
         add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_features.pkl')
         if os.path.exists(add_features_path):
             with open(add_features_path, 'rb') as f:
