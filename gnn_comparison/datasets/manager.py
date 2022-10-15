@@ -138,6 +138,13 @@ class GraphDatasetManager:
             node_fea_reg.register_by_str(feature_arg)
         self.node_fea_reg = node_fea_reg
         
+                
+        # TODO: check padding:
+        need_pad = False
+        if self.node_fea_reg.contains('kadj'):
+            need_pad = True
+            
+        # get maximum node num:
         adjs = []
         max_N = 0
         for d in self.dataset.data:
@@ -147,23 +154,53 @@ class GraphDatasetManager:
                 
         # TODO: load from file if exist, if not exist, then save if it's the first fold test.
         # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
-        add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_features.pkl')
-        if os.path.exists(add_features_path):
-            with open(add_features_path, 'rb') as f:
-                node_features = pk.load(f)
-                print('load node_features!')
+        feature_names = self.node_fea_reg.get_registered()
+        node_features = []
+        for (name, _, _) in feature_names:
+            # NOTE: check existence.
+            add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
+            if os.path.exists(add_features_path):
+                with open(add_features_path, 'rb') as f:
+                    node_feature = pk.load(f)
+                    print('load node_feature: ', name)
+                    node_features.append(node_feature)
+                # remove from register_node_features.
+                self.node_fea_reg.remove(name)
+                
+        # NOTE: generate rest node features:
+        if len(self.node_fea_reg.get_registered()) > 0:
+            rest_node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
+            # TODO: save each
+            for i, (name, _, _) in enumerate(self.node_fea_reg):
+                add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
+                with open(add_features_path, 'wb') as f:
+                    pk.dump(node_features, f)
+                    print('dump node_feature: ', name)
+                node_features.append(rest_node_features[i])
+        
+        # NOTE: padding
+        if need_pad:
+            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
         else:
-            # get maximum node num:
-            node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
-            if self.node_fea_reg.contains('kadj'):
-                node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
-            else:
-                node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
+            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
+        
+        # add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_features.pkl')
+        # if os.path.exists(add_features_path):
+        #     with open(add_features_path, 'rb') as f:
+        #         node_features = pk.load(f)
+        #         print('load node_features!')
+        # else:
+        #     # get maximum node num:
+        #     node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
+        #     if self.node_fea_reg.contains('kadj'):
+        #         node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
+        #     else:
+        #         node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
             
-            # save to file:
-            with open(add_features_path, 'wb') as f:
-                pk.dump(node_features, f)
-                print('dump node_features!')
+        #     # save to file:
+        #     with open(add_features_path, 'wb') as f:
+        #         pk.dump(node_features, f)
+        #         print('dump node_features!')
             
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.

@@ -283,7 +283,19 @@ class NodeFeaRegister(object):
                 return True
         return False
     
-    
+    def remove(self, re_name):
+        del_id = None
+        for i, (cur, _, _) in self.registered:
+            if re_name == cur:
+                del_id = i
+                break
+        if del_id is not None:
+            self.registered.pop(del_id)
+            print('remove func:', re_name)
+        else:
+            print('func name not found', re_name)
+                
+        
     def register(self, func_name, **xargs):
         if func_name not in self.funcs:
             print('func_name:', func_name)
