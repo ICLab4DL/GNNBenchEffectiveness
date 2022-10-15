@@ -14,11 +14,11 @@ dat="CSL"
 dat='all'
 dat='NCI1'
 dat='COLLAB'
-dat='IMDB-BINARY'
 dat='ENZYMES'
 dat='DD'
 dat="PROTEINS"
 dat='MUTAG'
+dat='IMDB-BINARY'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal

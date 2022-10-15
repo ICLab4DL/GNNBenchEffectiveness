@@ -38,7 +38,7 @@ num_layers:
 aggregation:
   # - mean
   - sum
-aÍditional_features:
+additional_features:
   # - degree
   - guassian
   # - degree,cycle@k:6

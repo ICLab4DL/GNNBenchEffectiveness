@@ -171,7 +171,7 @@ class GraphDatasetManager:
         if len(self.node_fea_reg.get_registered()) > 0:
             rest_node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
             # TODO: save each
-            for i, (name, _, _) in enumerate(self.node_fea_reg):
+            for i, (name, _, _) in enumerate(self.node_fea_reg.get_registered()):
                 add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
                 with open(add_features_path, 'wb') as f:
                     pk.dump(node_features, f)
