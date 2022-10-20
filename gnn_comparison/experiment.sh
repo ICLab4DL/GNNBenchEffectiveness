@@ -10,15 +10,15 @@
 #         REDDIT-BINARY
 #         REDDIT-MULTI-5K
 #         COLLAB
-dat="CSL"
 dat='all'
 dat='NCI1'
 dat='COLLAB'
 dat='ENZYMES'
 dat='DD'
 dat="PROTEINS"
-dat='MUTAG'
 dat='IMDB-BINARY'
+dat="CSL"
+dat='MUTAG'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal
@@ -30,7 +30,7 @@ dat='IMDB-BINARY'
 
 # python3 Launch_Experiments.py --config-file config_GraphSAGE.yml --dataset-name ${dat} --result-folder lzd --debug
 
-python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1015 --debug 
+# python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1015 --debug 
 
 # TODO: test all datasets using all models.
 
@@ -52,3 +52,9 @@ python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/con
 
 # cat result_1009/pre_results/GraphSAGE_IMDB-BINARY_assessment/10_NESTED_CV/OUTER_FOLD_*/outer_results.json 
 # cat result_1009/GraphSAGE_IMDB-BINARY_assessment/10_NESTED_CV/OUTER_FOLD_*/outer_results.json 
+
+
+# 2022.10.20, test graph-level features.
+
+
+python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1020 --debug 

@@ -15,4 +15,9 @@ class MolecularFingerprint(torch.nn.Module):
                                        torch.nn.Linear(hidden_dim, dim_target), ReLU())
 
     def forward(self, data):
+        # TODO: use graph-wise feature: g_x 
+        if hasattr(data, 'g_x'):
+            print('using g_x')
+            return self.mlp(data.g_x)
+                        
         return self.mlp(global_add_pool(data.x, data.batch))

@@ -38,9 +38,11 @@ num_layers:
 aggregation:
   # - mean
   - sum
+node_pool:
+  - max
 additional_features:
-  # - degree
-  - guassian
+  - tri_cycle
+  # - guassian
   # - degree,cycle@k:6
   # - degree,cycle@k:5
 

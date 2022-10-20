@@ -8,6 +8,9 @@ dataset/
 *.log
 *.pkl
 
+graphsage-simple
+graphsage-simple/*
+
 result*/
 nohup*
 *.out

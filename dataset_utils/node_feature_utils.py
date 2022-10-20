@@ -135,6 +135,14 @@ def node_cc_feature(adj):
     feats = np.array(feats).reshape(N, 1).astype(np.float32)
     return feats
 
+@xargs
+def graph_stats_degree(adj):
+    if not isinstance(adj, np.ndarray):
+        adj = adj.todense()
+    degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    mean_D = np.mean(degrees).astype(np.float32)
+    std_D = np.std(degrees).astype(np.float32)
+    return np.concatenate([mean_D,std_D]).reshape(1, 2)
 
 # TODO, d), graph feature pipeline.
 
@@ -162,6 +170,10 @@ def add_graph_features(graph_features, cons_fea_func, c_dim=0):
     return graph_features
 
 
+def composite_graph_feature_list(graph_features:list):
+    """graph_features: list of list, e.g., [fea1, fea2, ...], fea1:NxC1, fea2; NxC2
+    """
+    return np.concatenate(graph_features, axis=-1)
 
 def composite_node_feature_list(node_features:list, padding=False, padding_len=128, pad_value=0):
     """node_features: list of list, e.g., [fea1, fea2, ...], fea1:[node1, node2,...]
@@ -211,17 +223,18 @@ def get_features_by_ids(*indices, cur_features, pad=None):
     return (train_fea, test_fea)
 
 
-def gen_node_features(adjs, sparse, node_cons_func, **xargs):
+
+def gen_features(adjs, sparse, cons_func, **xargs):
     if sparse:
         # NOTE: the numbers of Node are different, so need sparse.
-        node_features = [node_cons_func(adj=adj, **xargs) for adj in adjs]
-        for i in range(len(node_features)):
-            node_features[i] = utils.fill_nan_inf(node_features[i])
+        features = [cons_func(adj=adj, **xargs) for adj in adjs]
+        for i in range(len(features)):
+            features[i] = utils.fill_nan_inf(features[i])
     else:
-        node_features = np.stack([node_cons_func(adj=adj, **xargs) for adj in adjs], axis=0)
-        node_features = utils.fill_nan_inf(node_features)
+        features = np.stack([cons_func(adj=adj, **xargs) for adj in adjs], axis=0)
+        features = utils.fill_nan_inf(features)
     
-    return node_features
+    return features
 
     
 def generate_node_feature(all_data, sparse, node_cons_func, **xargs) -> tuple:
@@ -246,7 +259,8 @@ def to_dict(var_str:str):
     return d
 
 
-class NodeFeaRegister(object):
+
+class GraphFeaRegister(object):
     def __init__(self, file_path=None):
         self.id = id(self)
         self.file_path = file_path
@@ -255,14 +269,7 @@ class NodeFeaRegister(object):
             pass
         else:
             self.funcs = {
-                "degree":node_degree_feature,
-                "allone":node_allone_feature,
-                "index_id":node_index_feature,
-                "guassian":node_gaussian_feature,
-                "tri_cycle":node_tri_cycles_feature,
-                "cycle":node_cycle_feature,
-                "kadj": node_k_adj_feature,
-                "rand_id":node_random_id_feature
+                "stats_degree": graph_stats_degree
                 }
         self.registered = []
 
@@ -285,8 +292,8 @@ class NodeFeaRegister(object):
     
     def remove(self, re_name):
         del_id = None
-        for i, (cur, _, _) in self.registered:
-            if re_name == cur:
+        for i, ts in enumerate(self.registered):
+            if re_name == ts[0]:
                 del_id = i
                 break
         if del_id is not None:
@@ -311,12 +318,79 @@ class NodeFeaRegister(object):
             print('index:', i, name, ' args: ',arg)
 
 
-def register_node_features(adjs, fea_register:NodeFeaRegister):
-    node_feature_list = []
+
+
+class NodeFeaRegister(object):
+    def __init__(self, file_path=None):
+        self.id = id(self)
+        self.file_path = file_path
+        if file_path is not None:
+            self.funcs = {} # TODO: load from file.
+            pass
+        else:
+            self.funcs = {
+                "degree":node_degree_feature,
+                "allone":node_allone_feature,
+                "index_id":node_index_feature,
+                "guassian":node_gaussian_feature,
+                "tri_cycle":node_tri_cycles_feature,
+                "cycle":node_cycle_feature,
+                "kadj": node_k_adj_feature,
+                "rand_id":node_random_id_feature,
+                "graph_stats_degree": graph_stats_degree
+                }
+        self.registered = []
+
+    def register_by_str(self, arg_str:str=None):
+        # arg_str format: name@key:value;key:value....
+        print('argstr:', arg_str)
+        args = arg_str.split("@")
+        print('args:', args)
+        
+        if len(args)>1:
+            self.register(args[0], **to_dict(args[1]))
+        else:
+            self.register(args[0])
+        
+    def contains(self, name:str) -> bool:
+        for i in self.registered:
+            if i[0] == name:
+                return True
+        return False
+    
+    def remove(self, re_name):
+        del_id = None
+        for i, ts in enumerate(self.registered):
+            if re_name == ts[0]:
+                del_id = i
+                break
+        if del_id is not None:
+            self.registered.pop(del_id)
+            print('remove func:', re_name)
+        else:
+            print('func name not found', re_name)
+                
+        
+    def register(self, func_name, **xargs):
+        if func_name not in self.funcs:
+            print('func_name:', func_name)
+            raise NotImplementedError
+        
+        self.registered.append((func_name, self.funcs[func_name], xargs))
+    
+    def get_registered(self):
+        return self.registered
+    
+    def list_registered(self):
+        for i, (name, _, arg) in enumerate(self.registered):
+            print('index:', i, name, ' args: ',arg)
+
+def register_features(adjs, fea_register):
+    feature_list = []
     for fea_reg in fea_register.get_registered():
-        node_fea = gen_node_features(adjs, sparse=True, node_cons_func=fea_reg[1], **fea_reg[2])
-        node_feature_list.append(node_fea)
-    return node_feature_list
+        features = gen_features(adjs, sparse=True, cons_func=fea_reg[1], **fea_reg[2])
+        feature_list.append(features)
+    return feature_list
     
 def construct_node_features(alldata, fea_register:NodeFeaRegister):
     node_feature_list = []

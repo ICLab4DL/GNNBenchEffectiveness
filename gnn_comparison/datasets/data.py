@@ -27,7 +27,9 @@ class Data(data.Data):
         super().__init__(x, edge_index, edge_attr, y, **additional_fields)
         self.N = self.x.shape[0]
         
-
+    def set_additional_attr(self, attr_name, attr_value):
+        setattr(self, attr_name, attr_value)
+        
     def to_numpy_array(self):
         self.N = self.x.shape[0]
         m = np.ones((self.N, self.N))
@@ -60,5 +62,5 @@ class Batch(data.Batch):
         batch = data.Batch.from_data_list(copy_data, follow_batch=follow_batch)
         batch['laplacians'] = laplacians
         batch['v_plus'] = v_plus
-
+        # TODO: 2022.10.20, implement graph-wise features.
         return batch

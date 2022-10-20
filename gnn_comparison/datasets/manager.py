@@ -35,7 +35,7 @@ class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
-                 use_deepwalk=False, precompute_kron_indices=False, additional_features:str=None,
+                 use_deepwalk=False, precompute_kron_indices=False, additional_features:str=None, additional_graph_features:str=None,
                  max_reductions=10, DATA_DIR='DATA'):
 
         self.root_dir = Path(DATA_DIR) / self.name
@@ -56,6 +56,8 @@ class GraphDatasetManager:
 
         # 2022.10.02
         self.additional_features = additional_features
+        # 2022.10.20
+        self.additional_graph_features = additional_graph_features
         
         self.Graph_whole = None
         self.Graph_whole_pagerank = None
@@ -100,6 +102,8 @@ class GraphDatasetManager:
             # node register
             self._add_features()
            
+        if self.additional_graph_features is not None:
+            self._add_graph_features()
 
     @property
     def init_method(self):
@@ -130,9 +134,61 @@ class GraphDatasetManager:
         # feature initialization
         return self._dim_features
 
+
+    def _add_graph_features(self):
+        # TODO: add graph-wise features:
+        graph_fea_reg = node_feature_utils.GraphFeaRegister()
+        for feature_arg in self.additional_graph_features:
+            graph_fea_reg.register_by_str(feature_arg)
+        self.graph_fea_reg = graph_fea_reg
+            
+        adjs = [d.to_numpy_array() for d in self.dataset.data]
+                
+        # TODO: load from file if exist, if not exist, then save if it's the first fold test.
+        # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
+        feature_names = self.graph_fea_reg.get_registered()
+        graph_features = []
+        for ts in feature_names:
+            # NOTE: check existence.
+            name = ts[0]
+            add_features_path = os.path.join(self.processed_dir, f'graphwise_{self.name}_add_{name}.pkl')
+            if os.path.exists(add_features_path):
+                with open(add_features_path, 'rb') as f:
+                    graph_feature = pk.load(f)
+                    print('laod graph_features len: ', len(graph_feature))
+                    print('load graph_feature: ', name)
+                    graph_features.append(graph_feature)
+                # remove from register_node_features.
+                self.graph_fea_reg.remove(name)
+                
+        # NOTE: generate rest node features:
+        graph_features = []
+        if len(self.graph_fea_reg.get_registered()) > 0:
+            print('has rest features:')
+            rest_graph_features = node_feature_utils.register_features(adjs, self.graph_fea_reg)
+            # TODO: save each
+            for i, ts in enumerate(self.node_fea_reg.get_registered()):
+                add_features_path = os.path.join(self.processed_dir, f'graphwise_{self.name}_add_{ts[0]}.pkl')
+                graph_features.append(rest_graph_features[i])
+                
+                with open(add_features_path, 'wb') as f:
+                    pk.dump(rest_graph_features[i], f)
+                    print('dump node_feature: ', ts[0])
+                    
+        print('aft:', len(rest_graph_features), ' shape: ', rest_graph_features[0][0].shape)
+        graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
+        
+        # store in graph as graph not x, but g_x.
+        for i, d in enumerate(self.dataset.data):
+            # concatenate with pre features.
+            d.set_additional_attr('g_x', torch.FloatTensor(graph_features[i]))
+            
+        print('add graph feature done!')
+        
+        
     def _add_features(self):
         print('adding additional features --')
-        self.additional_features = self.additional_features.strip().split(',')
+        
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in self.additional_features:
             node_fea_reg.register_by_str(feature_arg)
@@ -156,28 +212,32 @@ class GraphDatasetManager:
         # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
         feature_names = self.node_fea_reg.get_registered()
         node_features = []
-        for (name, _, _) in feature_names:
+        for ts in feature_names:
             # NOTE: check existence.
+            name = ts[0]
             add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
             if os.path.exists(add_features_path):
                 with open(add_features_path, 'rb') as f:
                     node_feature = pk.load(f)
+                    print('laod node_featureslen: ', len(node_feature))
                     print('load node_feature: ', name)
                     node_features.append(node_feature)
                 # remove from register_node_features.
                 self.node_fea_reg.remove(name)
-                
         # NOTE: generate rest node features:
         if len(self.node_fea_reg.get_registered()) > 0:
-            rest_node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
+            print('has rest features:')
+            rest_node_features = node_feature_utils.register_features(adjs, self.node_fea_reg)
             # TODO: save each
-            for i, (name, _, _) in enumerate(self.node_fea_reg.get_registered()):
-                add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
-                with open(add_features_path, 'wb') as f:
-                    pk.dump(node_features, f)
-                    print('dump node_feature: ', name)
+            for i, ts in enumerate(self.node_fea_reg.get_registered()):
+                add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{ts[0]}.pkl')
                 node_features.append(rest_node_features[i])
-        
+                
+                with open(add_features_path, 'wb') as f:
+                    pk.dump(rest_node_features[i], f)
+                    print('dump node_feature: ', ts[0])
+                    
+        print('aft:', len(node_features), ' shape: ', node_features[0][0].shape)
         # NOTE: padding
         if need_pad:
             node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
