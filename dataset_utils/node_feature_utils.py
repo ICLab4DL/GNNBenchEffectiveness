@@ -143,7 +143,7 @@ def graph_stats_degree(adj):
     mean_D = np.mean(degrees).astype(np.float32)
     std_D = np.std(degrees).astype(np.float32)
     sum_D = mean_D * adj.shape[0]
-    return np.stack([mean_D,std_D,sum_D]).reshape(1, 3)
+    return np.stack([mean_D,std_D,sum_D]).reshape(3)
 
 # TODO, d), graph feature pipeline.
 

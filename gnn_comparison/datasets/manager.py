@@ -1,3 +1,6 @@
+import sys,os
+sys.path.append(os.getcwd())
+
 
 import io
 import os
@@ -30,6 +33,7 @@ from .tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node
 
 
 from dataset_utils import node_feature_utils
+import my_utils
 
 class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
@@ -126,7 +130,7 @@ class GraphDatasetManager:
     def dim_features(self):
         # TODO: check the graph level features:
         if self.additional_graph_features is not None:
-            self._dim_features = self.dataset.data[0].g_x.size(1)
+            self._dim_features = self.dataset.data[0].g_x.shape[-1]
         else:
             self._dim_features = self.dataset.data[0].x.size(1)
         print('input feature dimension: ', self._dim_features)
@@ -181,8 +185,10 @@ class GraphDatasetManager:
                     print('dump node_feature: ', ts[0])
                     
         print('aft:', len(graph_features), ' shape: ', graph_features[0][0].shape)
-        graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
         
+        graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
+        # 2022.10.20, NOTE: normalize:
+        graph_features = my_utils.normalize(graph_features, along_axis=-1)
         # store in graph as graph not x, but g_x.
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
@@ -249,24 +255,10 @@ class GraphDatasetManager:
         else:
             node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
         
-        # add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_features.pkl')
-        # if os.path.exists(add_features_path):
-        #     with open(add_features_path, 'rb') as f:
-        #         node_features = pk.load(f)
-        #         print('load node_features!')
-        # else:
-        #     # get maximum node num:
-        #     node_features = node_feature_utils.register_node_features(adjs, self.node_fea_reg)
-        #     if self.node_fea_reg.contains('kadj'):
-        #         node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
-        #     else:
-        #         node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
-            
-        #     # save to file:
-        #     with open(add_features_path, 'wb') as f:
-        #         pk.dump(node_features, f)
-        #         print('dump node_features!')
-            
+        # 2022.10.20, NOTE: normalize:
+        # TODO: normalize through each graph ????
+        node_features = my_utils.normalize(node_features, along_axis=-1, same_data_shape=False)
+        
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
             pre_x = d.x

@@ -277,19 +277,23 @@ def get_corrs(normed_vars, cate="all"):
 
 
         
-def normalize(data, along_axis=None, ignore_norm=[]):
+def normalize(data, along_axis=None, ignore_norm=[], same_data_shape=True):
     '''
         only norm numpy type data with last dimension.
     '''
     if isinstance(data, list):
-        cur_data = np.concatenate(np.array(data).reshape(-1, 1), axis=0)
-        mean = np.mean(cur_data)
-        std = np.std(cur_data)
-        if std == 0:
-            print('std: ', std)
-            return [0.01 for _ in data]
-        return [(d - mean)/std for d in data]
-    
+        if same_data_shape:
+            # hear also along each axis:
+            cur_data = np.concatenate(np.array(data).reshape(-1, 1), axis=0)
+            return normalize(cur_data, along_axis=along_axis, ignore_norm=ignore_norm)
+        else:
+        # NOTE: data shape: [(N, C), (N1, C),...], so cannot concatenate
+            normed_res = []
+            for each in data:
+                each_norm = normalize(each, along_axis=along_axis, ignore_norm=ignore_norm)
+                normed_res.append(each_norm)
+            return normed_res
+        
     if not isinstance(data, np.ndarray):
         data = data.cpu().numpy()
         

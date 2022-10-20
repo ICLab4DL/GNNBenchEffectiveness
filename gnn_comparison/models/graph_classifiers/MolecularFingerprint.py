@@ -19,5 +19,5 @@ class MolecularFingerprint(torch.nn.Module):
         if 'g_x' in data:
             # print('using g_x, shape:', data['g_x'].shape)
             return self.mlp(data['g_x'])
-                        
+                
         return self.mlp(global_add_pool(data.x, data.batch))
