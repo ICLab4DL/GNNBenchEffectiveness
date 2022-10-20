@@ -35,3 +35,5 @@ early_stopper:
       use_loss: True
 shuffle:
   - True
+additional_graph_features:
+  - stats_degree

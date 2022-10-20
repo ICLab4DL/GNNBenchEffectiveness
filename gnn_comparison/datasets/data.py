@@ -1,5 +1,6 @@
 from torch_geometric import data
 import numpy as np
+import torch
 
 class Data(data.Data):
     def __init__(self,
@@ -48,6 +49,8 @@ class Batch(data.Batch):
             v_plus = [d.v_plus[:] for d in data_list]
 
         copy_data = []
+        # batch_graph_features:
+        batch_graph_features = []
         for d in data_list:
             copy_data.append(Data(x=d.x,
                                   y=d.y,
@@ -58,9 +61,15 @@ class Batch(data.Batch):
                                   e_outs=d.e_outs,
                                   o_outs=d.o_outs)
                              )
+            if hasattr(d, 'g_x'):
+                batch_graph_features.append(d.g_x)
 
         batch = data.Batch.from_data_list(copy_data, follow_batch=follow_batch)
         batch['laplacians'] = laplacians
         batch['v_plus'] = v_plus
         # TODO: 2022.10.20, implement graph-wise features.
+        if len(batch_graph_features) > 0:
+            N = len(batch_graph_features)
+            batch['g_x'] = torch.stack(batch_graph_features, dim=0).reshape(N, -1)
+        
         return batch

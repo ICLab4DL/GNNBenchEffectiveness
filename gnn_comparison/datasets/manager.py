@@ -124,9 +124,14 @@ class GraphDatasetManager:
 
     @property
     def dim_features(self):
-        # best for feature initialization based on the current implementation
-        self._dim_features = self.dataset.data[0].x.size(1)
+        # TODO: check the graph level features:
+        if self.additional_graph_features is not None:
+            self._dim_features = self.dataset.data[0].g_x.size(1)
+        else:
+            self._dim_features = self.dataset.data[0].x.size(1)
         print('input feature dimension: ', self._dim_features)
+        
+        # best for feature initialization based on the current implementation
         # if not hasattr(self, "_dim_features") or self._dim_features is None:
             # not very elegant, but it works
             # todo not general enough, we may just remove it
@@ -137,6 +142,7 @@ class GraphDatasetManager:
 
     def _add_graph_features(self):
         # TODO: add graph-wise features:
+        self.additional_graph_features = self.additional_graph_features.strip().split(',')
         graph_fea_reg = node_feature_utils.GraphFeaRegister()
         for feature_arg in self.additional_graph_features:
             graph_fea_reg.register_by_str(feature_arg)
@@ -162,12 +168,11 @@ class GraphDatasetManager:
                 self.graph_fea_reg.remove(name)
                 
         # NOTE: generate rest node features:
-        graph_features = []
         if len(self.graph_fea_reg.get_registered()) > 0:
             print('has rest features:')
             rest_graph_features = node_feature_utils.register_features(adjs, self.graph_fea_reg)
             # TODO: save each
-            for i, ts in enumerate(self.node_fea_reg.get_registered()):
+            for i, ts in enumerate(self.graph_fea_reg.get_registered()):
                 add_features_path = os.path.join(self.processed_dir, f'graphwise_{self.name}_add_{ts[0]}.pkl')
                 graph_features.append(rest_graph_features[i])
                 
@@ -175,7 +180,7 @@ class GraphDatasetManager:
                     pk.dump(rest_graph_features[i], f)
                     print('dump node_feature: ', ts[0])
                     
-        print('aft:', len(rest_graph_features), ' shape: ', rest_graph_features[0][0].shape)
+        print('aft:', len(graph_features), ' shape: ', graph_features[0][0].shape)
         graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
         
         # store in graph as graph not x, but g_x.
@@ -188,7 +193,7 @@ class GraphDatasetManager:
         
     def _add_features(self):
         print('adding additional features --')
-        
+        self.additional_features = self.additional_features.strip().split(',')
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in self.additional_features:
             node_fea_reg.register_by_str(feature_arg)

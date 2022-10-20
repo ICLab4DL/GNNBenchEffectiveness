@@ -16,8 +16,8 @@ class MolecularFingerprint(torch.nn.Module):
 
     def forward(self, data):
         # TODO: use graph-wise feature: g_x 
-        if hasattr(data, 'g_x'):
-            print('using g_x')
-            return self.mlp(data.g_x)
+        if 'g_x' in data:
+            # print('using g_x, shape:', data['g_x'].shape)
+            return self.mlp(data['g_x'])
                         
         return self.mlp(global_add_pool(data.x, data.batch))

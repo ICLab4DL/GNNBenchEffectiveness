@@ -23,6 +23,9 @@ class EndToEndExperiment(Experiment):
         elif 'additional_features' in self.model_config:
             print(self.model_config.additional_features)
             dataset = dataset_class(additional_features = self.model_config.additional_features)
+        elif 'additional_graph_features' in self.model_config:
+            print(self.model_config.additional_graph_features)
+            dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features)
         else:
             dataset = dataset_class()
         
@@ -72,6 +75,9 @@ class EndToEndExperiment(Experiment):
         elif 'additional_features' in self.model_config:
             print(self.model_config.additional_features)
             dataset = dataset_class(additional_features = self.model_config.additional_features)
+        elif 'additional_graph_features' in self.model_config:
+            print(self.model_config.additional_graph_features)
+            dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features)
         else:
             dataset = dataset_class()
 
