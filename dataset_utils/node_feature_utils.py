@@ -145,6 +145,18 @@ def graph_stats_degree(adj):
     sum_D = mean_D * adj.shape[0]
     return np.stack([mean_D,std_D,sum_D]).reshape(3)
 
+
+
+@xargs
+def graph_avg_degree(adj):
+    if not isinstance(adj, np.ndarray):
+        adj = adj.todense()
+    degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    mean_D = np.mean(degrees).astype(np.float32).reshape(1)
+    return mean_D
+
+
+
 # TODO, d), graph feature pipeline.
 
 def add_graph_features(graph_features, cons_fea_func, c_dim=0):
@@ -270,7 +282,8 @@ class GraphFeaRegister(object):
             pass
         else:
             self.funcs = {
-                "stats_degree": graph_stats_degree
+                'stats_degree': graph_stats_degree,
+                'avg_degree': graph_avg_degree
                 }
         self.registered = []
 

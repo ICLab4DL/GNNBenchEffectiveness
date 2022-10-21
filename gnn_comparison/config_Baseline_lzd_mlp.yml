@@ -7,9 +7,8 @@ batch_size:
 hidden_units:
   - 64
 learning_rate:
+  - 0.0001
   - 0.001
-  - 0.005
-  - 0.01
 l2:
   - 0.
 classifier_epochs:
@@ -35,5 +34,7 @@ early_stopper:
       use_loss: True
 shuffle:
   - True
+  
 additional_graph_features:
-  - stats_degree
+  # - stats_degree
+  - avg_degree
