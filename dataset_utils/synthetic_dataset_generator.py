@@ -9,6 +9,8 @@ import random
 import my_utils as utils
 from scipy.sparse import coo_matrix
 
+import node_feature_utils
+
 
 def connect_graphs(g1, g2):
     n1 = list(g1.nodes)
@@ -38,19 +40,39 @@ def random_connect_graph(graph_list:list):
     
     return g_all
 
-def generate_mix_degree_graphs(sample_num=300, avg_degrees=None, num_nodes=None):
+
+def generate_mix_degree_graphs(sample_num=300, er_p=None, num_nodes=None, class_num=3, is_type_A=True):
     """ 
-        input: default is 3 classification task with same avg degree but various number of nodes. 
+        input: default is 3 classification task with same avg degree but various number of nodes.
+        via E-R graphs:
+        generate two types graph:
+        A. ER(N, p1), ER(N, p2), ...
+        B. ER(N1, p), ER(N2, p), ...
     """
-    if degrees is None:
-        degrees = [20, 30, 40]
-    if num_nodes is None:
-        num_nodes = [] # TODO: linearly increase or Gaussian? default mean=20, std around mean. how?
-        for i in range()
-        
-    samples = []
     
-    pass
+    each_num = int(sample_num/class_num)
+    samples = []
+    if is_type_A:
+        if num_nodes is None:
+            num_nodes = list(range(80, 80+2*60+1, 60))
+            
+        for label, i in enumerate(num_nodes):
+            for _ in range(each_num):
+                g = nx.erdos_renyi_graph(i, 0.4)
+                # stats = node_feature_utils.graph_stats_degree(adj=nx.to_numpy_array(g))
+                samples.append((nx.to_numpy_array(g), np.array(label).astype(np.float32)))
+    else:
+        if er_p is None:
+            er_p = list(np.arange(0.3, 1, 0.3))
+            
+        for label, i in enumerate(er_p):
+            for _ in range(each_num):
+                g = nx.erdos_renyi_graph(100, i)
+                # stats = node_feature_utils.graph_stats_degree(adj=nx.to_numpy_array(g))
+                samples.append((nx.to_numpy_array(g), np.array(label).astype(np.float32)))
+                
+    return generate_training_graphs(samples)
+        
 
 def generate_circulant_graph_samples(each_class_num:int, N:int, S:list):
     samples = []
@@ -104,7 +126,6 @@ def generate_training_graphs(graphs_cc):
             
     train_adjs = [nx.to_scipy_sparse_matrix(g) for g in train_adjs]
     test_adjs = [nx.to_scipy_sparse_matrix(g) for g in test_adjs]
-
 
     train_y = np.stack(train_y, axis=0)
     test_y = np.stack(test_y, axis=0)
