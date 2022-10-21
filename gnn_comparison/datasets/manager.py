@@ -818,3 +818,9 @@ class CSL(SyntheticManager):
     _dim_features = 1
     _dim_target = 4
     max_num_nodes = 41
+    
+class MDG(SyntheticManager):
+    name = "MDG"
+    _dim_features = 1
+    _dim_target = 3
+    max_num_nodes = 200
