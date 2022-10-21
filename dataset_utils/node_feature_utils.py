@@ -146,7 +146,6 @@ def graph_stats_degree(adj):
     return np.stack([mean_D,std_D,sum_D]).reshape(3)
 
 
-
 @xargs
 def graph_avg_degree(adj):
     if not isinstance(adj, np.ndarray):

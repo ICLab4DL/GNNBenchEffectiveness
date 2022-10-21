@@ -55,9 +55,10 @@ dat='IMDB-BINARY'
 
 
 # 2022.10.20, test graph-level features.
-python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1022 --debug 
+# python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1022 --debug 
 
 # 2022.10.21, test graph-level features test on other datasets to prove GNN is not better than MLP if degree information is enough for the tasks.
 python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1021 --debug 
+
 
 
