@@ -615,7 +615,13 @@ class TUDatasetManager(GraphDatasetManager):
 class SyntheticManager(TUDatasetManager):
     
     def _download(self):
-        graphs = generate_CSL(each_class_num=150, N=41, S=[2,3,4,7])
+        if self.name == 'CSL':
+            graphs = generate_CSL(each_class_num=150, N=41, S=[2,3,4,7])
+        elif self.name == 'MDG':
+            graphs = generate_mix_degree_graphs()
+        else:
+            raise NotImplementedError
+        
         labels = []
         G = []
         for (g, y) in graphs:

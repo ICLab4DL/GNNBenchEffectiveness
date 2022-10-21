@@ -49,7 +49,6 @@ def generate_mix_degree_graphs(sample_num=300, er_p=None, num_nodes=None, class_
         A. ER(N, p1), ER(N, p2), ...
         B. ER(N1, p), ER(N2, p), ...
     """
-    
     each_num = int(sample_num/class_num)
     samples = []
     if is_type_A:

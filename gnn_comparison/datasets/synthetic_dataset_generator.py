@@ -36,6 +36,39 @@ def random_connect_graph(graph_list:list):
     return g_all
 
 
+
+def generate_mix_degree_graphs(sample_num=300, er_p=None, num_nodes=None, class_num=3, is_type_A=True):
+    """ 
+        input: default is 3 classification task with same avg degree but various number of nodes.
+        via E-R graphs:
+        generate two types graph:
+        A. ER(N, p1), ER(N, p2), ...
+        B. ER(N1, p), ER(N2, p), ...
+    """
+    each_num = int(sample_num/class_num)
+    samples = []
+    if is_type_A:
+        if num_nodes is None:
+            num_nodes = list(range(80, 80+2*60+1, 60))
+            
+        for label, i in enumerate(num_nodes):
+            for _ in range(each_num):
+                g = nx.erdos_renyi_graph(i, 0.4)
+                # stats = node_feature_utils.graph_stats_degree(adj=nx.to_numpy_array(g))
+                samples.append((nx.to_numpy_array(g), np.array(label).astype(np.float32)))
+    else:
+        if er_p is None:
+            er_p = list(np.arange(0.3, 1, 0.3))
+            
+        for label, i in enumerate(er_p):
+            for _ in range(each_num):
+                g = nx.erdos_renyi_graph(100, i)
+                # stats = node_feature_utils.graph_stats_degree(adj=nx.to_numpy_array(g))
+                samples.append((nx.to_numpy_array(g), np.array(label).astype(np.float32)))
+                
+    return samples
+
+
 def generate_CSL(each_class_num:int, N:int, S:list):
     samples = []
     for y, s in enumerate(S):
