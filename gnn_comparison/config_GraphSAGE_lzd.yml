@@ -41,7 +41,8 @@ aggregation:
 node_pool:
   - max
 additional_features:
-  - tri_cycle
+  - degree
+  # - tri_cycle
   # - guassian
   # - degree,cycle@k:6
   # - degree,cycle@k:5

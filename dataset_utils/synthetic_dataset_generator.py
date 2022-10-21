@@ -1,10 +1,12 @@
-from cProfile import label
+import sys,os
+sys.path.append(os.getcwd())
+
 import numpy as np
 import networkx as nx
 
 from functools import reduce
 import random
-import utils
+import my_utils as utils
 from scipy.sparse import coo_matrix
 
 
@@ -36,6 +38,19 @@ def random_connect_graph(graph_list:list):
     
     return g_all
 
+def generate_mix_degree_graphs(sample_num=300, avg_degrees=None, num_nodes=None):
+    """ 
+        input: default is 3 classification task with same avg degree but various number of nodes. 
+    """
+    if degrees is None:
+        degrees = [20, 30, 40]
+    if num_nodes is None:
+        num_nodes = [] # TODO: linearly increase or Gaussian? default mean=20, std around mean. how?
+        for i in range()
+        
+    samples = []
+    
+    pass
 
 def generate_circulant_graph_samples(each_class_num:int, N:int, S:list):
     samples = []

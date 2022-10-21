@@ -15,10 +15,10 @@ dat='NCI1'
 dat='COLLAB'
 dat='ENZYMES'
 dat='DD'
-dat="PROTEINS"
-dat='IMDB-BINARY'
 dat="CSL"
 dat='MUTAG'
+dat="PROTEINS"
+dat='IMDB-BINARY'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal
@@ -30,7 +30,7 @@ dat='MUTAG'
 
 # python3 Launch_Experiments.py --config-file config_GraphSAGE.yml --dataset-name ${dat} --result-folder lzd --debug
 
-# python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1015 --debug 
+# python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_GraphSAGE_lzd.yml --dataset-name ${dat} --result-folder result_1021 --debug 
 
 # TODO: test all datasets using all models.
 
@@ -55,6 +55,9 @@ dat='MUTAG'
 
 
 # 2022.10.20, test graph-level features.
+python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1022 --debug 
+
+# 2022.10.21, test graph-level features test on other datasets to prove GNN is not better than MLP if degree information is enough for the tasks.
+python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1021 --debug 
 
 
-python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1020 --debug 

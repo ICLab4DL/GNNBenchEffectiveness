@@ -23,7 +23,7 @@ class ClassificationLoss(nn.Module):
 
     def _calculate_accuracy(self, outputs, targets):
         correct = self._get_correct(outputs)
-        return 100. * (correct == targets).sum().float() / targets.size(0)
+        return 100. * (correct == targets).sum().float() / targets.size(0) # True/True
 
 
 class BinaryClassificationLoss(ClassificationLoss):
