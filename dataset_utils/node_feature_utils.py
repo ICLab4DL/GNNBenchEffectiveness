@@ -13,22 +13,24 @@ def xargs(f):
     return wrap
 
 @xargs
-def graph_cycle_feature(adj, k:str="4,"):
-    ks = [int(i) for i  in k.split(',')]
+def graph_cycle_feature(adj, k:str="4"):
+    ks = [int(i) for i  in k.split('-')]
     nx_g = nx.from_numpy_array(adj)
     cycles = nx.cycle_basis(nx_g)
-    cycle_count = defaultdict(int)
-    [cycle_count[i]=0 for i in ks]
+    cycle_count = {}
+    for i in ks:
+        cycle_count[i] = 0
     
     for c in cycles:
         if len(c) in ks:
             cycle_count[len(c)] += 1
     # NOTE: cycle_count to array list
-    graph_features = np.zeros()
-    
-    return np.array(graph_fea).astype(np.float32).reshape(1)
-    
-    
+    graph_features = np.zeros(len(ks))
+    for i, k in enumerate(ks):
+        graph_features[i] = cycle_count[k]
+        
+    return graph_features.astype(np.float32).reshape(len(ks))
+       
 @xargs
 def node_cycle_feature(adj, k=4):
     # TODO: make it only calculate once for the same dataset?
@@ -135,10 +137,9 @@ def node_deviated_feature(adj):
 
 @xargs
 def node_cc_avg_feature(adj):
-    N = adj.shape[0]
     g_cur = nx.from_numpy_array(adj)
     feats = nx.average_clustering(g_cur)
-    return feats
+    return np.array(feats).astype(np.float32).reshape(1)
 
 @xargs
 def node_cc_feature(adj):
@@ -311,7 +312,7 @@ class GraphFeaRegister(object):
                 'stats_degree': graph_stats_degree,
                 'avg_degree': graph_avg_degree,
                 'avg_cc': node_cc_avg_feature,
-                'cycle': 
+                'cycle': graph_cycle_feature
                 }
         self.registered = []
 

@@ -3,7 +3,7 @@ import networkx as nx
 
 from functools import reduce
 import random
-import utils
+import my_utils as utils
 # from scipy.sparse import coo_matrix
 
 

@@ -1121,8 +1121,8 @@ from torch import  nn
 from torch_scatter import scatter_mean, scatter, scatter_add, scatter_max
 from torch_geometric.nn.conv import MessagePassing
 
-import utils
-from utils import DLog
+import my_utils as utils
+from my_utils import DLog
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 

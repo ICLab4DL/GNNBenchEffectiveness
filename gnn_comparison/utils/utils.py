@@ -25,8 +25,8 @@ def get_max_num_nodes(dataset_str):
     return max_num_nodes
 
 def fill_nan_inf(a):
-    a[np.isnan(a)] = 0
-    a[np.isinf(a)] = 0
+    a[np.isnan(a)] = 0.0
+    a[np.isinf(a)] = 0.0
     return a
     
     

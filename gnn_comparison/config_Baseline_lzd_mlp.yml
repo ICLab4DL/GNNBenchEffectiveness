@@ -35,9 +35,15 @@ early_stopper:
 shuffle:
   - True
   
+
+#   'stats_degree': graph_stats_degree,
+# 'avg_degree': graph_avg_degree,
+# 'avg_cc': node_cc_avg_feature,
+# 'cycle': graph_cycle_feature
+
 additional_graph_features:
-  - stats_degree
-  # - avg_degree
+  # - stats_degree
+  - avg_degree,avg_cc,cycle@k:3-4
 
 dropout:
   - 0.4
