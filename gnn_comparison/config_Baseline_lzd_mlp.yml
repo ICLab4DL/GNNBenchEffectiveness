@@ -43,7 +43,10 @@ shuffle:
 
 additional_graph_features:
   # - stats_degree
-  - avg_degree,avg_cc,cycle@k:3-4
+  - avgd
 
 dropout:
   - 0.4
+
+norm_feature:
+  - False

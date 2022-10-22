@@ -40,7 +40,7 @@ class GraphDatasetManager:
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
                  use_deepwalk=False, precompute_kron_indices=False, additional_features:str=None, additional_graph_features:str=None,
-                 max_reductions=10, DATA_DIR='DATA'):
+                 max_reductions=10, DATA_DIR='DATA', config=None):
 
         self.root_dir = Path(DATA_DIR) / self.name
         self.kfold_class = kfold_class
@@ -57,11 +57,11 @@ class GraphDatasetManager:
         self.use_deepwalk = use_deepwalk
         self.precompute_kron_indices = precompute_kron_indices
         self.KRON_REDUCTIONS = max_reductions  # will compute indices for 10 pooling layers --> approximately 1000 nodes
-
         # 2022.10.02
         self.additional_features = additional_features
         # 2022.10.20
         self.additional_graph_features = additional_graph_features
+        self.config = config
         
         self.Graph_whole = None
         self.Graph_whole_pagerank = None
@@ -188,7 +188,12 @@ class GraphDatasetManager:
         
         graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
         # 2022.10.20, NOTE: normalize:
-        graph_features = my_utils.normalize(graph_features, along_axis=-1)
+        
+        if self.config is not None:
+            if self.config['norm_feature']:
+                print('normed features')
+                graph_features = my_utils.normalize(graph_features, along_axis=-1)
+        
         # store in graph as graph not x, but g_x.
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.

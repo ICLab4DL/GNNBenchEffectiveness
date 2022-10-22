@@ -19,15 +19,15 @@ class EndToEndExperiment(Experiment):
         dataset_class = self.model_config.dataset  # dataset_class()
 
         if 'dense' in self.model_config:
-            dataset = dataset_class(dense=self.model_config.dense)
+            dataset = dataset_class(dense=self.model_config.dense, config=self.model_config)
         elif 'additional_features' in self.model_config:
-            print(self.model_config.additional_features)
-            dataset = dataset_class(additional_features = self.model_config.additional_features)
+            print('create node additional_features:', self.model_config.additional_features)
+            dataset = dataset_class(additional_features = self.model_config.additional_features, config=self.model_config)
         elif 'additional_graph_features' in self.model_config:
-            print(self.model_config.additional_graph_features)
-            dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features)
+            print('create additional_graph_features', self.model_config.additional_graph_features)
+            dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features, config=self.model_config)
         else:
-            dataset = dataset_class()
+            dataset = dataset_class(config=self.model_config)
         
         model_class = self.model_config.model
         loss_class = self.model_config.loss

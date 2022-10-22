@@ -13,19 +13,20 @@ class MolecularFingerprint(torch.nn.Module):
         print('dim_features: ', dim_features)
         print('hidden_dim: ', hidden_dim)
         print('dim_target: ', dim_target)
+        print('dropout:', dropout)
         
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(dim_features, hidden_dim), ReLU(),
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(dim_features, hidden_dim), nn.Sigmoid(),
                                        nn.Dropout(dropout),
-                                       torch.nn.Linear(hidden_dim, hidden_dim), ReLU(),
-                                       nn.Dropout(dropout),
+                                    #    torch.nn.Linear(hidden_dim, hidden_dim), nn.Sigmoid(),
+                                    #    nn.Dropout(dropout),
                                        torch.nn.Linear(hidden_dim, dim_target), nn.Sigmoid())
 
     def forward(self, data):
         # TODO: use graph-wise feature: g_x 
         if 'g_x' in data:
-            # print('using g_x:', data['g_x'][0])
+            print('using g_x:', data['g_x'][:20],data['g_x'][20:-1] )
             result = self.mlp(data['g_x'])
-            # print('result: ', result)
+            print('result: ', result)
             return result
                 
         return self.mlp(global_add_pool(data.x, data.batch))

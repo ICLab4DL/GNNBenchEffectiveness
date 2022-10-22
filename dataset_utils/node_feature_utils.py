@@ -48,6 +48,9 @@ def node_cycle_feature(adj, k=4):
         
     return node_fea.astype(np.float32)
 
+
+
+    
 @xargs
 def node_tri_cycles_feature(adj, k=2):
     """ A^k as node features. so the dim of feature equals to the number of nodes.
@@ -116,7 +119,6 @@ def node_gaussian_feature(adj, mean_v=0.1, std_v=1.0, dim=1):
     return np.random.normal(loc=mean_v, scale=std_v, size=(N, dim)).astype(np.float32)
 
 
-
 @xargs
 def node_index_feature(adj):
     """return (N, 1) node feature, feature equals to the index+1
@@ -182,7 +184,21 @@ def graph_avg_degree(adj):
     mean_D = np.mean(degrees).astype(np.float32).reshape(1)
     return mean_D
 
-
+@xargs
+def graph_avgDN_feature(adj):
+    if not isinstance(adj, np.ndarray):
+        adj = adj.todense()
+        
+    N = adj.shape[0]
+    mean_avg = np.mean(node_degree_feature(adj=adj)).item()
+    # degrees = np.sum(adj, axis=1).astype(np.float32).reshape(N, 1)
+    # mean_avg = np.mean(degrees).astype(np.float32)
+    avgD = mean_avg / N
+    print('N:', N, 'avgD:', avgD, 'mean_avg:', mean_avg)
+    return np.array(avgD).astype(np.float32).reshape(1)
+    
+    
+    
 
 # TODO, d), graph feature pipeline.
 
@@ -312,7 +328,8 @@ class GraphFeaRegister(object):
                 'stats_degree': graph_stats_degree,
                 'avg_degree': graph_avg_degree,
                 'avg_cc': node_cc_avg_feature,
-                'cycle': graph_cycle_feature
+                'cycle': graph_cycle_feature,
+                'avgd': graph_avgDN_feature
                 }
         self.registered = []
 
