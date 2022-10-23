@@ -7,6 +7,7 @@ batch_size:
 hidden_units:
   - 256
 learning_rate:
+  - 0.001
   - 0.01
 l2:
   - 0.0

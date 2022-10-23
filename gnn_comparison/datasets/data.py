@@ -33,7 +33,7 @@ class Data(data.Data):
         
     def to_numpy_array(self):
         self.N = self.x.shape[0]
-        m = np.ones((self.N, self.N))
+        m = np.zeros((self.N, self.N))
         m[self.edge_index[0], self.edge_index[1]] = 1
         return m
         

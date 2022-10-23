@@ -196,9 +196,6 @@ def graph_avgDN_feature(adj):
     avgD = mean_avg / N
     print('N:', N, 'avgD:', avgD, 'mean_avg:', mean_avg)
     return np.array(avgD).astype(np.float32).reshape(1)
-    
-    
-    
 
 # TODO, d), graph feature pipeline.
 

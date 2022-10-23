@@ -61,10 +61,8 @@ dat='IMDB-BINARY'
 # python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1021 --debug 
 
 
-# 2022.10.22,
-
-
-python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1022 --debug 
+# 2022.10.23,
+python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1023 --debug 
 
 
 
