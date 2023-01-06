@@ -16,14 +16,15 @@ dat='ENZYMES'
 dat='DD'
 dat="CSL"
 dat='MUTAG'
-dat='COLLAB'
-dat='REDDIT-BINARY'
 dat="PROTEINS"
 dat='IMDB-BINARY'
+dat='COLLAB'
+dat='REDDIT-BINARY'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal
-# python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-degree
+# python3 gnn_comparison/PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10
+
 # cp -r DATA/SYNTHETIC/${dat}/ DATA/
 
 
@@ -48,6 +49,9 @@ dat='IMDB-BINARY'
 
 
 
+
+
+
 # cat result_1009/pre_results/GraphSAGE_IMDB-BINARY_assessment/10_NESTED_CV/OUTER_FOLD_*/outer_results.json 
 # cat result_1009/GraphSAGE_IMDB-BINARY_assessment/10_NESTED_CV/OUTER_FOLD_*/outer_results.json 
 
@@ -63,5 +67,4 @@ dat='IMDB-BINARY'
 # python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/01_config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_1024 --debug 
 
 
-# 2023.01.05
-nohup python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/eeg02_config_Baseline_lzd_mlp.yml --dataset-name ${dat} --result-folder result_MLP_0105 --debug &
+

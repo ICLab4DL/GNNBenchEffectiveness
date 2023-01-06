@@ -700,8 +700,6 @@ class DiGINNet(nn.Module):
         return x
     
 
-
-
 class GCNO(torch.nn.Module):
     def __init__(self, in_dim, hid_dim, class_num):
         super(GCNO, self).__init__()

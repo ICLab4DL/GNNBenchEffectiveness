@@ -42,7 +42,7 @@ shuffle:
 # 'cycle': graph_cycle_feature
 
 additional_graph_features:
-  - degree_dist@sample_len:32
+  - degree_dist@sample_len:64
 
 dropout:
   - 0.4

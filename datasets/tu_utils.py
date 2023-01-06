@@ -3,7 +3,7 @@ import numpy as np
 import networkx as nx
 
 from .graph import Graph
-from gnn_comparison.utils.encode_utils import one_hot
+from utils.encode_utils import one_hot
 
 
 def parse_tu_data(name, raw_dir):

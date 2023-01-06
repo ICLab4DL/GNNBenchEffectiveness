@@ -22,14 +22,13 @@ from torch.nn import functional as F
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
-from gnn_comparison.utils.encode_utils import NumpyEncoder
-
-from .synthetic_dataset_generator import *
-from .data import Data
-from .dataloader import DataLoader
-from .dataset import GraphDataset, GraphDatasetSubset
-from .sampler import RandomSampler
-from .tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
+from utils.encode_utils import NumpyEncoder
+from datasets.synthetic_dataset_generator import *
+from datasets.data import Data
+from datasets.dataloader import DataLoader
+from datasets.dataset import GraphDataset, GraphDatasetSubset
+from datasets.sampler import RandomSampler
+from datasets.tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
 
 
 from dataset_utils import node_feature_utils
@@ -40,7 +39,7 @@ class GraphDatasetManager:
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
                  use_deepwalk=False, precompute_kron_indices=False, additional_features:str=None, additional_graph_features:str=None,
-                 max_reductions=10, DATA_DIR='DATA', config=None):
+                 max_reductions=10, DATA_DIR='gnn_comparison/DATA', config={}):
 
         self.root_dir = Path(DATA_DIR) / self.name
         self.kfold_class = kfold_class
@@ -89,10 +88,10 @@ class GraphDatasetManager:
                 os.makedirs(self.processed_dir)
             self._process()
 
-        
+        print('load dataset !')
         self.dataset = GraphDataset(torch.load(
             self.processed_dir / f"{self.name}.pt"))
-        print(len(self.dataset))
+        print('dataset len: ', len(self.dataset))
         splits_filename = self.processed_dir / f"{self.name}_splits.json"
         if not splits_filename.exists():
             self.splits = []
@@ -171,27 +170,27 @@ class GraphDatasetManager:
                 # remove from register_node_features.
                 self.graph_fea_reg.remove(name)
                 
-        # NOTE: generate rest node features:
+        # NOTE: generate rest features:
         if len(self.graph_fea_reg.get_registered()) > 0:
-            print('has rest features:')
+            print('Generate rest features!', self.graph_fea_reg.get_registered())
             rest_graph_features = node_feature_utils.register_features(adjs, self.graph_fea_reg)
-            # TODO: save each
+            # save each
             for i, ts in enumerate(self.graph_fea_reg.get_registered()):
                 add_features_path = os.path.join(self.processed_dir, f'graphwise_{self.name}_add_{ts[0]}.pkl')
                 graph_features.append(rest_graph_features[i])
-                
+                print('rest graph features: ', rest_graph_features[i][0].shape)
                 with open(add_features_path, 'wb') as f:
                     pk.dump(rest_graph_features[i], f)
-                    print('dump node_feature: ', ts[0])
+                    print('dump graph features: ', ts[0])
                     
-        print('aft:', len(graph_features), ' shape: ', graph_features[0][0].shape)
+        print('aft:', len(graph_features), ' shape: ', graph_features[0][0].shape, graph_features[0][3].shape)
         
         graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
         # 2022.10.20, NOTE: normalize:
         
-        if self.config is not None:
+        if 'norm_feature' in self.config:
             if self.config['norm_feature']:
-                print('normed features')
+                print('Need to normalize graph features !!!!!!!!!!!')
                 graph_features = my_utils.normalize(graph_features, along_axis=-1)
         
         # store in graph as graph not x, but g_x.
@@ -232,10 +231,11 @@ class GraphDatasetManager:
             # NOTE: check existence.
             name = ts[0]
             add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
+            print('add_features_path: ', add_features_path)
             if os.path.exists(add_features_path):
                 with open(add_features_path, 'rb') as f:
                     node_feature = pk.load(f)
-                    print('laod node_featureslen: ', len(node_feature))
+                    print('laod node_features len: ', len(node_feature))
                     print('load node_feature: ', name)
                     node_features.append(node_feature)
                 # remove from register_node_features.
@@ -264,12 +264,19 @@ class GraphDatasetManager:
         # TODO: normalize through each graph ????
         node_features = my_utils.normalize(node_features, along_axis=-1, same_data_shape=False)
         
+        node_attribute = False
+        if 'node_attribute' in self.config:
+            node_attribute = self.config['node_attribute']
+        print('original node_attribute: ', node_attribute)
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
-            pre_x = d.x
-            # TODO: composite features
-            new_x = torch.cat([pre_x, torch.FloatTensor(node_features[i])], axis=-1)
-            d.x=new_x
+            if node_attribute:
+                pre_x = d.x
+                # TODO: composite features
+                new_x = torch.cat([pre_x, torch.FloatTensor(node_features[i])], axis=-1)
+                d.x = new_x
+            else:
+                d.x = torch.FloatTensor(node_features[i])
         print('added feature done!')        
         
     def _process(self):

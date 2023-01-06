@@ -1,14 +1,11 @@
-import sys,os
-sys.path.append(os.getcwd())
-
 import argparse
 
-from gnn_comparison.datasets import *
-from gnn_comparison.datasets.manager import *
+from datasets import *
+from datasets.manager import *
 
 DATASETS = {
-    # 'REDDIT-BINARY': RedditBinary,
-    # 'REDDIT-MULTI-5K': Reddit5K,
+    'REDDIT-BINARY': RedditBinary,
+    'REDDIT-MULTI-5K': Reddit5K,
     'COLLAB': Collab,
     'IMDB-BINARY': IMDBBinary,
     'IMDB-MULTI': IMDBMulti,

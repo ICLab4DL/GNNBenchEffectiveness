@@ -42,7 +42,7 @@ class GraphSAGE(nn.Module):
 
         for i, layer in enumerate(self.layers):
             x = layer(x, edge_index)
-            if self.aggregation == 'max':# ???? why need that?
+            if self.aggregation == 'max':# ???? why need that? overfitting if True.
                 x = torch.relu(self.fc_max(x))
             x_all.append(x)
 

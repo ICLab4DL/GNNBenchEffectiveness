@@ -4,7 +4,7 @@ from collections import defaultdict
 
 # node or edge feature generation:
 
-from gnn_comparison.utils import utils
+from utils import utils
 
 
 def xargs(f):
@@ -165,6 +165,53 @@ def graph_stats_degree(adj):
     return np.stack([mean_D,std_D,sum_D]).reshape(3)
 
 
+def downsampling(s:np.ndarray, sample_len=64, pad=True):
+    s_len = s.shape[0]
+    assert s_len > sample_len
+            
+    indice = np.linspace(0, s_len-1, sample_len)
+    int_idc = [int(i) for i in indice]
+    downsampled = np.array([s[i] for i in int_idc])
+    
+    return int_idc, downsampled
+    
+    
+@xargs
+def graph_degree_dist(adj, sample_len=128):
+    """ pad the node degree set into the same dimension.
+        how? sort and sample 128, if less than 128 then pad.
+    """
+    if not isinstance(sample_len, int):
+        sample_len = int(sample_len)
+        
+    if not isinstance(adj, np.ndarray):
+        adj = adj.todense()
+        
+    degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    # sort
+    degree_sorted = np.sort(degrees)[::-1]
+    s_len = degree_sorted.shape[0]
+    
+    if s_len <= sample_len:
+        # pad last value:
+        downsampled = np.pad(degree_sorted, pad_width=((0, sample_len-s_len), (0, 0)), mode='minimum')
+    else:
+        _, downsampled = downsampling(degree_sorted, sample_len=sample_len)
+        
+    downsampled = downsampled.squeeze().reshape(sample_len).astype(np.float32)
+    
+    # normlize:
+    mean = np.mean(downsampled)
+    std = np.std(downsampled)
+    
+    if std == 0:
+        downsampled = downsampled - mean
+    else:
+        downsampled = (downsampled - mean)/std
+    
+    return downsampled
+
+
 @xargs
 def graph_cycles_degree(adj):
     if not isinstance(adj, np.ndarray):
@@ -280,7 +327,14 @@ def get_features_by_ids(*indices, cur_features, pad=None):
 def gen_features(adjs, sparse, cons_func, **xargs):
     if sparse:
         # NOTE: the numbers of Node are different, so need sparse.
+        print('cons_func2:', graph_degree_dist)
         features = [cons_func(adj=adj, **xargs) for adj in adjs]
+        print('adjs:', adjs[0].shape)
+        a = cons_func(adj=adjs[0], **xargs)
+        b = graph_degree_dist(adj=adjs[0], **xargs)
+        print('a: :', a.shape)
+        print('b: :', b.shape)
+        
         for i in range(len(features)):
             features[i] = utils.fill_nan_inf(features[i])
     else:
@@ -319,10 +373,12 @@ class GraphFeaRegister(object):
         self.file_path = file_path
         if file_path is not None:
             self.funcs = {} # TODO: load from file.
+            print('no funcs found!')
             pass
         else:
             self.funcs = {
                 'stats_degree': graph_stats_degree,
+                'degree_dist': graph_degree_dist,
                 'avg_degree': graph_avg_degree,
                 'avg_cc': node_cc_avg_feature,
                 'cycle': graph_cycle_feature,
@@ -446,6 +502,7 @@ def register_features(adjs, fea_register):
     feature_list = []
     for fea_reg in fea_register.get_registered():
         features = gen_features(adjs, sparse=True, cons_func=fea_reg[1], **fea_reg[2])
+        print('features: ', features[0].shape)
         feature_list.append(features)
     return feature_list
     
