@@ -497,6 +497,7 @@ class TUDatasetManager(GraphDatasetManager):
                 G.__class__()
                 
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
+        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
 
     def _to_data(self, G):
         datadict = {}

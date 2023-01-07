@@ -15,15 +15,15 @@ dat='NCI1'
 dat='ENZYMES'
 dat='DD'
 dat="CSL"
-dat='MUTAG'
 dat="PROTEINS"
 dat='IMDB-BINARY'
 dat='COLLAB'
 dat='REDDIT-BINARY'
+dat='MUTAG'
 
 # python3 PrepareDatasets.py DATA/SYNTHETIC --dataset-name ${dat} --outer-k 10 --use-degree
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal
-# python3 gnn_comparison/PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10
+python3 gnn_comparison/PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10
 
 # cp -r DATA/SYNTHETIC/${dat}/ DATA/
 

@@ -39,11 +39,11 @@ class Graph(nx.Graph):
 
         for node, node_attrs in self.nodes(data=True):
             data = []
-            # if node_attrs["label"] is not None:
-            #     data.extend(node_attrs["label"])
+            if node_attrs["label"] is not None:
+                data.extend(node_attrs["label"])
             
-            # if use_node_attrs and node_attrs["attrs"] is not None:
-            #     data.extend(node_attrs["attrs"])
+            if use_node_attrs and node_attrs["attrs"] is not None:
+                data.extend(node_attrs["attrs"])
 
             if use_node_degree:
                 data.extend([self.degree(node)])
