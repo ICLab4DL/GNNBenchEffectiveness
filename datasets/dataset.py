@@ -56,6 +56,10 @@ class GraphDatasetSubset(GraphDataset):
     def __getitem__(self, index):
         return self.data[self.indices[index]]
 
+    def get_subset(self):
+        sub_data = [self.data[i] for i in self.indices]
+        return sub_data
+        
     def __len__(self):
         return len(self.indices)
 
