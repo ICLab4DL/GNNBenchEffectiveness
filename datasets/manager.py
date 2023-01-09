@@ -98,7 +98,8 @@ class GraphDatasetManager:
             self._make_splits()
         else:
             self.splits = json.load(open(splits_filename, "r"))
-            
+            print('load splits:', splits_filename)
+        print('split counts:', len(self.splits))
         # TODO: if add more node features:
         if self.additional_features is not None:
             # TODO: pass node function?
