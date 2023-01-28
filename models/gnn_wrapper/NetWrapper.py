@@ -94,7 +94,7 @@ class NetWrapper:
             return None, loss_all / len(loader.dataset)
 
     def train(self, train_loader, max_epochs=100, optimizer=torch.optim.Adam, scheduler=None, clipping=None,
-              validation_loader=None, test_loader=None, early_stopping=None, logger=None, log_every=10):
+              validation_loader=None, test_loader=None, early_stopping=None, logger=None, log_every=1):
 
         early_stopper = early_stopping() if early_stopping is not None else None
 
