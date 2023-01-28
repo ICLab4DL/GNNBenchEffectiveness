@@ -428,7 +428,7 @@ class TUDatasetManager(GraphDatasetManager):
 
         if self.use_pagerank:
             self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
-        elif self.use_eigen or self.use_eigen_norm:
+        if self.use_eigen or self.use_eigen_norm:
             try:
                 print("{name}".format(name=self.name))
                 if self.use_eigen:
@@ -468,7 +468,7 @@ class TUDatasetManager(GraphDatasetManager):
                     embedding[i, j] = self.Graph_whole_eigen[j, i]
             self.Graph_whole_eigen = embedding
             print(self.Graph_whole_eigen)
-        elif self.use_1hot:
+        if self.use_1hot:
             self.Graph_whole_embedding = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
         elif self.use_deepwalk:
             self.Graph_whole_deepwalk = self.extract_deepwalk_embeddings("DATA/proteins.embeddings")
@@ -502,20 +502,25 @@ class TUDatasetManager(GraphDatasetManager):
 
     def _to_data(self, G):
         datadict = {}
-        embedding = None
-        if self.use_1hot:
-            embedding = self.Graph_whole_embedding
-        elif self.use_random_normal:
-            embedding = self.Graph_whole_embedding
-        elif self.use_pagerank:
-            # embedding is essentially pagerank dictionary
-            embedding = self.Graph_whole_pagerank
-        elif self.use_eigen:
-            embedding = self.Graph_whole_eigen
-        elif self.use_deepwalk:
-            embedding = self.Graph_whole_deepwalk
-        
-        node_features = G.get_x(self.use_node_attrs, self.use_node_degree, self.use_one, self.use_shared, self.use_1hot, self.use_random_normal, self.use_pagerank, self.use_eigen, self.use_deepwalk, embedding=embedding)
+        # embedding = None
+        # if self.use_1hot:
+        #     embedding = self.Graph_whole_embedding
+        # elif self.use_random_normal:
+        #     embedding = self.Graph_whole_embedding
+        # elif self.use_pagerank:
+        #     # embedding is essentially pagerank dictionary
+        #     embedding = self.Graph_whole_pagerank
+        # elif self.use_eigen:
+        #     embedding = self.Graph_whole_eigen
+        # elif self.use_deepwalk:
+        #     embedding = self.Graph_whole_deepwalk
+            
+        node_features = G.get_x(self.use_node_attrs, self.use_node_degree, self.use_one,
+                                self.use_shared, self.use_1hot, self.use_random_normal, self.use_pagerank,
+                                self.use_eigen, self.use_deepwalk, Graph_whole_embedding=self.Graph_whole_embedding,
+                                Graph_whole_pagerank=self.Graph_whole_pagerank,
+                                Graph_whole_eigen=self.Graph_whole_eigen,
+                                Graph_whole_deepwalk=self.Graph_whole_deepwalk)
         datadict.update(x=node_features)
 
         if G.laplacians is not None:
