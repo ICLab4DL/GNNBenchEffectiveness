@@ -30,7 +30,6 @@ sys.path.append(os.getcwd())
 
 # import k_gnn
 
-
 class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
@@ -41,16 +40,26 @@ class GraphDatasetManager:
         self.root_dir = Path(DATA_DIR) / self.name
         self.kfold_class = kfold_class
         self.holdout_test_size = holdout_test_size
+        self.config = config
+        if additional_features is not None:
+            add_features = additional_features.strip().split(',')
+            self.use_1hot = True if 'use_onehot' in add_features else use_1hot
+            self.use_random_normal = True if 'use_random' in add_features else use_random_normal
+            self.use_pagerank = True if 'use_pagerank' in add_features else use_pagerank
+            self.use_eigen = True if 'use_eigen' in add_features else use_eigen
+            self.use_deepwalk = True if 'use_deepwalk' in add_features else use_deepwalk
+        else:
+            self.use_1hot = use_1hot
+            self.use_random_normal = use_random_normal
+            self.use_pagerank = use_pagerank
+            self.use_eigen = use_eigen
+            self.use_deepwalk = use_deepwalk
+                        
         self.use_node_degree = use_node_degree
         self.use_node_attrs = use_node_attrs
         self.use_one = use_one
-        self.use_1hot = use_1hot
         self.use_shared = use_shared
-        self.use_random_normal = use_random_normal
-        self.use_pagerank = use_pagerank
-        self.use_eigen = use_eigen
         self.use_eigen_norm = use_eigen_norm
-        self.use_deepwalk = use_deepwalk
         self.precompute_kron_indices = precompute_kron_indices
         # will compute indices for 10 pooling layers --> approximately 1000 nodes
         self.KRON_REDUCTIONS = max_reductions
@@ -58,7 +67,6 @@ class GraphDatasetManager:
         self.additional_features = additional_features
         # 2022.10.20
         self.additional_graph_features = additional_graph_features
-        self.config = config
 
         self.Graph_whole = None
         self.Graph_whole_pagerank = None
@@ -207,9 +215,16 @@ class GraphDatasetManager:
         # TODO: load from files, if no files, create ???
 
         print('adding additional features --')
-        self.additional_features = self.additional_features.strip().split(',')
+        all_features = self.additional_features.strip().split(',')
+        additional_features_list ,use_features_list = [], []
+        for s in all_features:
+            if s.startswith('use_'): 
+                use_features_list.append(s)
+            else: 
+                additional_features_list.append(s)
+            
         node_fea_reg = node_feature_utils.NodeFeaRegister()
-        for feature_arg in self.additional_features:
+        for feature_arg in additional_features_list:
             node_fea_reg.register_by_str(feature_arg)
         self.node_fea_reg = node_fea_reg
 
@@ -226,36 +241,9 @@ class GraphDatasetManager:
             if max_N < d.N:
                 max_N = d.N
 
-        # TODO: load from file if exist, if not exist, then save if it's the first fold test.
-        # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
         feature_names = self.node_fea_reg.get_registered()
         node_features = []
         for ts in feature_names:
-            # NOTE: check existence.
-            if ts == 'pagerank':
-                # load
-                fea_load = np.load(f'DATA/{self.name}_pagerank.npy')
-                node_features.append(fea_load)
-                print('fea_load shape:', fea_load.shape)
-                continue
-            if ts == 'random':
-                fea_dir = f'DATA/{self.name}_random.npy'
-                node_features.append(np.load(fea_dir))
-                print('fea_load shape:', fea_load.shape)
-                continue
-
-            if ts == 'eigenvector':
-                fea_dir = f'DATA/{self.name}_eigenvector.npy'
-                node_features.append(np.load(fea_dir))
-                print('fea_load shape:', fea_load.shape)
-                continue
-
-            if ts == 'deepwalk':
-                fea_dir = f'DATA/{self.name}_deepwalk.npy'
-                node_features.append(np.load(fea_dir))
-                print('fea_load shape:', fea_load.shape)
-                continue
-
             name = ts[0]
             add_features_path = os.path.join(
                 self.processed_dir, f'{self.name}_add_{name}.pkl')
@@ -287,6 +275,7 @@ class GraphDatasetManager:
         print('aft:', len(node_features),
               ' shape: ', node_features[0][0].shape)
 
+
         # NOTE: padding
         if need_pad:
             node_features = node_feature_utils.composite_node_feature_list(
@@ -295,6 +284,8 @@ class GraphDatasetManager:
             node_features = node_feature_utils.composite_node_feature_list(
                 node_features, padding=False)
 
+
+            
         # 2022.10.20, NOTE: normalize:
         # TODO: normalize through each graph ????
         node_features = my_utils.normalize(
@@ -304,6 +295,13 @@ class GraphDatasetManager:
         if 'node_attribute' in self.config:
             node_attribute = self.config['node_attribute']
         print('original node_attribute: ', node_attribute)
+        
+        used_features = None
+        if len(use_features_list) > 0:
+            used_features = self._save_load_use_features()
+            print('used_features shape:', used_features.shape)
+            
+            
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
             if node_attribute:
@@ -314,8 +312,17 @@ class GraphDatasetManager:
                 d.x = new_x
             else:
                 d.x = torch.FloatTensor(node_features[i])
+            
+            if used_features is not None:
+                d.x = torch.cat(
+                    [d.x, torch.FloatTensor(used_features[i])], axis=-1)
+                
+                
         print('added feature done!')
 
+    def _save_load_use_features(self, graphs=None):
+        raise NotImplementedError
+    
     def _process(self):
         raise NotImplementedError
 
@@ -470,9 +477,10 @@ class TUDatasetManager(GraphDatasetManager):
             if not os.path.exists(page_dir):
                 self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
                 np.save(page_dir, self.Graph_whole_pagerank)
-                print('save ', page_dir, ' shape:', self.Graph_whole_pagerank.shape)
+                print('save ', page_dir)
             else:
-                self.Graph_whole_pagerank = np.load(page_dir)
+                self.Graph_whole_pagerank = np.load(page_dir, allow_pickle=True)
+                
                 print('loaded ', page_dir, ' shape:', self.Graph_whole_pagerank.shape)
                 
         if self.use_eigen or self.use_eigen_norm:
@@ -560,6 +568,7 @@ class TUDatasetManager(GraphDatasetManager):
         setattr(self, 'max_num_nodes', max_num_nodes)
 
         dataset = []
+        graphs = []
         for i, target in enumerate(targets, 1):
             graph_data = {k: v[i] for (k, v) in graphs_data.items()}
             G = create_graph_from_tu_data(
@@ -578,13 +587,17 @@ class TUDatasetManager(GraphDatasetManager):
 
                 dataset.append(data)
                 G.__class__()
-
+                graphs.append(G)
+        
+        # Save
+        self._save_load_use_features(graphs=graphs)
+        
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
         print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
         
+    def _save_load_use_features(self, graphs=None) -> np.array:
 
-    def _save_load_features(self, graphs):
-
+        res = []
         pagerank_fea, onehot_fea, random_fea, eigen_fea, deepwalk_fea = [], [], [], [], []
 
         if self.use_pagerank:
@@ -593,13 +606,14 @@ class TUDatasetManager(GraphDatasetManager):
                 for gg in graphs:
                     feas = []
                     for node in gg.nodes:
-                        feas.extend([self.Graph_whole_pagerank[node]] * 50)
+                        feas.append([self.Graph_whole_pagerank[node]] * 50)
                     pagerank_fea.append(np.array(feas))
                 np.save(save_dir, pagerank_fea)
-                print('save tensor:', save_dir)
+                print('save tensor:', save_dir, 'shape:', pagerank_fea.shape)
             else:
                 pagerank_fea = np.load(save_dir)
-                print('load tensor:', save_dir)
+                print('load tensor:', save_dir, 'shape:', pagerank_fea.shape)
+            res.append(pagerank_fea)
          
         if self.use_1hot:
             save_dir = f'DATA/{self.name}_tensor_onehot.npy'
@@ -608,15 +622,16 @@ class TUDatasetManager(GraphDatasetManager):
                     feas = []
                     for node in gg.nodes:
                         arr = self.onehot(torch.LongTensor([node-1]))
-                        feas.extend(list(arr.view(-1).detach().numpy())) 
+                        feas.append(list(arr.view(-1).detach().numpy())) 
                     onehot_fea.append(np.array(feas))
                 np.save(save_dir, onehot_fea)
-                print('save tensor:', save_dir)
+                print('save tensor:', save_dir, 'shape:', onehot_fea.shape)
             else:
                 onehot_fea = np.load(save_dir)
-                print('load tensor:', save_dir)
+                print('load tensor:', save_dir, 'shape:', onehot_fea.shape)
                 
-                
+            res.append(onehot_fea)
+            
         if self.use_random_normal:
             save_dir = f'DATA/{self.name}_tensor_random.npy'
             if not os.path.exists(save_dir):
@@ -624,43 +639,51 @@ class TUDatasetManager(GraphDatasetManager):
                     feas = []
                     for node in gg.nodes:
                         arr = self.rn[node-1, :]
-                        feas.extend(list(arr))
+                        feas.append(list(arr))
                     random_fea.append(np.array(feas))
                 np.save(save_dir, random_fea)
-                print('save tensor:', save_dir)
+                print('save tensor:', save_dir, 'shape:', random_fea.shape)
             else:
                 random_fea = np.load(save_dir)
-                print('load tensor:', save_dir)
+                print('load tensor:', save_dir, 'shape:', random_fea.shape)
                 
-                
+            res.append(random_fea)
+            
         if self.use_eigen:
             save_dir = f'DATA/{self.name}_tensor_eigen.npy'
             if not os.path.exists(save_dir):
                 for gg in graphs:
                     feas = []
                     for node in gg.nodes:
-                        feas.extend(list(self.Graph_whole_eigen[node-1]))
+                        feas.append(list(self.Graph_whole_eigen[node-1]))
                     eigen_fea.append(np.array(feas))
                 np.save(save_dir, eigen_fea)
-                print('save tensor:', save_dir)
+                print('save tensor:', save_dir, 'shape:', eigen_fea.shape)
             else:
                 eigen_fea = np.load(save_dir)
-                print('load tensor:', save_dir)
+                print('load tensor:', save_dir, 'shape:', eigen_fea.shape)
                 
+            res.append(eigen_fea)
+            
         if self.use_deepwalk:
             save_dir = f'DATA/{self.name}_tensor_deepwalk.npy'
             if not os.path.exists(save_dir):
                 for gg in graphs:
                     feas = []
                     for node in gg.nodes:
-                        feas.extend(list(self.deepwalk[node-1]))
+                        feas.append(list(self.deepwalk[node-1]))
                     deepwalk_fea.append(np.array(feas))
                 np.save(save_dir, deepwalk_fea)
+                print('load tensor:', save_dir, 'shape:', deepwalk_fea.shape)
             else:
                 deepwalk_fea = np.load(save_dir)
-                print('load tensor:', save_dir)
-                
-        return pagerank_fea, onehot_fea, random_fea, eigen_fea, deepwalk_fea
+                print('load tensor:', save_dir, 'shape:', deepwalk_fea.shape)
+        
+            res.append(deepwalk_fea)
+        
+        # TODO: concate:
+        
+        return np.concatenate(res, axis=-1)
 
     def _to_data(self, G):
         datadict = {}
@@ -818,7 +841,6 @@ class SyntheticManager(TUDatasetManager):
         print('saved pkl data')
 
     def _process(self):
-
         graph_nodes = defaultdict(list)
         graph_edges = defaultdict(list)
         node_labels = defaultdict(list)

@@ -41,7 +41,9 @@ resume:
   - False
 
 additional_features:
-  - random,eigen,degree
+  - use_random,use_eigen
+  # degree
+  # NOTE: use_xxx is created by prepareDataset. xxx without use_ is created by node_feature_register
 # print different features.
 
 node_attribute:

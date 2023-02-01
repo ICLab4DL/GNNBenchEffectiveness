@@ -22,7 +22,8 @@ class EndToEndExperiment(Experiment):
             dataset = dataset_class(dense=self.model_config.dense, config=self.model_config)
         elif 'additional_features' in self.model_config:
             print('create node additional_features:', self.model_config.additional_features)
-            dataset = dataset_class(additional_features = self.model_config.additional_features , config=self.model_config)
+            dataset = dataset_class(additional_features = self.model_config.additional_features, 
+                                    config=self.model_config)
         elif 'additional_graph_features' in self.model_config:
             print('create additional_graph_features', self.model_config.additional_graph_features)
             dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features, config=self.model_config)
