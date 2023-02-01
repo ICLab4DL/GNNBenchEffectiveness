@@ -1,44 +1,41 @@
-import sys,os
+import my_utils
+from dataset_utils import node_feature_utils
+from datasets.tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
+from datasets.sampler import RandomSampler
+from datasets.dataset import GraphDataset, GraphDatasetSubset
+from datasets.dataloader import DataLoader
+from datasets.data import Data
+from datasets.synthetic_dataset_generator import *
+from utils.encode_utils import NumpyEncoder
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from torch.nn import functional as F
+import torch
+import numpy as np
+from collections import defaultdict
+import pickle as pk
+from numpy import linalg as LA
+import torch.nn as nn
+from networkx import normalized_laplacian_matrix
+import networkx as nx
+from pathlib import Path
+import zipfile
+import requests
+import json
+import os
+import io
+import sys
+import os
 sys.path.append(os.getcwd())
 
 
-import io
-import os
-import json
-import requests
-import zipfile
-from pathlib import Path
-import networkx as nx
-from networkx import normalized_laplacian_matrix
-import torch.nn as nn
-from numpy import linalg as LA
-import pickle as pk
-from collections import defaultdict
+# import k_gnn
 
-import numpy as np
-import torch
-from torch.nn import functional as F
-#import k_gnn
-
-from sklearn.model_selection import train_test_split, StratifiedKFold
-
-from utils.encode_utils import NumpyEncoder
-from datasets.synthetic_dataset_generator import *
-from datasets.data import Data
-from datasets.dataloader import DataLoader
-from datasets.dataset import GraphDataset, GraphDatasetSubset
-from datasets.sampler import RandomSampler
-from datasets.tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
-
-
-from dataset_utils import node_feature_utils
-import my_utils
 
 class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
-                 use_deepwalk=False, precompute_kron_indices=False, additional_features:str=None, additional_graph_features:str=None,
+                 use_deepwalk=False, precompute_kron_indices=False, additional_features: str = None, additional_graph_features: str = None,
                  max_reductions=10, DATA_DIR='gnn_comparison/DATA', config={}):
 
         self.root_dir = Path(DATA_DIR) / self.name
@@ -55,18 +52,17 @@ class GraphDatasetManager:
         self.use_eigen_norm = use_eigen_norm
         self.use_deepwalk = use_deepwalk
         self.precompute_kron_indices = precompute_kron_indices
-        self.KRON_REDUCTIONS = max_reductions  # will compute indices for 10 pooling layers --> approximately 1000 nodes
+        # will compute indices for 10 pooling layers --> approximately 1000 nodes
+        self.KRON_REDUCTIONS = max_reductions
         # 2022.10.02
         self.additional_features = additional_features
         # 2022.10.20
         self.additional_graph_features = additional_graph_features
         self.config = config
-        
+
         self.Graph_whole = None
         self.Graph_whole_pagerank = None
         self.Graph_whole_eigen = None
-        self.Graph_whole_embedding = None
-        self.Graph_whole_deepwalk = None
 
         self.outer_k = outer_k
         assert (outer_k is not None and outer_k > 0) or outer_k is None
@@ -105,7 +101,7 @@ class GraphDatasetManager:
             # TODO: pass node function?
             # node register
             self._add_features()
-           
+
         if self.additional_graph_features is not None:
             self._add_graph_features()
 
@@ -134,15 +130,14 @@ class GraphDatasetManager:
         else:
             self._dim_features = self.dataset.data[0].x.size(1)
         print('input feature dimension: ', self._dim_features)
-        
+
         # best for feature initialization based on the current implementation
         # if not hasattr(self, "_dim_features") or self._dim_features is None:
-            # not very elegant, but it works
-            # todo not general enough, we may just remove it
-            # self._dim_features = self.dataset.data[0].x.size(1)
+        # not very elegant, but it works
+        # todo not general enough, we may just remove it
+        # self._dim_features = self.dataset.data[0].x.size(1)
         # feature initialization
         return self._dim_features
-
 
     def _add_graph_features(self):
         # TODO: add graph-wise features:
@@ -151,9 +146,9 @@ class GraphDatasetManager:
         for feature_arg in self.additional_graph_features:
             graph_fea_reg.register_by_str(feature_arg)
         self.graph_fea_reg = graph_fea_reg
-            
+
         adjs = [d.to_numpy_array() for d in self.dataset.data]
-                
+
         # TODO: load from file if exist, if not exist, then save if it's the first fold test.
         # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
         feature_names = self.graph_fea_reg.get_registered()
@@ -161,7 +156,8 @@ class GraphDatasetManager:
         for ts in feature_names:
             # NOTE: check existence.
             name = ts[0]
-            add_features_path = os.path.join(self.processed_dir, f'graphwise_{self.name}_add_{name}.pkl')
+            add_features_path = os.path.join(
+                self.processed_dir, f'graphwise_{self.name}_add_{name}.pkl')
             if os.path.exists(add_features_path):
                 with open(add_features_path, 'rb') as f:
                     graph_feature = pk.load(f)
@@ -170,52 +166,58 @@ class GraphDatasetManager:
                     graph_features.append(graph_feature)
                 # remove from register_node_features.
                 self.graph_fea_reg.remove(name)
-                
+
         # NOTE: generate rest features:
         if len(self.graph_fea_reg.get_registered()) > 0:
-            print('Generate rest features!', self.graph_fea_reg.get_registered())
-            rest_graph_features = node_feature_utils.register_features(adjs, self.graph_fea_reg)
+            print('Generate rest features!',
+                  self.graph_fea_reg.get_registered())
+            rest_graph_features = node_feature_utils.register_features(
+                adjs, self.graph_fea_reg)
             # save each
             for i, ts in enumerate(self.graph_fea_reg.get_registered()):
-                add_features_path = os.path.join(self.processed_dir, f'graphwise_{self.name}_add_{ts[0]}.pkl')
+                add_features_path = os.path.join(
+                    self.processed_dir, f'graphwise_{self.name}_add_{ts[0]}.pkl')
                 graph_features.append(rest_graph_features[i])
                 print('rest graph features: ', rest_graph_features[i][0].shape)
                 with open(add_features_path, 'wb') as f:
                     pk.dump(rest_graph_features[i], f)
                     print('dump graph features: ', ts[0])
-                    
-        print('aft:', len(graph_features), ' shape: ', graph_features[0][0].shape, graph_features[0][3].shape)
-        
-        graph_features = node_feature_utils.composite_graph_feature_list(graph_features)
+
+        print('aft:', len(graph_features), ' shape: ',
+              graph_features[0][0].shape, graph_features[0][3].shape)
+
+        graph_features = node_feature_utils.composite_graph_feature_list(
+            graph_features)
         # 2022.10.20, NOTE: normalize:
-        
+
         if 'norm_feature' in self.config:
             if self.config['norm_feature']:
                 print('Need to normalize graph features !!!!!!!!!!!')
-                graph_features = my_utils.normalize(graph_features, along_axis=-1)
-        
+                graph_features = my_utils.normalize(
+                    graph_features, along_axis=-1)
+
         # store in graph as graph not x, but g_x.
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
             d.set_additional_attr('g_x', torch.FloatTensor(graph_features[i]))
-            
+
         print('add graph feature done!')
-        
-        
+
     def _add_features(self):
+        # TODO: load from files, if no files, create ???
+
         print('adding additional features --')
         self.additional_features = self.additional_features.strip().split(',')
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in self.additional_features:
             node_fea_reg.register_by_str(feature_arg)
         self.node_fea_reg = node_fea_reg
-        
-                
+
         # TODO: check padding:
         need_pad = False
         if self.node_fea_reg.contains('kadj'):
             need_pad = True
-            
+
         # get maximum node num:
         adjs = []
         max_N = 0
@@ -223,15 +225,40 @@ class GraphDatasetManager:
             adjs.append(d.to_numpy_array())
             if max_N < d.N:
                 max_N = d.N
-                
+
         # TODO: load from file if exist, if not exist, then save if it's the first fold test.
         # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
         feature_names = self.node_fea_reg.get_registered()
         node_features = []
         for ts in feature_names:
             # NOTE: check existence.
+            if ts == 'pagerank':
+                # load
+                fea_load = np.load(f'DATA/{self.name}_pagerank.npy')
+                node_features.append(fea_load)
+                print('fea_load shape:', fea_load.shape)
+                continue
+            if ts == 'random':
+                fea_dir = f'DATA/{self.name}_random.npy'
+                node_features.append(np.load(fea_dir))
+                print('fea_load shape:', fea_load.shape)
+                continue
+
+            if ts == 'eigenvector':
+                fea_dir = f'DATA/{self.name}_eigenvector.npy'
+                node_features.append(np.load(fea_dir))
+                print('fea_load shape:', fea_load.shape)
+                continue
+
+            if ts == 'deepwalk':
+                fea_dir = f'DATA/{self.name}_deepwalk.npy'
+                node_features.append(np.load(fea_dir))
+                print('fea_load shape:', fea_load.shape)
+                continue
+
             name = ts[0]
-            add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{name}.pkl')
+            add_features_path = os.path.join(
+                self.processed_dir, f'{self.name}_add_{name}.pkl')
             print('add_features_path: ', add_features_path)
             if os.path.exists(add_features_path):
                 with open(add_features_path, 'rb') as f:
@@ -241,30 +268,38 @@ class GraphDatasetManager:
                     node_features.append(node_feature)
                 # remove from register_node_features.
                 self.node_fea_reg.remove(name)
+
         # NOTE: generate rest node features:
         if len(self.node_fea_reg.get_registered()) > 0:
             print('has rest features:')
-            rest_node_features = node_feature_utils.register_features(adjs, self.node_fea_reg)
+            rest_node_features = node_feature_utils.register_features(
+                adjs, self.node_fea_reg)
             # TODO: save each
             for i, ts in enumerate(self.node_fea_reg.get_registered()):
-                add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{ts[0]}.pkl')
+                add_features_path = os.path.join(
+                    self.processed_dir, f'{self.name}_add_{ts[0]}.pkl')
                 node_features.append(rest_node_features[i])
-                
+
                 with open(add_features_path, 'wb') as f:
                     pk.dump(rest_node_features[i], f)
                     print('dump node_feature: ', ts[0])
-                    
-        print('aft:', len(node_features), ' shape: ', node_features[0][0].shape)
+
+        print('aft:', len(node_features),
+              ' shape: ', node_features[0][0].shape)
+
         # NOTE: padding
         if need_pad:
-            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=True, padding_len=max_N+10)
+            node_features = node_feature_utils.composite_node_feature_list(
+                node_features, padding=True, padding_len=max_N+10)
         else:
-            node_features = node_feature_utils.composite_node_feature_list(node_features, padding=False)
-        
+            node_features = node_feature_utils.composite_node_feature_list(
+                node_features, padding=False)
+
         # 2022.10.20, NOTE: normalize:
         # TODO: normalize through each graph ????
-        node_features = my_utils.normalize(node_features, along_axis=-1, same_data_shape=False)
-        
+        node_features = my_utils.normalize(
+            node_features, along_axis=-1, same_data_shape=False)
+
         node_attribute = False
         if 'node_attribute' in self.config:
             node_attribute = self.config['node_attribute']
@@ -274,12 +309,13 @@ class GraphDatasetManager:
             if node_attribute:
                 pre_x = d.x
                 # TODO: composite features
-                new_x = torch.cat([pre_x, torch.FloatTensor(node_features[i])], axis=-1)
+                new_x = torch.cat(
+                    [pre_x, torch.FloatTensor(node_features[i])], axis=-1)
                 d.x = new_x
             else:
                 d.x = torch.FloatTensor(node_features[i])
-        print('added feature done!')        
-        
+        print('added feature done!')
+
     def _process(self):
         raise NotImplementedError
 
@@ -334,7 +370,8 @@ class GraphDatasetManager:
                 n_splits=self.outer_k, shuffle=True)
 
             for train_ok_split, test_ok_split in outer_kfold.split(X=all_idxs, y=targets):
-                split = {"test": all_idxs[test_ok_split], 'model_selection': []}
+                split = {
+                    "test": all_idxs[test_ok_split], 'model_selection': []}
 
                 train_ok_targets = targets[train_ok_split]
 
@@ -395,7 +432,8 @@ class GraphDatasetManager:
 
         idxs = self.splits[outer_idx]["model_selection"][inner_idx]
         train_data = GraphDatasetSubset(self.dataset.get_data(), idxs["train"])
-        val_data = GraphDatasetSubset(self.dataset.get_data(), idxs["validation"])
+        val_data = GraphDatasetSubset(
+            self.dataset.get_data(), idxs["validation"])
 
         train_loader = self._get_loader(train_data, batch_size, shuffle)
 
@@ -420,22 +458,33 @@ class TUDatasetManager(GraphDatasetManager):
                 z.extract(fname, self.raw_dir)
 
     def _process(self):
-        graphs_data, num_node_labels, num_edge_labels, Graph_whole = parse_tu_data(self.name, self.raw_dir) # Graph_whole contains all nodes and edges in the dataset
+        graphs_data, num_node_labels, num_edge_labels, Graph_whole = parse_tu_data(
+            self.name, self.raw_dir)  # Graph_whole contains all nodes and edges in the dataset
         targets = graphs_data.pop("graph_labels")
 
         self.Graph_whole = Graph_whole
         print("in _process")
-
+        # TODO, NOTE: whole graph level !!!
         if self.use_pagerank:
-            self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
+            page_dir = f'DATA/{self.name}_pagerank.npy'
+            if not os.path.exists(page_dir):
+                self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
+                np.save(page_dir, self.Graph_whole_pagerank)
+                print('save ', page_dir, ' shape:', self.Graph_whole_pagerank.shape)
+            else:
+                self.Graph_whole_pagerank = np.load(page_dir)
+                print('loaded ', page_dir, ' shape:', self.Graph_whole_pagerank.shape)
+                
         if self.use_eigen or self.use_eigen_norm:
             try:
                 print("{name}".format(name=self.name))
                 if self.use_eigen:
-                    self.Graph_whole_eigen = np.load("DATA/{name}_eigenvector.npy".format(name=self.name))
+                    self.Graph_whole_eigen = np.load(
+                        "DATA/{name}_eigenvector.npy".format(name=self.name))
                 else:
-                    self.Graph_whole_eigen = np.load("DATA/{name}_eigenvector_degree_normalized.npy".format(name=self.name))
-                print(self.Graph_whole_eigen.shape)
+                    self.Graph_whole_eigen = np.load(
+                        "DATA/{name}_eigenvector_degree_normalized.npy".format(name=self.name))
+                print('eigen shape:', self.Graph_whole_eigen.shape)
             except:
                 num_node = get_dataset_node_num(self.name)
                 adj_matrix = nx.to_numpy_array(self.Graph_whole)
@@ -446,7 +495,8 @@ class TUDatasetManager(GraphDatasetManager):
                     # deal with edge case of disconnected node:
                     for i in range(num_node):
                         if sum_of_rows[i] != 0:
-                            normalized_adj_matrix[i, :] = adj_matrix[i, :] / sum_of_rows[i, None]
+                            normalized_adj_matrix[i, :] = adj_matrix[i,
+                                                                     :] / sum_of_rows[i, None]
                     adj_matrix = normalized_adj_matrix
                 print("start computing eigen vectors")
                 w, v = LA.eig(adj_matrix)
@@ -454,14 +504,18 @@ class TUDatasetManager(GraphDatasetManager):
                 v = v.transpose()[indices]
                 # only save top 200 eigenvectors
                 if self.use_eigen:
-                    np.save("DATA/{name}_eigenvector".format(name=self.name), v[:200])
+                    np.save(
+                        "DATA/{name}_eigenvector".format(name=self.name), v[:200])
                 else:
-                    np.save("DATA/{name}_eigenvector_degree_normalized".format(name=self.name), v[:200])
+                    np.save(
+                        "DATA/{name}_eigenvector_degree_normalized".format(name=self.name), v[:200])
                 self.Graph_whole_eigen = v
-            
+                print('eigen shape:', self.Graph_whole_eigen.shape)
+
             print(self.Graph_whole_eigen)
-            print(np.count_nonzero(self.Graph_whole_eigen==0))
+            print(np.count_nonzero(self.Graph_whole_eigen == 0))
             node_num = get_dataset_node_num(self.name)
+            # why top 50???? lzd.
             embedding = np.zeros((node_num, 50))
             for i in range(node_num):
                 for j in range(50):
@@ -469,23 +523,47 @@ class TUDatasetManager(GraphDatasetManager):
             self.Graph_whole_eigen = embedding
             print(self.Graph_whole_eigen)
         if self.use_1hot:
-            self.Graph_whole_embedding = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
-        elif self.use_deepwalk:
-            self.Graph_whole_deepwalk = self.extract_deepwalk_embeddings("DATA/proteins.embeddings")
-        elif self.use_random_normal:
-            num_of_nodes = self.Graph_whole.number_of_nodes()
-            self.Graph_whole_embedding = np.random.normal(0, 1, (num_of_nodes, 50))
-        else:
-            print('use other base node features! e.g., degree')
+            onehot_dir = f'DATA/{self.name}_onehot.npy'
+            if not os.path.exists(onehot_dir):
+                self.onehot = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
+                np.save(onehot_dir, self.onehot)
+                print('save ', onehot_dir)
+            else:
+                self.onehot = np.load(onehot_dir)
+                print('loaded ', onehot_dir)
+
+        if self.use_deepwalk:
+            dw_dir = f'DATA/{self.name}_deepwalk.npy'
+            if not os.path.exists(dw_dir):
+                self.deepwalk = self.extract_deepwalk_embeddings(
+                    "DATA/proteins.embeddings")
+                np.save(dw_dir, self.deepwalk)
+                print('save ', dw_dir)
+            else:
+                self.deepwalk = np.load(dw_dir)
+                print('loaded ', dw_dir)
+
+        if self.use_random_normal:
+            rn_dir = f'DATA/{self.name}_random.npy'
+            if not os.path.exists(rn_dir):
+                num_of_nodes = self.Graph_whole.number_of_nodes()
+                self.rn = np.random.normal(0, 1, (num_of_nodes, 50))
+                np.save(rn_dir, self.rn)
+                print('save ', rn_dir)
+            else:
+                self.rn = np.load(rn_dir)
+                print('loaded ', rn_dir)
 
         # dynamically set maximum num nodes (useful if using dense batching, e.g. diffpool)
-        max_num_nodes = max([len(v) for (k, v) in graphs_data['graph_nodes'].items()])
+        max_num_nodes = max([len(v)
+                            for (k, v) in graphs_data['graph_nodes'].items()])
         setattr(self, 'max_num_nodes', max_num_nodes)
 
         dataset = []
         for i, target in enumerate(targets, 1):
             graph_data = {k: v[i] for (k, v) in graphs_data.items()}
-            G = create_graph_from_tu_data(graph_data, target, num_node_labels, num_edge_labels, Graph_whole)
+            G = create_graph_from_tu_data(
+                graph_data, target, num_node_labels, num_edge_labels, Graph_whole)
 
             if self.precompute_kron_indices:
                 laplacians, v_plus_list = self._precompute_kron_indices(G)
@@ -493,12 +571,96 @@ class TUDatasetManager(GraphDatasetManager):
                 G.v_plus = v_plus_list
 
             if G.number_of_nodes() > 1 and G.number_of_edges() > 0:
+                # TODO: convert to numpy : npy
+                
                 data = self._to_data(G)
+                # TODO save here:
+
                 dataset.append(data)
                 G.__class__()
-                
+
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
         print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+        
+
+    def _save_load_features(self, graphs):
+
+        pagerank_fea, onehot_fea, random_fea, eigen_fea, deepwalk_fea = [], [], [], [], []
+
+        if self.use_pagerank:
+            save_dir = f'DATA/{self.name}_tensor_pagerank.npy'
+            if not os.path.exists(save_dir):
+                for gg in graphs:
+                    feas = []
+                    for node in gg.nodes:
+                        feas.extend([self.Graph_whole_pagerank[node]] * 50)
+                    pagerank_fea.append(np.array(feas))
+                np.save(save_dir, pagerank_fea)
+                print('save tensor:', save_dir)
+            else:
+                pagerank_fea = np.load(save_dir)
+                print('load tensor:', save_dir)
+         
+        if self.use_1hot:
+            save_dir = f'DATA/{self.name}_tensor_onehot.npy'
+            if not os.path.exists(save_dir):
+                for gg in graphs:
+                    feas = []
+                    for node in gg.nodes:
+                        arr = self.onehot(torch.LongTensor([node-1]))
+                        feas.extend(list(arr.view(-1).detach().numpy())) 
+                    onehot_fea.append(np.array(feas))
+                np.save(save_dir, onehot_fea)
+                print('save tensor:', save_dir)
+            else:
+                onehot_fea = np.load(save_dir)
+                print('load tensor:', save_dir)
+                
+                
+        if self.use_random_normal:
+            save_dir = f'DATA/{self.name}_tensor_random.npy'
+            if not os.path.exists(save_dir):
+                for gg in graphs:
+                    feas = []
+                    for node in gg.nodes:
+                        arr = self.rn[node-1, :]
+                        feas.extend(list(arr))
+                    random_fea.append(np.array(feas))
+                np.save(save_dir, random_fea)
+                print('save tensor:', save_dir)
+            else:
+                random_fea = np.load(save_dir)
+                print('load tensor:', save_dir)
+                
+                
+        if self.use_eigen:
+            save_dir = f'DATA/{self.name}_tensor_eigen.npy'
+            if not os.path.exists(save_dir):
+                for gg in graphs:
+                    feas = []
+                    for node in gg.nodes:
+                        feas.extend(list(self.Graph_whole_eigen[node-1]))
+                    eigen_fea.append(np.array(feas))
+                np.save(save_dir, eigen_fea)
+                print('save tensor:', save_dir)
+            else:
+                eigen_fea = np.load(save_dir)
+                print('load tensor:', save_dir)
+                
+        if self.use_deepwalk:
+            save_dir = f'DATA/{self.name}_tensor_deepwalk.npy'
+            if not os.path.exists(save_dir):
+                for gg in graphs:
+                    feas = []
+                    for node in gg.nodes:
+                        feas.extend(list(self.deepwalk[node-1]))
+                    deepwalk_fea.append(np.array(feas))
+                np.save(save_dir, deepwalk_fea)
+            else:
+                deepwalk_fea = np.load(save_dir)
+                print('load tensor:', save_dir)
+                
+        return pagerank_fea, onehot_fea, random_fea, eigen_fea, deepwalk_fea
 
     def _to_data(self, G):
         datadict = {}
@@ -514,13 +676,11 @@ class TUDatasetManager(GraphDatasetManager):
         #     embedding = self.Graph_whole_eigen
         # elif self.use_deepwalk:
         #     embedding = self.Graph_whole_deepwalk
-            
+        # TODO: only save attributes
+
         node_features = G.get_x(self.use_node_attrs, self.use_node_degree, self.use_one,
                                 self.use_shared, self.use_1hot, self.use_random_normal, self.use_pagerank,
-                                self.use_eigen, self.use_deepwalk, Graph_whole_embedding=self.Graph_whole_embedding,
-                                Graph_whole_pagerank=self.Graph_whole_pagerank,
-                                Graph_whole_eigen=self.Graph_whole_eigen,
-                                Graph_whole_deepwalk=self.Graph_whole_deepwalk)
+                                self.use_eigen, self.use_deepwalk)
         datadict.update(x=node_features)
 
         if G.laplacians is not None:
@@ -546,7 +706,8 @@ class TUDatasetManager(GraphDatasetManager):
         v_plus_list = []  # reduction matrices
 
         X = G.get_x(self.use_node_attrs, self.use_node_degree, self.use_one)
-        lap = torch.Tensor(normalized_laplacian_matrix(G).todense())  # I - D^{-1/2}AD^{-1/2}
+        lap = torch.Tensor(normalized_laplacian_matrix(
+            G).todense())  # I - D^{-1/2}AD^{-1/2}
         # print(X.shape, lap.shape)
 
         laplacians.append(lap)
@@ -590,7 +751,8 @@ class TUDatasetManager(GraphDatasetManager):
     def _vertex_decimation(self, L):
 
         max_eigenvec = self._power_iteration(L)
-        v_plus, v_minus = (max_eigenvec >= 0).squeeze(), (max_eigenvec < 0).squeeze()
+        v_plus, v_minus = (max_eigenvec >= 0).squeeze(
+        ), (max_eigenvec < 0).squeeze()
 
         # print(v_plus, v_minus)
 
@@ -608,7 +770,9 @@ class TUDatasetManager(GraphDatasetManager):
         L_minus_minus = L[v_minus][:, v_minus]
         L_minus_plus = L[v_minus][:, v_plus]
 
-        L_new = L_plus_plus - torch.mm(torch.mm(L_plus_minus, torch.inverse(L_minus_minus)), L_minus_plus)
+        L_new = L_plus_plus - \
+            torch.mm(torch.mm(L_plus_minus, torch.inverse(
+                L_minus_minus)), L_minus_plus)
 
         return v_plus, L_new
 
@@ -627,20 +791,21 @@ class TUDatasetManager(GraphDatasetManager):
                 else:
                     idx = int(info[0]) - 1
                     feat_data[idx, :] = list(map(float, info[1::]))
-        
+
         print("finished loading deepwalk embeddings")
         return feat_data
 
+
 class SyntheticManager(TUDatasetManager):
-    
+
     def _download(self):
         if self.name == 'CSL':
-            graphs = generate_CSL(each_class_num=150, N=41, S=[2,3,4,7])
+            graphs = generate_CSL(each_class_num=150, N=41, S=[2, 3, 4, 7])
         elif self.name == 'MDG':
             graphs = generate_mix_degree_graphs()
         else:
             raise NotImplementedError
-        
+
         labels = []
         G = []
         for (g, y) in graphs:
@@ -651,24 +816,24 @@ class SyntheticManager(TUDatasetManager):
         pk.dump(G, open(f'{self.raw_dir}/{self.name}_graph.pkl', 'wb'))
         pk.dump(labels, open(f'{self.raw_dir}/{self.name}_label.pkl', 'wb'))
         print('saved pkl data')
-        
+
     def _process(self):
-        
+
         graph_nodes = defaultdict(list)
         graph_edges = defaultdict(list)
         node_labels = defaultdict(list)
         node_attrs = defaultdict(list)
         edge_labels = defaultdict(list)
         edge_attrs = defaultdict(list)
-        
+
         graphs = pk.load(open(f'{self.raw_dir}/{self.name}_graph.pkl', 'rb'))
-        graph_labels = pk.load(open(f'{self.raw_dir}/{self.name}_label.pkl', 'rb'))
-        
+        graph_labels = pk.load(
+            open(f'{self.raw_dir}/{self.name}_label.pkl', 'rb'))
+
         for i, g in enumerate(graphs):
-            graph_nodes[i]=g.nodes
-            graph_edges[i]=g.edges
-            
-        
+            graph_nodes[i] = g.nodes
+            graph_edges[i] = g.edges
+
         graphs_data = {
             "graph_nodes": graph_nodes,
             "graph_edges": graph_edges,
@@ -678,11 +843,11 @@ class SyntheticManager(TUDatasetManager):
             "edge_labels": edge_labels,
             "edge_attrs": edge_attrs
         }
-        
+
         print("in _process")
 
         if self.use_pagerank:
-        # TODO: create whole graphs:
+            # TODO: create whole graphs:
             Graph_whole = nx.disjoint_union_all(graphs)
             self.Graph_whole = Graph_whole
             self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
@@ -690,9 +855,11 @@ class SyntheticManager(TUDatasetManager):
             try:
                 print("{name}".format(name=self.name))
                 if self.use_eigen:
-                    self.Graph_whole_eigen = np.load("DATA/{name}_eigenvector.npy".format(name=self.name))
+                    self.Graph_whole_eigen = np.load(
+                        "DATA/{name}_eigenvector.npy".format(name=self.name))
                 else:
-                    self.Graph_whole_eigen = np.load("DATA/{name}_eigenvector_degree_normalized.npy".format(name=self.name))
+                    self.Graph_whole_eigen = np.load(
+                        "DATA/{name}_eigenvector_degree_normalized.npy".format(name=self.name))
                 print(self.Graph_whole_eigen.shape)
             except:
                 num_node = get_dataset_node_num(self.name)
@@ -704,7 +871,8 @@ class SyntheticManager(TUDatasetManager):
                     # deal with edge case of disconnected node:
                     for i in range(num_node):
                         if sum_of_rows[i] != 0:
-                            normalized_adj_matrix[i, :] = adj_matrix[i, :] / sum_of_rows[i, None]
+                            normalized_adj_matrix[i, :] = adj_matrix[i,
+                                                                     :] / sum_of_rows[i, None]
                     adj_matrix = normalized_adj_matrix
                 print("start computing eigen vectors")
                 w, v = LA.eig(adj_matrix)
@@ -712,13 +880,15 @@ class SyntheticManager(TUDatasetManager):
                 v = v.transpose()[indices]
                 # only save top 200 eigenvectors
                 if self.use_eigen:
-                    np.save("DATA/{name}_eigenvector".format(name=self.name), v[:200])
+                    np.save(
+                        "DATA/{name}_eigenvector".format(name=self.name), v[:200])
                 else:
-                    np.save("DATA/{name}_eigenvector_degree_normalized".format(name=self.name), v[:200])
+                    np.save(
+                        "DATA/{name}_eigenvector_degree_normalized".format(name=self.name), v[:200])
                 self.Graph_whole_eigen = v
-            
+
             print(self.Graph_whole_eigen)
-            print(np.count_nonzero(self.Graph_whole_eigen==0))
+            print(np.count_nonzero(self.Graph_whole_eigen == 0))
             node_num = get_dataset_node_num(self.name)
             embedding = np.zeros((node_num, 50))
             for i in range(node_num):
@@ -730,21 +900,25 @@ class SyntheticManager(TUDatasetManager):
             # TODO: create whole graphs:
             Graph_whole = nx.disjoint_union_all(graphs)
             self.Graph_whole = Graph_whole
-            
-            self.Graph_whole_embedding = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
+
+            self.Graph_whole_embedding = nn.Embedding(
+                self.Graph_whole.number_of_nodes(), 64)
         elif self.use_deepwalk:
-            self.Graph_whole_deepwalk = self.extract_deepwalk_embeddings("DATA/proteins.embeddings")
+            self.Graph_whole_deepwalk = self.extract_deepwalk_embeddings(
+                "DATA/proteins.embeddings")
         elif self.use_random_normal:
             # TODO: create whole graphs:
             Graph_whole = nx.disjoint_union_all(graphs)
             self.Graph_whole = Graph_whole
             num_of_nodes = self.Graph_whole.number_of_nodes()
-            self.Graph_whole_embedding = np.random.normal(0, 1, (num_of_nodes, 50))
+            self.Graph_whole_embedding = np.random.normal(
+                0, 1, (num_of_nodes, 50))
         else:
             print('use other base node features! e.g., degree')
 
         # dynamically set maximum num nodes (useful if using dense batching, e.g. diffpool)
-        max_num_nodes = max([len(v) for (k, v) in graphs_data['graph_nodes'].items()])
+        max_num_nodes = max([len(v)
+                            for (k, v) in graphs_data['graph_nodes'].items()])
         setattr(self, 'max_num_nodes', max_num_nodes)
 
         dataset = []
@@ -830,14 +1004,15 @@ class Mutag(TUDatasetManager):
     _dim_features = 71
     _dim_target = 2
     max_num_nodes = 100
-    
-    
+
+
 class CSL(SyntheticManager):
     name = "CSL"
     _dim_features = 1
     _dim_target = 4
     max_num_nodes = 41
-    
+
+
 class MDG(SyntheticManager):
     name = "MDG"
     _dim_features = 1

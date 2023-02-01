@@ -32,8 +32,10 @@ class Graph(nx.Graph):
 
     def get_x(self, use_node_attrs=False, use_node_degree=False, use_one=False, use_shared=False, 
               use_1hot=False, use_random_normal=False, use_pagerank=False, use_eigen=False, 
-              use_deepwalk=False, Graph_whole_embedding=None ,Graph_whole_pagerank=None,
-              Graph_whole_eigen=None, Graph_whole_deepwalk=None):
+              use_deepwalk=False):
+        """
+        only load node attrs ! 2023.01.30, lzd
+        """
         
         features = []
 
@@ -46,31 +48,31 @@ class Graph(nx.Graph):
             if use_node_attrs and node_attrs["attrs"] is not None:
                 data.extend(node_attrs["attrs"])
 
-            if use_node_degree:
-                data.extend([self.degree(node)])
+            # if use_node_degree:
+            #     data.extend([self.degree(node)])
 
-            if use_one:
-                data.extend([1])
+            # if use_one:
+            #     data.extend([1])
             
-            if use_shared:
-                data.extend([1] * 50)
+            # if use_shared:
+            #     data.extend([1] * 50)
             
-            if use_1hot:
-                arr = Graph_whole_embedding(torch.LongTensor([node-1]))
-                data.extend(list(arr.view(-1).detach().numpy()))
+            # if use_1hot:
+            #     arr = Graph_whole_embedding(torch.LongTensor([node-1]))
+            #     data.extend(list(arr.view(-1).detach().numpy()))
 
-            if use_random_normal:
-                arr = Graph_whole_embedding[node-1, :]
-                data.extend(list(arr))
+            # if use_random_normal:
+            #     arr = Graph_whole_embedding[node-1, :]
+            #     data.extend(list(arr))
 
-            if use_pagerank:
-                data.extend([Graph_whole_pagerank[node]] * 50)
+            # if use_pagerank:
+            #     data.extend([Graph_whole_pagerank[node]] * 50)
 
-            if use_eigen:
-                data.extend(list(Graph_whole_eigen[node-1]))
+            # if use_eigen:
+            #     data.extend(list(Graph_whole_eigen[node-1]))
 
-            if use_deepwalk:
-                data.extend(list(Graph_whole_deepwalk[node-1]))
+            # if use_deepwalk:
+            #     data.extend(list(Graph_whole_deepwalk[node-1]))
 
             features.append(data)
 

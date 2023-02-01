@@ -41,8 +41,8 @@ resume:
   - False
 
 additional_features:
-  - degree
+  - random,eigen,degree
 # print different features.
 
 node_attribute:
-  - False
+  - True
