@@ -473,16 +473,7 @@ class TUDatasetManager(GraphDatasetManager):
         print("in _process")
         # TODO, NOTE: whole graph level !!!
         if self.use_pagerank:
-            page_dir = f'DATA/{self.name}_pagerank.npy'
-            if not os.path.exists(page_dir):
                 self.Graph_whole_pagerank = nx.pagerank(self.Graph_whole)
-                np.save(page_dir, self.Graph_whole_pagerank)
-                print('save ', page_dir)
-            else:
-                self.Graph_whole_pagerank = np.load(page_dir, allow_pickle=True)
-                
-                print('loaded ', page_dir, ' shape:', self.Graph_whole_pagerank.shape)
-                
         if self.use_eigen or self.use_eigen_norm:
             try:
                 print("{name}".format(name=self.name))
@@ -520,8 +511,9 @@ class TUDatasetManager(GraphDatasetManager):
                 self.Graph_whole_eigen = v
                 print('eigen shape:', self.Graph_whole_eigen.shape)
 
-            print(self.Graph_whole_eigen)
-            print(np.count_nonzero(self.Graph_whole_eigen == 0))
+            print('Graph_whole_eigen: ', self.Graph_whole_eigen)
+            print('nonzero: ', np.count_nonzero(self.Graph_whole_eigen == 0))
+            
             node_num = get_dataset_node_num(self.name)
             # why top 50???? lzd.
             embedding = np.zeros((node_num, 50))
@@ -531,36 +523,15 @@ class TUDatasetManager(GraphDatasetManager):
             self.Graph_whole_eigen = embedding
             print(self.Graph_whole_eigen)
         if self.use_1hot:
-            onehot_dir = f'DATA/{self.name}_onehot.npy'
-            if not os.path.exists(onehot_dir):
-                self.onehot = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
-                np.save(onehot_dir, self.onehot)
-                print('save ', onehot_dir)
-            else:
-                self.onehot = np.load(onehot_dir)
-                print('loaded ', onehot_dir)
+            self.onehot = nn.Embedding(self.Graph_whole.number_of_nodes(), 64)
 
         if self.use_deepwalk:
-            dw_dir = f'DATA/{self.name}_deepwalk.npy'
-            if not os.path.exists(dw_dir):
-                self.deepwalk = self.extract_deepwalk_embeddings(
+            self.deepwalk = self.extract_deepwalk_embeddings(
                     "DATA/proteins.embeddings")
-                np.save(dw_dir, self.deepwalk)
-                print('save ', dw_dir)
-            else:
-                self.deepwalk = np.load(dw_dir)
-                print('loaded ', dw_dir)
 
         if self.use_random_normal:
-            rn_dir = f'DATA/{self.name}_random.npy'
-            if not os.path.exists(rn_dir):
-                num_of_nodes = self.Graph_whole.number_of_nodes()
-                self.rn = np.random.normal(0, 1, (num_of_nodes, 50))
-                np.save(rn_dir, self.rn)
-                print('save ', rn_dir)
-            else:
-                self.rn = np.load(rn_dir)
-                print('loaded ', rn_dir)
+            num_of_nodes = self.Graph_whole.number_of_nodes()
+            self.rn = np.random.normal(0, 1, (num_of_nodes, 50))
 
         # dynamically set maximum num nodes (useful if using dense batching, e.g. diffpool)
         max_num_nodes = max([len(v)
@@ -595,11 +566,15 @@ class TUDatasetManager(GraphDatasetManager):
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
         print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
         
-    def _save_load_use_features(self, graphs=None) -> np.array:
+    def _save_load_use_features(self, graphs=None) -> np.ndarray:
 
         res = []
         pagerank_fea, onehot_fea, random_fea, eigen_fea, deepwalk_fea = [], [], [], [], []
 
+        def print_fea_info(str1, fea_path, fea:np.ndarray):
+            print(f'{str1}: {fea_path}, shape: {fea.shape}')
+            
+            
         if self.use_pagerank:
             save_dir = f'DATA/{self.name}_tensor_pagerank.npy'
             if not os.path.exists(save_dir):
@@ -608,11 +583,13 @@ class TUDatasetManager(GraphDatasetManager):
                     for node in gg.nodes:
                         feas.append([self.Graph_whole_pagerank[node]] * 50)
                     pagerank_fea.append(np.array(feas))
+                    
+                pagerank_fea = np.array(pagerank_fea)
                 np.save(save_dir, pagerank_fea)
-                print('save tensor:', save_dir, 'shape:', pagerank_fea.shape)
+                print_fea_info('save tensor:', save_dir, pagerank_fea)
             else:
                 pagerank_fea = np.load(save_dir)
-                print('load tensor:', save_dir, 'shape:', pagerank_fea.shape)
+                print_fea_info('load tensor:', save_dir, pagerank_fea)
             res.append(pagerank_fea)
          
         if self.use_1hot:
@@ -624,11 +601,13 @@ class TUDatasetManager(GraphDatasetManager):
                         arr = self.onehot(torch.LongTensor([node-1]))
                         feas.append(list(arr.view(-1).detach().numpy())) 
                     onehot_fea.append(np.array(feas))
+                onehot_fea = np.array(onehot_fea)
                 np.save(save_dir, onehot_fea)
-                print('save tensor:', save_dir, 'shape:', onehot_fea.shape)
+                print_fea_info('save tensor:', save_dir, onehot_fea)
+                
             else:
                 onehot_fea = np.load(save_dir)
-                print('load tensor:', save_dir, 'shape:', onehot_fea.shape)
+                print_fea_info('load tensor:', save_dir, onehot_fea)
                 
             res.append(onehot_fea)
             
@@ -641,11 +620,13 @@ class TUDatasetManager(GraphDatasetManager):
                         arr = self.rn[node-1, :]
                         feas.append(list(arr))
                     random_fea.append(np.array(feas))
+                random_fea = np.array(random_fea)
                 np.save(save_dir, random_fea)
-                print('save tensor:', save_dir, 'shape:', random_fea.shape)
+                print_fea_info('save tensor:', save_dir, random_fea)
             else:
                 random_fea = np.load(save_dir)
-                print('load tensor:', save_dir, 'shape:', random_fea.shape)
+                print_fea_info('load tensor:', save_dir, random_fea)
+                
                 
             res.append(random_fea)
             
@@ -657,11 +638,13 @@ class TUDatasetManager(GraphDatasetManager):
                     for node in gg.nodes:
                         feas.append(list(self.Graph_whole_eigen[node-1]))
                     eigen_fea.append(np.array(feas))
+                    
+                eigen_fea = np.array(eigen_fea)
                 np.save(save_dir, eigen_fea)
-                print('save tensor:', save_dir, 'shape:', eigen_fea.shape)
+                print_fea_info('save tensor:', save_dir, eigen_fea)
             else:
                 eigen_fea = np.load(save_dir)
-                print('load tensor:', save_dir, 'shape:', eigen_fea.shape)
+                print_fea_info('load tensor:', save_dir, eigen_fea)
                 
             res.append(eigen_fea)
             
@@ -673,11 +656,13 @@ class TUDatasetManager(GraphDatasetManager):
                     for node in gg.nodes:
                         feas.append(list(self.deepwalk[node-1]))
                     deepwalk_fea.append(np.array(feas))
+                    
+                deepwalk_fea = np.array(deepwalk_fea)
                 np.save(save_dir, deepwalk_fea)
-                print('load tensor:', save_dir, 'shape:', deepwalk_fea.shape)
+                print_fea_info('save tensor:', save_dir, deepwalk_fea)
             else:
                 deepwalk_fea = np.load(save_dir)
-                print('load tensor:', save_dir, 'shape:', deepwalk_fea.shape)
+                print_fea_info('load tensor:', save_dir, deepwalk_fea)
         
             res.append(deepwalk_fea)
         
