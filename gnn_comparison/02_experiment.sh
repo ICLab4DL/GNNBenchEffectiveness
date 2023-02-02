@@ -11,7 +11,8 @@
 #         COLLAB
 
 gpu=02
-dt=0201
+dt=0202
+tag=attr
 
 dat='all'
 dat='NCI1'
@@ -26,6 +27,6 @@ dat='MUTAG'
 
 # 2023.01.28
 
-# TODO: Random. 2023.02.01
+# TODO: Random. 2023.02.02
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_GIN_lzd.yml \
---dataset-name ${dat} --result-folder result_GIN_${dt} --debug > ${gpu}_${dt}_nohup.log 2>&1 &
+--dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > ${gpu}_${dt}_${tag}_nohup.log 2>&1 &

@@ -51,7 +51,7 @@ class NetWrapper:
                 loss = self.loss_fun(data.y, *output)
                 loss.backward()
                 loss_all += loss.item()
-
+            
             if clipping is not None:  # Clip gradient before updating weights
                 torch.nn.utils.clip_grad_norm_(model.parameters(), clipping)
             optimizer.step()
@@ -107,6 +107,14 @@ class NetWrapper:
 
             start = time.time()
             train_acc, train_loss = self._train(train_loader, optimizer, clipping)
+            
+            # TODO: calculate norm before clipping 
+            total_norm = 0.0
+            for p in self.model.parameters():
+                param_norm = p.grad.data.norm(2)
+                total_norm += param_norm.item() ** 2
+            total_norm = total_norm ** (1. / 2)
+            
             end = time.time() - start
             time_per_epoch.append(end)
 
@@ -133,7 +141,10 @@ class NetWrapper:
 
             if epoch % log_every == 0 or epoch == 1:
                 msg = f'Epoch: {epoch}, TR loss: {train_loss} TR acc: {train_acc}, VL loss: {val_loss} VL acc: {val_acc} ' \
-                    f'TE loss: {test_loss} TE acc: {test_acc}'
+                    f'TE loss: {test_loss} TE acc: {test_acc}, GradNorm: {total_norm}' 
+                    # TODO: add grad norm
+                    
+                
                 if logger is not None:
                     logger.log(msg)
                     print(msg)

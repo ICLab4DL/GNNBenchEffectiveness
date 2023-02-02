@@ -10,9 +10,9 @@
 #         REDDIT-MULTI-5K
 #         COLLAB
 
-gpu=03
+gpu=04
 dt=0202
-tag=eigen
+tag=pagerank
 
 dat='all'
 dat='NCI1'

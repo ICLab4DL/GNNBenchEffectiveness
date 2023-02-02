@@ -30,12 +30,16 @@ sys.path.append(os.getcwd())
 
 # import k_gnn
 
+class EmptyNodeFeatureException(Exception):
+    def __init__(self) -> None:
+        super().__init__("There is no node feature as input!!!")
+
 class GraphDatasetManager:
     def __init__(self, kfold_class=StratifiedKFold, outer_k=10, inner_k=None, seed=42, holdout_test_size=0.1,
                  use_node_degree=False, use_node_attrs=False, use_one=False, use_shared=False, use_1hot=False,
                  use_random_normal=False, use_pagerank=False, use_eigen=False, use_eigen_norm=False,
                  use_deepwalk=False, precompute_kron_indices=False, additional_features: str = None, additional_graph_features: str = None,
-                 max_reductions=10, DATA_DIR='gnn_comparison/DATA', config={}):
+                 max_reductions=10, DATA_DIR='./DATA', config={}):
 
         self.root_dir = Path(DATA_DIR) / self.name
         self.kfold_class = kfold_class
@@ -211,18 +215,11 @@ class GraphDatasetManager:
 
         print('add graph feature done!')
 
-    def _add_features(self):
-        # TODO: load from files, if no files, create ???
 
-        print('adding additional features --')
-        all_features = self.additional_features.strip().split(',')
-        additional_features_list ,use_features_list = [], []
-        for s in all_features:
-            if s.startswith('use_'): 
-                use_features_list.append(s)
-            else: 
-                additional_features_list.append(s)
-            
+    def _add_additional_features(self, additional_features_list:list):
+        if len(additional_features_list) < 1:
+            return None
+        
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in additional_features_list:
             node_fea_reg.register_by_str(feature_arg)
@@ -273,7 +270,7 @@ class GraphDatasetManager:
                     print('dump node_feature: ', ts[0])
 
         print('aft:', len(node_features),
-              ' shape: ', node_features[0][0].shape)
+            ' shape: ', node_features[0][0].shape)
 
 
         # NOTE: padding
@@ -284,12 +281,26 @@ class GraphDatasetManager:
             node_features = node_feature_utils.composite_node_feature_list(
                 node_features, padding=False)
 
-
-            
         # 2022.10.20, NOTE: normalize:
         # TODO: normalize through each graph ????
         node_features = my_utils.normalize(
             node_features, along_axis=-1, same_data_shape=False)
+        
+        return node_features
+    
+    def _add_features(self):
+        # TODO: load from files, if no files, create ???
+
+        print('adding additional features --')
+        all_features = self.additional_features.strip().split(',')
+        additional_features_list ,use_features_list = [], []
+        for s in all_features:
+            if s.startswith('use_'): 
+                use_features_list.append(s)
+            else: 
+                additional_features_list.append(s)
+        
+        addi_node_features = self._add_additional_features(additional_features_list)
 
         node_attribute = False
         if 'node_attribute' in self.config:
@@ -301,23 +312,29 @@ class GraphDatasetManager:
             used_features = self._save_load_use_features()
             print('used_features len:', len(used_features))
             
+        # NOTE: composite [attr, additional, used] those 3 features:
+        
         for i, d in enumerate(self.dataset.data):
             # concatenate with pre features.
+            new_x = []
             if node_attribute:
-                pre_x = d.x
-                # TODO: composite features
-                new_x = torch.cat(
-                    [pre_x, torch.FloatTensor(node_features[i])], axis=-1)
-                d.x = new_x
-            else:
-                d.x = torch.FloatTensor(node_features[i])
-            
+                new_x.append(d.x)
+                
+            if addi_node_features is not None:
+                new_x.append(torch.FloatTensor(addi_node_features[i]))
+                
             if used_features is not None:
+                all_feas = []
                 for each_fea in used_features:
                     if len(each_fea) > 0:
-                        d.x = torch.cat(
-                            [d.x, torch.FloatTensor(each_fea[i])], axis=-1)
+                        all_feas.append(torch.FloatTensor(each_fea[i]))
+                all_feas = torch.cat(all_feas, dim=-1)
+                new_x.append(all_feas)
                 
+            if len(new_x) == 0:
+                raise EmptyNodeFeatureException
+                
+            d.x = torch.cat(new_x, axis=-1)
                 
         print('added feature done!')
 
@@ -516,7 +533,9 @@ class TUDatasetManager(GraphDatasetManager):
             print('nonzero: ', np.count_nonzero(self.Graph_whole_eigen == 0))
             
             node_num = get_dataset_node_num(self.name)
-            # why top 50???? lzd.
+            # why top 50????
+            
+            
             embedding = np.zeros((node_num, 50))
             for i in range(node_num):
                 for j in range(50):
@@ -580,7 +599,7 @@ class TUDatasetManager(GraphDatasetManager):
             
             
         if self.use_pagerank:
-            save_dir = f'DATA/{self.name}_tensor_pagerank.npy'
+            save_dir = f'DATA/{self.name}_tensor_pagerank.pkl'
             if not os.path.exists(save_dir):
                 for gg in graphs:
                     feas = []
@@ -597,7 +616,7 @@ class TUDatasetManager(GraphDatasetManager):
             res.append(pagerank_fea)
          
         if self.use_1hot:
-            save_dir = f'DATA/{self.name}_tensor_onehot.npy'
+            save_dir = f'DATA/{self.name}_tensor_onehot.pkl'
             if not os.path.exists(save_dir):
                 for gg in graphs:
                     feas = []
@@ -615,7 +634,7 @@ class TUDatasetManager(GraphDatasetManager):
             res.append(onehot_fea)
             
         if self.use_random_normal:
-            save_dir = f'DATA/{self.name}_tensor_random.npy'
+            save_dir = f'DATA/{self.name}_tensor_random.pkl'
             if not os.path.exists(save_dir):
                 for gg in graphs:
                     feas = []
@@ -623,7 +642,6 @@ class TUDatasetManager(GraphDatasetManager):
                         arr = self.rn[node-1, :]
                         feas.append(list(arr)) # [1,...,50]
                     feas = np.array(feas)
-                    print('feas shape:', feas.shape) # 
                     random_fea.append(feas) # (N, 50)
                     
                 pk.dump(random_fea, open(save_dir, 'wb'))
