@@ -12,7 +12,7 @@
 
 gpu=02
 dt=0202
-tag=attr
+tag=degree
 
 dat='all'
 dat='NCI1'

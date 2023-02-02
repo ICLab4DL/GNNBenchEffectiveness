@@ -12,7 +12,7 @@
 
 gpu=03
 dt=0202
-tag=eigen
+tag=degree_large_batchsize
 
 dat='all'
 dat='NCI1'
