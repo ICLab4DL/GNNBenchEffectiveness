@@ -12,14 +12,14 @@
 #         COLLAB
 dat='all'
 dat='NCI1'
-dat='ENZYMES'
-dat='DD'
 dat="CSL"
-dat='COLLAB'
 dat='REDDIT-BINARY'
 dat="PROTEINS"
-dat='IMDB-BINARY'
 dat='MUTAG'
+dat='COLLAB'
+dat='DD'
+dat='ENZYMES'
+dat='IMDB-BINARY'
 
 python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-degree --use-random-normal --use-pagerank --use-eigen
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal

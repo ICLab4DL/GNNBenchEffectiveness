@@ -197,7 +197,8 @@ def get_dataset_node_num(dataset_name):
         "IMDB-BINARY": 19773, 
         "IMDB-MULTI": 19502, 
         "DD": 334925,
-        "PROTEINS_full": 43471
+        "PROTEINS_full": 43471,
+        "COLLAB": 372474,
     }
 
     return num_nodes_map[dataset_name]
