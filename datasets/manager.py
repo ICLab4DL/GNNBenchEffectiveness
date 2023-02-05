@@ -335,7 +335,7 @@ class GraphDatasetManager:
                 raise EmptyNodeFeatureException
                 
             d.x = torch.cat(new_x, axis=-1)
-                
+        # TODO: add batch norm ????
         print('added feature done!')
 
     def _save_load_use_features(self, graphs=None):

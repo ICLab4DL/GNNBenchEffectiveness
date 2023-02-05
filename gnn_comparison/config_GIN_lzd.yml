@@ -41,8 +41,8 @@ resume:
   - False
 
 additional_features:
-  # - use_pagerank
-  - degree
+  - use_random
+  # - degree
   # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
   #        xxx without use_ is created by node_feature_register, e.g., degree
 # print different features.

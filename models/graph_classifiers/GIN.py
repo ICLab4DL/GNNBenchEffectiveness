@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn import BatchNorm1d
 from torch.nn import Sequential, Linear, ReLU
-from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool
+from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool, BatchNorm
 
 
 class GIN(torch.nn.Module):
@@ -25,6 +25,8 @@ class GIN(torch.nn.Module):
         elif config['aggregation'] == 'mean':
             self.pooling = global_mean_pool
 
+        self.batch0 = BatchNorm1d(dim_features)
+        
         for layer, out_emb_dim in enumerate(self.embeddings_dim):
 
             if layer == 0:
@@ -47,7 +49,9 @@ class GIN(torch.nn.Module):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         out = 0
-
+        # TODO: batch normalization:
+        x = self.batch0(x)
+        
         for layer in range(self.no_layers):
             if layer == 0:
                 x = self.first_h(x)

@@ -20,6 +20,7 @@ dat='COLLAB'
 dat='DD'
 dat='ENZYMES'
 dat='IMDB-BINARY'
+dat='IMDB-MULTI'
 
 python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-degree --use-random-normal --use-pagerank --use-eigen
 # python3 PrepareDatasets.py DATA/ --dataset-name ${dat} --outer-k 10 --use-random-normal

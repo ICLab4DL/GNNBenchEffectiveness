@@ -1,4 +1,3 @@
-
 #    CHEMICAL:
 #         NCI1
 #         DD
@@ -10,18 +9,23 @@
 #         REDDIT-BINARY
 #         REDDIT-MULTI-5K
 #         COLLAB
+
+gpu=01
+dt=0205
+tag=degree_norm
+
 dat='all'
 dat='NCI1'
-dat="CSL"
-dat="PROTEINS"
-dat='IMDB-BINARY'
-dat='MUTAG'
-dat='DD'
-dat='IMDB-MULTI'
 dat='ENZYMES'
+dat='DD'
+dat="CSL"
 dat='COLLAB'
+dat='REDDIT-BINARY'
+dat="PROTEINS"
+dat='MUTAG'
+dat='IMDB-BINARY'
 
 
-# EEG01, 2023.01.03,
-nohup python3 -u gnn_comparison/Launch_Experiments.py --config-file gnn_comparison/config_Baseline_lzd_mlp.yml \
---dataset-name ${dat} --result-folder result_eeg01_MLP_0103 --debug > eeg01_nohup_ppi.log 2>&1 &
+# TODO: Random. 2023.02.05
+nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_GIN_lzd.yml \
+--dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > ${gpu}_${dt}_${tag}_nohup.log 2>&1 &
