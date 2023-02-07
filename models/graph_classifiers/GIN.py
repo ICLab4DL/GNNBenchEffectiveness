@@ -25,7 +25,7 @@ class GIN(torch.nn.Module):
         elif config['aggregation'] == 'mean':
             self.pooling = global_mean_pool
 
-        self.batch0 = BatchNorm1d(dim_features)
+        # self.batch0 = BatchNorm1d(dim_features)
         
         for layer, out_emb_dim in enumerate(self.embeddings_dim):
 
@@ -50,7 +50,7 @@ class GIN(torch.nn.Module):
 
         out = 0
         # TODO: batch normalization:
-        x = self.batch0(x)
+        # x = self.batch0(x)
         
         for layer in range(self.no_layers):
             if layer == 0:
