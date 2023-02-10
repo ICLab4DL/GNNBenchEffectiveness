@@ -11,8 +11,8 @@
 #         COLLAB
 
 gpu=03
-dt=0202
-tag=degree_large_batchsize
+dt=0210
+tag=all_one
 
 dat='all'
 dat='NCI1'
@@ -22,11 +22,8 @@ dat="CSL"
 dat='COLLAB'
 dat='REDDIT-BINARY'
 dat="PROTEINS"
-dat='IMDB-BINARY'
 dat='MUTAG'
+dat='IMDB-BINARY'
 
-# 2023.01.28
-
-# TODO: Random. 2023.02.02
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_GIN_lzd.yml \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > ${gpu}_${dt}_${tag}_nohup.log 2>&1 &

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from utils import utils
 
-
+    
 def xargs(f):
     def wrap(**xargs):
         return f(**xargs)
@@ -89,13 +89,16 @@ def node_degree_feature(adj):
 
 
 @xargs
-def node_random_id_feature(adj, ratio=1.0):
+def node_random_id_feature(adj, total=None, ratio=1.0):
         
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
 
     N = adj.shape[0]
-    id_features = np.random.randint(1, int(N*ratio), size=N).reshape(N, 1).astype(np.float32)
+    total = N if total is None else total
+    total = int(total)
+    
+    id_features = np.random.randint(1, int(total*ratio), size=N).reshape(N, 1).astype(np.float32)
     return id_features
 
 @xargs
@@ -327,14 +330,13 @@ def get_features_by_ids(*indices, cur_features, pad=None):
 def gen_features(adjs, sparse, cons_func, **xargs):
     if sparse:
         # NOTE: the numbers of Node are different, so need sparse.
-        print('cons_func2:', graph_degree_dist)
+        # print('cons_func2:', graph_degree_dist.__name__)
         features = [cons_func(adj=adj, **xargs) for adj in adjs]
-        print('adjs:', adjs[0].shape)
-        a = cons_func(adj=adjs[0], **xargs)
-        b = graph_degree_dist(adj=adjs[0], **xargs)
-        print('a: :', a.shape)
-        print('b: :', b.shape)
-        
+        # print('adjs:', adjs[0].shape)
+        # a = cons_func(adj=adjs[0], **xargs)
+        # b = graph_degree_dist(adj=adjs[0], **xargs)
+        # print('a: :', a.shape)
+        # print('b: :', b.shape)
         for i in range(len(features)):
             features[i] = utils.fill_nan_inf(features[i])
     else:

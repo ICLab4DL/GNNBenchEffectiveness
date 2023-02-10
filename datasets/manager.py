@@ -335,7 +335,39 @@ class GraphDatasetManager:
                 raise EmptyNodeFeatureException
                 
             d.x = torch.cat(new_x, axis=-1)
-        # TODO: add batch norm ????
+        # TODO: shuffle x among all node samples.
+        if 'shuffle_feature' in self.config:
+            if self.config['shuffle_feature']:
+                node_num_total = 0
+                node_index = {}
+                start_id = 0
+                for i, d in enumerate(self.dataset.data):
+                    node_num = d.x.shape[0]
+                    node_num_total += node_num
+                    for j in range(node_num):
+                        node_index[start_id] = (i, j)
+                        start_id += 1
+                        
+                shuf_idx = list(np.arange(node_num_total))
+                np.random.shuffle(shuf_idx)
+                # construct pairs
+                pairs = []
+                for i in range(0, len(shuf_idx), 2):
+                    if i + 1 < len(shuf_idx):
+                        pairs.append((shuf_idx[i], shuf_idx[i+1]))
+                
+                print(f'shuffle feature!, total len: {node_num_total}, pair len: {len(pairs)}')
+                # reconstruct:
+                for (p1, p2) in pairs:
+                    # swich p1 p2 in place
+                    p1_node, p1_x_id = node_index[p1]
+                    p2_node, p2_x_id = node_index[p2]
+                    tmp = self.dataset.data[p1_node].x[p1_x_id]
+                    self.dataset.data[p1_node].x[p1_x_id] = self.dataset.data[p2_node].x[p2_x_id]
+                    self.dataset.data[p2_node].x[p2_x_id] = tmp
+                # TODO: how to check correctness???????
+                    
+                
         print('added feature done!')
 
     def _save_load_use_features(self, graphs=None):
