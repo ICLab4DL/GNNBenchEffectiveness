@@ -335,38 +335,56 @@ class GraphDatasetManager:
                 raise EmptyNodeFeatureException
                 
             d.x = torch.cat(new_x, axis=-1)
+            
         # TODO: shuffle x among all node samples.
         if 'shuffle_feature' in self.config:
             if self.config['shuffle_feature']:
                 node_num_total = 0
                 node_index = {}
                 start_id = 0
+                copy_degree_sequence = []
                 for i, d in enumerate(self.dataset.data):
                     node_num = d.x.shape[0]
                     node_num_total += node_num
                     for j in range(node_num):
                         node_index[start_id] = (i, j)
                         start_id += 1
+                        copy_degree_sequence.append(d.x[j].item())
+                        
                         
                 shuf_idx = list(np.arange(node_num_total))
                 np.random.shuffle(shuf_idx)
-                # construct pairs
-                pairs = []
-                for i in range(0, len(shuf_idx), 2):
-                    if i + 1 < len(shuf_idx):
-                        pairs.append((shuf_idx[i], shuf_idx[i+1]))
-                
-                print(f'shuffle feature!, total len: {node_num_total}, pair len: {len(pairs)}')
-                # reconstruct:
-                for (p1, p2) in pairs:
-                    # swich p1 p2 in place
-                    p1_node, p1_x_id = node_index[p1]
-                    p2_node, p2_x_id = node_index[p2]
-                    tmp = self.dataset.data[p1_node].x[p1_x_id]
-                    self.dataset.data[p1_node].x[p1_x_id] = self.dataset.data[p2_node].x[p2_x_id]
-                    self.dataset.data[p2_node].x[p2_x_id] = tmp
-                # TODO: how to check correctness???????
+                pre_value = torch.FloatTensor(self.dataset.data[0].x)
+                sample_ids = [s.item() for s in np.random.choice(shuf_idx, size=len(shuf_idx), replace=True)].__iter__()
+                for d in self.dataset.data:
+                    new_x = []
+                    N = d.x.shape[0]
+                    for i in range(N):
+                        new_x.append(copy_degree_sequence[sample_ids.__next__()])
+                        
+                    d.x = torch.FloatTensor(new_x).reshape(N, 1)
                     
+                
+                print(self.dataset.data[0].x - pre_value)
+                
+                # # construct pairs
+                # pairs = []
+                # for i in range(0, len(shuf_idx), 2):
+                #     if i + 1 < len(shuf_idx):
+                #         pairs.append((shuf_idx[i], shuf_idx[i+1]))
+                
+                # print(f'shuffle feature!, total len: {node_num_total}, pair len: {len(pairs)}')
+                # # reconstruct:
+                # for (p1, p2) in pairs:
+                #     # swich p1 p2 in place
+                #     p1_node, p1_x_id = node_index[p1]
+                #     p2_node, p2_x_id = node_index[p2]
+                #     tmp = self.dataset.data[p1_node].x[p1_x_id]
+                #     self.dataset.data[p1_node].x[p1_x_id] = self.dataset.data[p2_node].x[p2_x_id]
+                #     self.dataset.data[p2_node].x[p2_x_id] = tmp
+                # TODO: how to check correctness???????
+                # TODO: dump to file:
+                
                 
         print('added feature done!')
 

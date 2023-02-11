@@ -42,8 +42,8 @@ resume:
 
 additional_features:
   # - use_random
-  - rand_id@total:4
-  # - degree
+  # - rand_id@total:4
+  - degree
   # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
   #        xxx without use_ is created by node_feature_register, e.g., degree;rand_id@total:3
 # print different features.
@@ -52,4 +52,4 @@ node_attribute:
   - False
 
 shuffle_feature:
-  - False
+  - True
