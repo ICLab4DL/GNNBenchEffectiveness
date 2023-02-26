@@ -11,8 +11,8 @@
 #         COLLAB
 
 gpu=04
-dt=0210
-tag=rand_id_4
+dt=0212
+tag=allone
 
 dat='all'
 dat='NCI1'

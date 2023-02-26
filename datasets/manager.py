@@ -240,19 +240,21 @@ class GraphDatasetManager:
 
         feature_names = self.node_fea_reg.get_registered()
         node_features = []
-        for ts in feature_names:
-            name = ts[0]
-            add_features_path = os.path.join(
-                self.processed_dir, f'{self.name}_add_{name}.pkl')
-            print('add_features_path: ', add_features_path)
-            if os.path.exists(add_features_path):
-                with open(add_features_path, 'rb') as f:
-                    node_feature = pk.load(f)
-                    print('laod node_features len: ', len(node_feature))
-                    print('load node_feature: ', name)
-                    node_features.append(node_feature)
-                # remove from register_node_features.
-                self.node_fea_reg.remove(name)
+        additional_feature_path = lambda fea_name,fea_args: \
+            os.path.join(self.processed_dir, f'{self.name}_add_{fea_name}_{fea_args}.pkl')
+            
+        # for ts in feature_names:
+        #     name = ts[0]
+        #     add_features_path = additional_feature_path(name, ts[-1])
+        #     print('additional_features_path: ', add_features_path)
+        #     if os.path.exists(add_features_path):
+        #         with open(add_features_path, 'rb') as f:
+        #             node_feature = pk.load(f)
+        #             print('laod node_features len: ', len(node_feature))
+        #             print('load node_feature: ', name)
+        #             node_features.append(node_feature)
+        #         # remove from register_node_features.
+        #         self.node_fea_reg.remove(name)
 
         # NOTE: generate rest node features:
         if len(self.node_fea_reg.get_registered()) > 0:
@@ -261,13 +263,11 @@ class GraphDatasetManager:
                 adjs, self.node_fea_reg)
             # TODO: save each
             for i, ts in enumerate(self.node_fea_reg.get_registered()):
-                add_features_path = os.path.join(
-                    self.processed_dir, f'{self.name}_add_{ts[0]}.pkl')
+                add_features_path = additional_feature_path(ts[0], ts[-1])
                 node_features.append(rest_node_features[i])
-
                 with open(add_features_path, 'wb') as f:
                     pk.dump(rest_node_features[i], f)
-                    print('dump node_feature: ', ts[0])
+                    print('dump node_feature: ', add_features_path)
 
         print('aft:', len(node_features),
             ' shape: ', node_features[0][0].shape)
@@ -283,8 +283,9 @@ class GraphDatasetManager:
 
         # 2022.10.20, NOTE: normalize:
         # TODO: normalize through each graph ????
-        node_features = my_utils.normalize(
-            node_features, along_axis=-1, same_data_shape=False)
+        
+        # node_features = my_utils.normalize(
+        #     node_features, along_axis=-1, same_data_shape=False)
         
         return node_features
     
@@ -350,21 +351,25 @@ class GraphDatasetManager:
                         node_index[start_id] = (i, j)
                         start_id += 1
                         copy_degree_sequence.append(d.x[j].item())
-                        
-                        
+                
                 shuf_idx = list(np.arange(node_num_total))
-                np.random.shuffle(shuf_idx)
+                # np.random.shuffle(shuf_idx)
                 pre_value = torch.FloatTensor(self.dataset.data[0].x)
-                sample_ids = [s.item() for s in np.random.choice(shuf_idx, size=len(shuf_idx), replace=True)].__iter__()
+                print('pre_value: ', pre_value)
+                
+                sample_ids = [s for s in np.random.choice(shuf_idx, size=len(shuf_idx), replace=True)].__iter__()
+                # sample_ids = np.random.randint(1, int(4), size=len(shuf_idx)).__iter__()
+                
                 for d in self.dataset.data:
                     new_x = []
                     N = d.x.shape[0]
                     for i in range(N):
-                        new_x.append(copy_degree_sequence[sample_ids.__next__()])
+                        new_x.append(copy_degree_sequence[sample_ids.__next__().item()])
                         
                     d.x = torch.FloatTensor(new_x).reshape(N, 1)
+                    d.x = torch.FloatTensor(new_x).reshape(N, 1)
                     
-                
+                print('replaced value:', self.dataset.data[0].x)
                 print(self.dataset.data[0].x - pre_value)
                 
                 # # construct pairs

@@ -77,29 +77,80 @@ def node_k_adj_feature(adj, k=2):
         adj = np.matmul(adj, ori_adj)
     return adj.astype(np.float32)
 
+cds_mutag = np.load('imdb_degree_dist_shuffled.npy')
+
+class MyIter(object):
+    def __init__(self, ite_obj) -> None:
+        self.ite_obj = ite_obj
+        self.ite = None
+        
+    def __iter__(self):
+        self.ite = iter(self.ite_obj)
+        return self.ite
+    
+    def __next__(self):
+        if self.ite is None:
+            self.__reset__()
+        try:
+            res = next(self.ite)
+            return res
+        except StopIteration as e:
+            self.__reset__()
+            
+        return next(self.ite)
+    
+    def __reset__(self):
+        self.ite = iter(self.ite_obj)
+    
+
+cds_mutag_iter = MyIter(cds_mutag)
+shuf_idx = list(np.arange(len(cds_mutag)))
+copy_degree_sequence = [i.item() for i in cds_mutag]
+
 @xargs
 def node_degree_feature(adj):
     """ node (weighted, if its weighted adjacency matrix) degree as the node feature.
     """
-    
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
-    degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    N = adj.shape[0]
+    degrees = np.array([cds_mutag_iter.__next__().item() for _ in range(N)]).reshape(adj.shape[0], 1)
+    # degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    
     return degrees.astype(np.float32)
 
-
 @xargs
-def node_random_id_feature(adj, total=None, ratio=1.0):
+def node_random_id_feature(adj, total=None, ratio=1.0, dist=None):
         
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
 
     N = adj.shape[0]
-    total = N if total is None else total
-    total = int(total)
-    
-    id_features = np.random.randint(1, int(total*ratio), size=N).reshape(N, 1).astype(np.float32)
-    return id_features
+    if dist is not None:
+        if int(dist) == 2:
+            id_features = np.random.choice(cds_mutag, size=N).reshape(N, 1).astype(np.float32)
+            print('dist 2')
+        elif int(dist) == 3:
+            id_features = np.array([cds_mutag_iter.__next__() for _ in range(N)]).reshape(N, 1).astype(np.float32)
+            print('dist 3')
+        elif int(dist) == 4:
+            print('dist 4')
+            # np.random.shuffle(shuf_idx)
+            sample_ids = [s for s in np.random.choice(shuf_idx, size=len(shuf_idx), replace=True)].__iter__()
+            new_x = []
+            for _ in range(N):
+                new_x.append(copy_degree_sequence[sample_ids.__next__().item()])                
+            id_features = np.array(new_x).reshape(N, 1).astype(np.float32)
+        else:
+            dist = [3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,1,1,1,1]
+            id_features = np.random.choice(dist, size=N).reshape(N, 1).astype(np.float32)
+        
+        return id_features
+    else:
+        total = N if total is None else total
+        total = int(total)
+        id_features = np.random.randint(1, int(total*ratio), size=N).reshape(N, 1).astype(np.float32)
+        return id_features
 
 @xargs
 def node_allone_feature(adj):
@@ -109,7 +160,7 @@ def node_allone_feature(adj):
         adj = adj.todense()
         
     N = adj.shape[0]
-    return np.ones(N).reshape(N, 1).astype(np.float32)
+    return 0.1 * np.ones(N).reshape(N, 1).astype(np.float32)
 
 
 @xargs

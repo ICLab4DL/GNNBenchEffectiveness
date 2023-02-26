@@ -14,6 +14,7 @@ graphsage-simple/*
 result*/
 nohup*
 *.out
+*.npy
 
 *gnn_lsp*
 

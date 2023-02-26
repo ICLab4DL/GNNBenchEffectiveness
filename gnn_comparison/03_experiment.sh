@@ -11,8 +11,8 @@
 #         COLLAB
 
 gpu=03
-dt=0210
-tag=all_one
+dt=0212
+tag=load_degree_shuff
 
 dat='all'
 dat='NCI1'
@@ -25,5 +25,6 @@ dat="PROTEINS"
 dat='MUTAG'
 dat='IMDB-BINARY'
 
-nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_GIN_lzd.yml \
+
+nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_GIN_lzd_imdb.yml \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > ${gpu}_${dt}_${tag}_nohup.log 2>&1 &
