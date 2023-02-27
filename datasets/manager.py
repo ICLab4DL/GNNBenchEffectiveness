@@ -284,8 +284,11 @@ class GraphDatasetManager:
         # 2022.10.20, NOTE: normalize:
         # TODO: normalize through each graph ????
         
-        # node_features = my_utils.normalize(
-        #     node_features, along_axis=-1, same_data_shape=False)
+        if 'norm_feature' in self.config:
+            if self.config['norm_feature']:
+                print('normalize node features!!')
+                node_features = my_utils.normalize(
+                    node_features, along_axis=-1, same_data_shape=False)
         
         return node_features
     

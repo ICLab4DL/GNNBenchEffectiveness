@@ -10,7 +10,7 @@
 #         REDDIT-MULTI-5K
 #         COLLAB
 
-gpu=01_nlp
+gpu=02_diff
 dt=0226
 tag=load_degree_shuf
 

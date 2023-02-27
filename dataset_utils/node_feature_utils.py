@@ -77,7 +77,15 @@ def node_k_adj_feature(adj, k=2):
         adj = np.matmul(adj, ori_adj)
     return adj.astype(np.float32)
 
-cds_mutag = np.load('imdb_degree_dist_shuffled.npy')
+
+name='imdb_degree_dist_shuffled.npy'
+# name='imdb_degree_dist.npy'
+
+cds_mutag = np.load(name)
+# cds_mutag = np.load('imdb_degree_dist.npy')
+
+print(f'load node feauture: {name}\n')
+
 
 class MyIter(object):
     def __init__(self, ite_obj) -> None:
