@@ -7,12 +7,14 @@ from models.graph_classifiers.DeepMultisets import DeepMultisets
 from models.graph_classifiers.MolecularFingerprint import MolecularFingerprint
 from models.schedulers.ECCScheduler import ECCLR
 from models.utils.EarlyStopper import Patience, GLStopper
+from models.graph_classifiers.ModelAdapter import ModelAdapter
 from models.graph_classifiers.GIN import GIN
 from models.graph_classifiers.DiffPool import DiffPool
 from models.graph_classifiers.ECC import ECC
 from models.graph_classifiers.GraphSAGE import GraphSAGE
 from models.modules import (BinaryClassificationLoss, MulticlassClassificationLoss,
                             NN4GMulticlassClassificationLoss, DiffPoolMulticlassClassificationLoss)
+
 
 from copy import deepcopy
 from .utils import read_config_file
@@ -41,6 +43,7 @@ class Config:
     }
 
     models = {
+        'Adapter': ModelAdapter,
         'GIN': GIN,
         'ECC': ECC,
         "DiffPool": DiffPool,

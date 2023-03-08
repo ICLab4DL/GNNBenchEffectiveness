@@ -309,7 +309,7 @@ class GraphDatasetManager:
         node_attribute = False
         if 'node_attribute' in self.config:
             node_attribute = self.config['node_attribute']
-        print('original node_attribute: ', node_attribute)
+        print('------- whether use original node_attribute: ', node_attribute)
         
         used_features = None
         if len(use_features_list) > 0:

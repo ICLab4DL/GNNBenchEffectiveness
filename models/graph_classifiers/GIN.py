@@ -28,7 +28,6 @@ class GIN(torch.nn.Module):
         # self.batch0 = BatchNorm1d(dim_features)
         
         for layer, out_emb_dim in enumerate(self.embeddings_dim):
-
             if layer == 0:
                 self.first_h = Sequential(Linear(dim_features, out_emb_dim), BatchNorm1d(out_emb_dim), ReLU(),
                                     Linear(out_emb_dim, out_emb_dim), BatchNorm1d(out_emb_dim), ReLU())
@@ -38,15 +37,15 @@ class GIN(torch.nn.Module):
                 self.nns.append(Sequential(Linear(input_emb_dim, out_emb_dim), BatchNorm1d(out_emb_dim), ReLU(),
                                       Linear(out_emb_dim, out_emb_dim), BatchNorm1d(out_emb_dim), ReLU()))
                 self.convs.append(GINConv(self.nns[-1], train_eps=train_eps))  # Eq. 4.2
-
                 self.linears.append(Linear(out_emb_dim, dim_target))
 
         self.nns = torch.nn.ModuleList(self.nns)
         self.convs = torch.nn.ModuleList(self.convs)
         self.linears = torch.nn.ModuleList(self.linears)  # has got one more for initial input
 
-    def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+    def forward(self, data=None, x=None, edge_index=None, batch=None):
+        if data is not None:
+            x, edge_index, batch = data.x, data.edge_index, data.batch
 
         out = 0
         # TODO: batch normalization:
@@ -59,6 +58,7 @@ class GIN(torch.nn.Module):
             else:
                 # Layer l ("convolution" layer)
                 x = self.convs[layer-1](x, edge_index)
+                # NOTE: residual connection
                 out += F.dropout(self.linears[layer](self.pooling(x, batch)), p=self.dropout, training=self.training)
 
         return out

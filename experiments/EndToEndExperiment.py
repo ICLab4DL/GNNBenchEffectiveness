@@ -8,16 +8,10 @@ class EndToEndExperiment(Experiment):
     def __init__(self, model_configuration, exp_path):
         super(EndToEndExperiment, self).__init__(model_configuration, exp_path)
 
-    def run_valid(self, dataset_getter, logger, other=None):
-        """
-        This function returns the training and validation or test accuracy
-        :return: (training accuracy, validation/test accuracy)
-        """
 
-        # print(self.model_config, dataset_getter.outer_k, dataset_getter.inner_k)
-
+    def init_dataset(self):
         dataset_class = self.model_config.dataset  # dataset_class()
-
+        
         if 'dense' in self.model_config:
             dataset = dataset_class(dense=self.model_config.dense, config=self.model_config)
         elif 'additional_features' in self.model_config:
@@ -29,7 +23,20 @@ class EndToEndExperiment(Experiment):
             dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features, config=self.model_config)
         else:
             dataset = dataset_class(config=self.model_config)
+            
+        return dataset
         
+        
+    def run_valid(self, dataset_getter, logger, other=None):
+        """
+        This function returns the training and validation or test accuracy
+        :return: (training accuracy, validation/test accuracy)
+        """
+
+        # print(self.model_config, dataset_getter.outer_k, dataset_getter.inner_k)
+
+
+      
         model_class = self.model_config.model
         loss_class = self.model_config.loss
         optim_class = self.model_config.optimizer
@@ -38,7 +45,8 @@ class EndToEndExperiment(Experiment):
         clipping = self.model_config.gradient_clipping
 
         shuffle = self.model_config['shuffle'] if 'shuffle' in self.model_config else True
-
+        dataset = self.init_dataset()
+        
         train_loader, val_loader = dataset_getter.get_train_val(dataset, self.model_config['batch_size'],
                                                                 shuffle=shuffle)
         print('dataset dim features', dataset.dim_features)
@@ -69,19 +77,8 @@ class EndToEndExperiment(Experiment):
         :return: (training accuracy, test accuracy)
         """
 
-        dataset_class = self.model_config.dataset  # dataset_class()
-
-        if 'dense' in self.model_config:
-            dataset = dataset_class(dense=self.model_config.dense)
-        elif 'additional_features' in self.model_config:
-            print(self.model_config.additional_features)
-            dataset = dataset_class(additional_features = self.model_config.additional_features)
-        elif 'additional_graph_features' in self.model_config:
-            print(self.model_config.additional_graph_features)
-            dataset = dataset_class(additional_graph_features = self.model_config.additional_graph_features)
-        else:
-            dataset = dataset_class()
-
+        dataset = self.init_dataset()
+            
         shuffle = self.model_config['shuffle'] if 'shuffle' in self.model_config else True
 
         model_class = self.model_config.model
@@ -95,6 +92,7 @@ class EndToEndExperiment(Experiment):
                                                                 shuffle=shuffle)
         test_loader = dataset_getter.get_test(dataset, self.model_config['batch_size'], shuffle=shuffle)
 
+        print('--------- self model config:', self.model_config)
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target,
                             config=self.model_config)
         net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'])

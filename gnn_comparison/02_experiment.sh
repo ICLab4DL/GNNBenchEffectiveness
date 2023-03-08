@@ -10,20 +10,20 @@
 #         REDDIT-MULTI-5K
 #         COLLAB
 
-gpu=02_nlp
-dt=0227
-tag=load_degree_shuffle_norm
+gpu=nlp02
+dt=0308
+tag=DD_degree_attribute
 
 dat='all'
 dat='NCI1'
 dat='ENZYMES'
-dat='DD'
 dat="CSL"
 dat='COLLAB'
 dat='REDDIT-BINARY'
+dat='IMDB-BINARY' # no attribute
 dat="PROTEINS"
 dat='MUTAG'
-dat='IMDB-BINARY'
+dat='DD'
 
-nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_GIN_lzd_imdb.yml \
+nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/config_Adapter.yml \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &

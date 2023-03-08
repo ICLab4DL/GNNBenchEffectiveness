@@ -16,11 +16,9 @@ import time
 from collections import Counter, defaultdict
 
 
-import joblib
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-from sklearn import svm
 
 def training(epochs, trainer, train_evaluator, test_evaluator, train_dataloader, test_dataloader, cuda=True):
     for e in range(epochs):

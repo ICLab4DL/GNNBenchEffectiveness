@@ -78,13 +78,18 @@ def node_k_adj_feature(adj, k=2):
     return adj.astype(np.float32)
 
 
-name='imdb_degree_dist_shuffled.npy'
+# name='imdb_degree_dist_shuffled.npy'
+name='dd_degree_dist_shuffled.npy'
+# name='proteins_degree_dist_shuffled.npy'
 # name='imdb_degree_dist.npy'
+# name='proteins_degree_dist.npy'
+# name='dd_degree_dist.npy'
 
-cds_mutag = np.load(name)
+
+# cds_mutag = np.load(name)
 # cds_mutag = np.load('imdb_degree_dist.npy')
 
-print(f'load node feauture: {name}\n')
+# print(f'load node feauture: {name}\n')
 
 
 class MyIter(object):
@@ -111,19 +116,22 @@ class MyIter(object):
         self.ite = iter(self.ite_obj)
     
 
-cds_mutag_iter = MyIter(cds_mutag)
-shuf_idx = list(np.arange(len(cds_mutag)))
-copy_degree_sequence = [i.item() for i in cds_mutag]
+# cds_mutag_iter = MyIter(cds_mutag)
+# shuf_idx = list(np.arange(len(cds_mutag)))
+# copy_degree_sequence = [i.item() for i in cds_mutag]
+
 
 @xargs
-def node_degree_feature(adj):
+def node_degree_feature(adj, checkpoint=False):
     """ node (weighted, if its weighted adjacency matrix) degree as the node feature.
     """
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
     N = adj.shape[0]
-    degrees = np.array([cds_mutag_iter.__next__().item() for _ in range(N)]).reshape(adj.shape[0], 1)
-    # degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    if checkpoint:
+        degrees = np.array([cds_mutag_iter.__next__().item() for _ in range(N)]).reshape(adj.shape[0], 1)
+    else:
+        degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
     
     return degrees.astype(np.float32)
 
@@ -286,6 +294,18 @@ def graph_cycles_degree(adj):
 
 
 @xargs
+def graph_invariant(adj):
+    if not isinstance(adj, np.ndarray):
+        adj = adj.todense()
+    N = adj.shape[0]
+
+    ratio=0.5
+    degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
+    E = np.sum(degrees).astype(np.float32).reshape(1)
+    #N+2E
+    return (N+ratio*E).reshape(1)
+
+@xargs
 def graph_avg_degree(adj):
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
@@ -443,7 +463,8 @@ class GraphFeaRegister(object):
                 'avg_degree': graph_avg_degree,
                 'avg_cc': node_cc_avg_feature,
                 'cycle': graph_cycle_feature,
-                'avgd': graph_avgDN_feature
+                'avgd': graph_avgDN_feature,
+                'invariant':graph_invariant
                 }
         self.registered = []
 
