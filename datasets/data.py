@@ -36,6 +36,14 @@ class Data(data.Data):
         m = np.zeros((self.N, self.N))
         m[self.edge_index[0], self.edge_index[1]] = 1
         return m
+    
+    def from_pyg_data(cur:data):
+        return Data(x=cur.x,
+                 edge_index=cur.edge_index,
+                 edge_attr=cur.edge_attr,
+                 y=cur.y.long().squeeze(),
+                 laplacians=None,
+                 v_plus=None)
         
         
 class Batch(data.Batch):

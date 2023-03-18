@@ -25,6 +25,11 @@ import os
 import io
 import sys
 import os
+
+from torch_geometric.datasets import GNNBenchmarkDataset, TUDataset
+from torch_geometric.datasets import PPI as PPIDataset
+from torch_geometric.datasets import QM9, MoleculeNet
+
 sys.path.append(os.getcwd())
 
 
@@ -94,9 +99,10 @@ class GraphDatasetManager:
         if not (self.processed_dir / f"{self.name}.pt").exists():
             if not self.processed_dir.exists():
                 os.makedirs(self.processed_dir)
-            self._process()
+            self._process() 
 
         print('load dataset !')
+
         self.dataset = GraphDataset(torch.load(
             self.processed_dir / f"{self.name}.pt"))
         print('dataset len: ', len(self.dataset))
@@ -222,6 +228,8 @@ class GraphDatasetManager:
         
         node_fea_reg = node_feature_utils.NodeFeaRegister()
         for feature_arg in additional_features_list:
+            if 'degree' in feature_arg:
+                feature_arg += f'@name:{self.name}'
             node_fea_reg.register_by_str(feature_arg)
         self.node_fea_reg = node_fea_reg
 
@@ -515,6 +523,7 @@ class GraphDatasetManager:
 
         idxs = self.splits[outer_idx]["model_selection"][inner_idx]
         train_data = GraphDatasetSubset(self.dataset.get_data(), idxs["train"])
+        print('idxs keys:', idxs.keys())
         val_data = GraphDatasetSubset(
             self.dataset.get_data(), idxs["validation"])
 
@@ -527,6 +536,197 @@ class GraphDatasetManager:
 
         return train_loader, val_loader
 
+
+class SmilesDataset:
+    def __init__(self, dataset, smiles) -> None:
+        self.dataset = dataset
+        self.smiles = smiles
+
+    def __getitem__(self, idx):
+        return self.dataset[idx]
+    
+    def __len__(self):
+        return len(self.dataset)
+    
+class MoleculeDatasetManager(GraphDatasetManager):
+    classification = True
+    from collections import defaultdict
+    from functools import partial
+    from itertools import accumulate, chain
+
+    import numpy as np
+    import dgl.backend as F
+    from dgl.data.utils import split_dataset, Subset
+    from rdkit import Chem
+    from rdkit.Chem import rdMolDescriptors
+    from rdkit.Chem.rdmolops import FastFindRings
+    from rdkit.Chem import AllChem
+    from rdkit.Chem.Scaffolds import MurckoScaffold
+
+    @staticmethod
+    def get_ordered_scaffold_sets(molecules, scaffold_func):
+     
+        assert scaffold_func in ['decompose', 'smiles'], \
+            "Expect scaffold_func to be 'decompose' or 'smiles', " \
+            "got '{}'".format(scaffold_func)
+
+        scaffolds = defaultdict(list)
+        for i, mol in enumerate(molecules):
+            # For mols that have not been sanitized, we need to compute their ring information
+            try:
+                FastFindRings(mol)
+                if scaffold_func == 'decompose':
+                    mol_scaffold = Chem.MolToSmiles(AllChem.MurckoDecompose(mol))
+                if scaffold_func == 'smiles':
+                    mol_scaffold = MurckoScaffold.MurckoScaffoldSmiles(
+                        mol=mol, includeChirality=False)
+                # Group molecules that have the same scaffold
+                scaffolds[mol_scaffold].append(i)
+            except:
+                print('Failed to compute the scaffold for molecule {:d} '
+                      'and it will be excluded.'.format(i + 1))
+
+        # Order groups of molecules by first comparing the size of groups
+        # and then the index of the first compound in the group.
+        scaffolds = {key: sorted(value) for key, value in scaffolds.items()}
+        scaffold_sets = [
+            scaffold_set for (scaffold, scaffold_set) in sorted(
+                scaffolds.items(), key=lambda x: (len(x[1]), x[1][0]), reverse=True)
+        ]
+
+        return scaffold_sets # [[1,23,24], [123]...] sorted group of each scaffold
+
+
+    def _k_fold_split(dataset, mols=None, sanitize=True,
+                     k=5, log_every_n=1000, scaffold_func='decompose'):
+        
+      
+        assert k >= 2, 'Expect the number of folds to be no smaller than 2, got {:d}'.format(k)
+
+        molecules = prepare_mols(dataset, mols, sanitize)
+        scaffold_sets = ScaffoldSplitter.get_ordered_scaffold_sets(
+            molecules, log_every_n, scaffold_func)
+
+        # scaffold_sets: [[1,23,24], [123]...] sorted group of each scaffold
+
+        # k buckets that form a relatively balanced partition of the dataset
+        index_buckets = [[] for _ in range(k)]
+        for group_indices in scaffold_sets:
+            bucket_chosen = int(np.argmin([len(bucket) for bucket in index_buckets]))
+            index_buckets[bucket_chosen].extend(group_indices)
+
+        all_folds = []
+        for i in range(k):
+            if log_every_n is not None:
+                print('Processing fold {:d}/{:d}'.format(i + 1, k))
+            train_indices = list(chain.from_iterable(index_buckets[:i] + index_buckets[i + 1:]))
+            val_indices = index_buckets[i]
+            all_folds.append((Subset(dataset, train_indices), Subset(dataset, val_indices)))
+
+        return all_folds
+    def _download(self):
+        # TODO: write to file
+        """
+        name (string): The name of the dataset (one of :obj:`"PATTERN"`,
+            :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
+            :obj:`"TSP"`, :obj:`"CSL"`)
+        """
+        MoleculeNet(root='DATA', name=self.name)
+        print('Downloaded')
+
+    def _process(self):
+        # TODO: combine trian, val, test:
+        # load from raw:
+        cur_dataset = MoleculeNet(root='DATA', name=self.name)
+        print(f'len: {len(cur_dataset)}')
+        
+        # TODO: splits:
+        from dgllife.utils import ScaffoldSplitter
+        from dgllife.utils.splitters
+        
+        smdataset = SmilesDataset(cur_dataset, smiles=[i.smiles for i in cur_dataset])
+        splits = ScaffoldSplitter.k_fold_split(smdataset, mols=None, sanitize=True, k=5, log_every_n=1000, scaffold_func='decompose')
+        print(len(splits))
+        
+        torch.save(all_data, self.processed_dir / f"{self.name}.pt")
+        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+
+
+class GNNBenchmarkDatasetManager(GraphDatasetManager):
+    classification = True
+
+    def _download(self):
+        # TODO: write to file
+        """
+        name (string): The name of the dataset (one of :obj:`"PATTERN"`,
+            :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
+            :obj:`"TSP"`, :obj:`"CSL"`)
+        """
+        split_name = ['train', 'val', 'test']
+        for n in split_name:
+            GNNBenchmarkDataset(root='DATA', name=self.name, split=n)
+            print('Downloaded')
+
+    def _process(self):
+        # TODO: combine trian, val, test:
+        # load from raw:
+        split_name = ['train', 'val', 'test']
+        splits = []
+        all_data = []
+        for n in split_name:
+            cur_dataset = GNNBenchmarkDataset(root='DATA', name=self.name, split=n)
+            print(f'{n} len: {len(cur_dataset)}')
+            splits.append(len(cur_dataset))
+            all_data.extend([Data.from_pyg_data(d) for d in cur_dataset])
+        
+        torch.save(all_data, self.processed_dir / f"{self.name}.pt")
+        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+
+        split = [{ "test": [i for i in range(splits[0]+splits[1], len(all_data))], 
+                 'model_selection': [{'train':[i for i in range(0, splits[0])],
+                                      "validation":[i for i in range(splits[0], splits[0]+splits[1])]}]}]
+        
+        filename = self.processed_dir / f"{self.name}_splits.json"
+        with open(filename, "w") as f:
+            json.dump(split, f, cls=NumpyEncoder)
+
+        print(f"saved: {filename}")
+
+
+class PPIDatasetManager(GraphDatasetManager):
+    classification = True
+
+    def _download(self):
+        # TODO: write to file
+        split_name = ['train', 'val', 'test']
+        for n in split_name:
+            PPIDataset(root='DATA', split=n)
+            print('Downloaded')
+
+    def _process(self):
+        # TODO: combine trian, val, test:
+        # load from raw:
+        split_name = ['train', 'val', 'test']
+        splits = []
+        all_data = []
+        for n in split_name:
+            cur_dataset = PPIDataset(root='DATA', split=n)
+            print(f'{n} len: {len(cur_dataset)}')
+            splits.append(len(cur_dataset))
+            all_data.extend([Data.from_pyg_data(d) for d in cur_dataset])
+        
+        torch.save(all_data, self.processed_dir / f"{self.name}.pt")
+        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+
+        split = [{ "test": [i for i in range(splits[0]+splits[1], len(all_data))], 
+                 'model_selection': [{'train':[i for i in range(0, splits[0])],
+                                      "validation":[i for i in range(splits[0], splits[0]+splits[1])]}]}]
+        
+        filename = self.processed_dir / f"{self.name}_splits.json"
+        with open(filename, "w") as f:
+            json.dump(split, f, cls=NumpyEncoder)
+
+        print(f"saved: {filename}")
 
 class TUDatasetManager(GraphDatasetManager):
     URL = "https://ls11-www.cs.tu-dortmund.de/people/morris/graphkerneldatasets/{name}.zip"
@@ -1018,6 +1218,44 @@ class SyntheticManager(TUDatasetManager):
                 dataset.append(data)
                 G.__class__()
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
+
+
+
+        """
+        name (string): The name of the dataset (one of :obj:`"PATTERN"`,
+            :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
+            :obj:`"TSP"`, :obj:`"CSL"`)
+        """
+
+
+
+class CIFAR10(GNNBenchmarkDatasetManager):
+    name = "CIFAR10"
+    _dim_features = 3
+    _dim_target = 10
+
+
+class HIV(MoleculeDatasetManager):
+    name = "hiv"
+    _dim_features = 3
+    _dim_target = 10
+
+class BACE(MoleculeDatasetManager):
+    name = "bace"
+    _dim_features = 3
+    _dim_target = 10
+
+class BBPB(MoleculeDatasetManager):
+    name = "bbpb"
+    _dim_features = 3
+    _dim_target = 10
+
+
+class PPI(PPIDatasetManager):
+    name = "PPI"
+    _dim_features = 50
+    _dim_target = 121
+
 
 
 class NCI1(TUDatasetManager):

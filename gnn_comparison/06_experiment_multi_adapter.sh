@@ -22,25 +22,23 @@ dat='NCI1'
 dat='ENZYMES'
 
 
-
 gpu=01
-dt=0313
+dt=0319
 # conf_file='config_Adapter.yml'
 
 # degree + attributes:
-conf_file='config_GIN_lzd_shuffle.yml'
+conf_file='config_GIN_lzd_mix_adapter.yml'
 
-# dats='NCI1 ENZYMES'
-
-dats='IMDB-MULTI COLLAB NCI1 ENZYMES'
+dats='NCI1 ENZYMES MUTAG DD'
 for dat in ${dats};do
 
-echo 'running only degree: '${dat}
-tag=degree_shuffle_${dat}
+echo 'running: '${dat}
+tag=new_alpha_decouple_attr_degree_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
+echo 'config file: '${conf_file}
 echo '    check log:'
 echo 'tail -f logs/'${gpu}_${dt}_${tag}'_nohup.log'
 

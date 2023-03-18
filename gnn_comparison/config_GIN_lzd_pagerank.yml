@@ -3,8 +3,8 @@ model:
 device:
   - cuda:0
 batch_size:
-  # - 64
-  - 128
+  - 64
+  # - 128
 learning_rate:
   - 0.001
 classifier_epochs:
@@ -41,11 +41,11 @@ resume:
   - False
 
 additional_features:
-  # - use_random
+  - use_pagerank
   # - rand_id@dist:4
-  - degree
+  # - degree@checkpoint:True
   # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
-  #        xxx without use_ is created by node_feature_register, e.g., degree;rand_id@total:3
+  #        xxx without use_ is created by node_feature_register, e.g., degree,rand_id@total:3
 # print different features.
 
 node_attribute:

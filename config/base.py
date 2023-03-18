@@ -7,13 +7,13 @@ from models.graph_classifiers.DeepMultisets import DeepMultisets
 from models.graph_classifiers.MolecularFingerprint import MolecularFingerprint
 from models.schedulers.ECCScheduler import ECCLR
 from models.utils.EarlyStopper import Patience, GLStopper
-from models.graph_classifiers.ModelAdapter import ModelAdapter
+from models.graph_classifiers.ModelAdapter import ModelAdapter, ModelMix
 from models.graph_classifiers.GIN import GIN
 from models.graph_classifiers.DiffPool import DiffPool
 from models.graph_classifiers.ECC import ECC
 from models.graph_classifiers.GraphSAGE import GraphSAGE
 from models.modules import (BinaryClassificationLoss, MulticlassClassificationLoss,
-                            NN4GMulticlassClassificationLoss, DiffPoolMulticlassClassificationLoss)
+                            NN4GMulticlassClassificationLoss, DiffPoolMulticlassClassificationLoss, MixDecoupleClassificationLoss)
 
 
 from copy import deepcopy
@@ -39,11 +39,17 @@ class Config:
         'ENZYMES': Enzymes,
         'DD': DD,
         'MUTAG': Mutag,
-        "CSL": CSL
+        "CSL": CSL,
+        'CIFAR10': CIFAR10,
+        'PPI':PPI,
+        'hiv': HIV,
+        'bace':BACE,
+        'bbpb':BBPB,
     }
 
     models = {
         'Adapter': ModelAdapter,
+        'Mix': ModelMix,
         'GIN': GIN,
         'ECC': ECC,
         "DiffPool": DiffPool,
@@ -58,6 +64,8 @@ class Config:
         'MulticlassClassificationLoss': MulticlassClassificationLoss,
         'NN4GMulticlassClassificationLoss': NN4GMulticlassClassificationLoss,
         'DiffPoolMulticlassClassificationLoss': DiffPoolMulticlassClassificationLoss,
+        'MixDecoupleClassificationLoss':MixDecoupleClassificationLoss,
+        
 
     }
 

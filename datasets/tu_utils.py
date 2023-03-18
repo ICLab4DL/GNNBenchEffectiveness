@@ -40,19 +40,6 @@ def parse_tu_data(name, raw_dir):
     print('total node num:', total_nodes_num)
     
     
-    num_nodes_map = {
-        "COLLAB": 372474,
-        "NCI1": 122747,
-        "MUTAG": 3371,
-        "ENZYMES": 19580, 
-        "IMDB-BINARY": 19773, 
-        "IMDB-MULTI": 19502, 
-        "DD": 334925,
-        "PROTEINS_full": 43471,
-        "REDDIT-BINARY":3782,
-        'REDDIT-MULTI-5K':3648
-    }
-    
     
     # num_nodes = num_nodes_map[name] 
     num_nodes = total_nodes_num

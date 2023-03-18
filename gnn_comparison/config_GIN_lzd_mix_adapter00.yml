@@ -1,5 +1,5 @@
 model:
-  - GIN
+  - Mix
 device:
   - cuda:0
 batch_size:
@@ -7,6 +7,7 @@ batch_size:
   - 128
 learning_rate:
   - 0.001
+  - 0.0001
 classifier_epochs:
   - 200
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
@@ -16,7 +17,7 @@ optimizer:
 scheduler:
   - null
 loss:
-  - MulticlassClassificationLoss
+  - MixDecoupleClassificationLoss
 train_eps:
   # - true
   - false
@@ -49,7 +50,7 @@ additional_features:
 # print different features.
 
 node_attribute:
-  - False
+  - True
 
 shuffle_feature:
   - False

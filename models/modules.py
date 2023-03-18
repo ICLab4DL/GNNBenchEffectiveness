@@ -14,6 +14,7 @@ class ClassificationLoss(nn.Module):
         :return: loss and accuracy values
         """
         outputs = outputs[0]
+
         loss = self.loss(outputs, targets)
         accuracy = self._calculate_accuracy(outputs, targets)
         return loss, accuracy
@@ -36,6 +37,20 @@ class BinaryClassificationLoss(ClassificationLoss):
 
     def _get_correct(self, outputs):
         return outputs > 0.5
+
+
+
+class MixDecoupleClassificationLoss(ClassificationLoss):
+    def __init__(self, reduction=None):
+        super().__init__()
+        if reduction is None:
+            self.loss = nn.NLLLoss()
+        else:
+            self.loss = nn.NLLLoss(reduction=reduction)
+
+    def _get_correct(self, outputs):
+        return torch.argmax(outputs, dim=1)
+
 
 
 class MulticlassClassificationLoss(ClassificationLoss):

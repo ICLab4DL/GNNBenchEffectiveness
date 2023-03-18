@@ -14,7 +14,14 @@ DATASETS = {
     'PROTEINS': Proteins,
     'DD': DD,
     "MUTAG": Mutag,
-    'CSL': CSL
+    'CSL': CSL,
+    'CIFAR10': CIFAR10,
+    'PPI': PPI,
+    'hiv': HIV,
+    'bace':BACE,
+    'bbpb':BBPB,
+
+
 }
 
 SYN_DATASETS = {

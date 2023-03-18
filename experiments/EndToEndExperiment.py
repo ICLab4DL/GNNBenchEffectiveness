@@ -52,7 +52,8 @@ class EndToEndExperiment(Experiment):
         print('dataset dim features', dataset.dim_features)
         
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target, config=self.model_config)
-        net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'])
+        net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'], config=self.model_config)
+
 
         optimizer = optim_class(model.parameters(),
                                 lr=self.model_config['learning_rate'], weight_decay=self.model_config['l2'])
@@ -95,7 +96,7 @@ class EndToEndExperiment(Experiment):
         print('--------- self model config:', self.model_config)
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target,
                             config=self.model_config)
-        net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'])
+        net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'], config=self.model_config)
 
         optimizer = optim_class(model.parameters(),
                                 lr=self.model_config['learning_rate'], weight_decay=self.model_config['l2'])

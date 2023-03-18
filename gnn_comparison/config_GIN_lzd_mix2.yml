@@ -1,7 +1,7 @@
 model:
   - GIN
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   # - 64
   - 128
@@ -49,7 +49,7 @@ additional_features:
 # print different features.
 
 node_attribute:
-  - False
+  - True
 
 shuffle_feature:
   - False

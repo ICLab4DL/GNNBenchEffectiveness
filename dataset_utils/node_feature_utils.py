@@ -1,12 +1,22 @@
 import numpy as np
 import networkx as nx
-from collections import defaultdict
-
-# node or edge feature generation:
-
 from utils import utils
+import os
 
-    
+DATASETS_NAMES = {
+    'REDDIT-BINARY',
+    'REDDIT-MULTI-5K',
+    'COLLAB',
+    'IMDB-BINARY',
+    'IMDB-MULTI',
+    'NCI1',
+    'ENZYMES',
+    'PROTEINS',
+    'DD',
+    "MUTAG",
+    'CSL'
+}
+
 def xargs(f):
     def wrap(**xargs):
         return f(**xargs)
@@ -85,11 +95,25 @@ name='dd_degree_dist_shuffled.npy'
 # name='proteins_degree_dist.npy'
 # name='dd_degree_dist.npy'
 
+"""
+COLLAB_degree_dist.npy
+COLLAB_degree_dist_shuffled.npy
+ENZYMES_degree_dist.npy
+ENZYMES_degree_dist_shuffled.npy
+IMDB-MULTI_degree_dist.npy
+IMDB-MULTI_degree_dist_shuffled.npy
+NCI1_degree_dist.npy
+NCI1_degree_dist_shuffled.npy
+dd_degree_dist.npy
+dd_degree_dist_shuffled.npy
+imdb_degree_dist.npy
+imdb_degree_dist_shuffled.npy
+mutag_degree_dist.npy
+mutag_degree_dist_shuffled.npy
+proteins_degree_dist.npy
+proteins_degree_dist_shuffled.npy
+"""
 
-# cds_mutag = np.load(name)
-# cds_mutag = np.load('imdb_degree_dist.npy')
-
-# print(f'load node feauture: {name}\n')
 
 
 class MyIter(object):
@@ -115,21 +139,24 @@ class MyIter(object):
     def __reset__(self):
         self.ite = iter(self.ite_obj)
     
+csd_dict = {}
+for d_name in DATASETS_NAMES:
+    f_name = f'{d_name}_degree_dist_shuffled.npy'
+    if os.path.exists(f_name):
+        csd_dict[d_name] = MyIter(np.load(f_name))
+        print(f'load node feauture: {f_name}\n')
 
-# cds_mutag_iter = MyIter(cds_mutag)
-# shuf_idx = list(np.arange(len(cds_mutag)))
-# copy_degree_sequence = [i.item() for i in cds_mutag]
 
 
 @xargs
-def node_degree_feature(adj, checkpoint=False):
+def node_degree_feature(adj, name=None, checkpoint=False):
     """ node (weighted, if its weighted adjacency matrix) degree as the node feature.
     """
     if not isinstance(adj, np.ndarray):
         adj = adj.todense()
     N = adj.shape[0]
     if checkpoint:
-        degrees = np.array([cds_mutag_iter.__next__().item() for _ in range(N)]).reshape(adj.shape[0], 1)
+        degrees = np.array([csd_dict[name].__next__().item() for _ in range(N)]).reshape(adj.shape[0], 1)
     else:
         degrees = np.sum(adj, axis=1).reshape(adj.shape[0], 1)
     
@@ -537,7 +564,7 @@ class NodeFeaRegister(object):
         self.registered = []
 
     def register_by_str(self, arg_str:str=None):
-        # arg_str format: name@key:value;key:value....
+        # arg_str format: func_name@key:value;key:value....
         print('argstr:', arg_str)
         args = arg_str.split("@")
         print('args:', args)
