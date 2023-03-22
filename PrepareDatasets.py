@@ -10,6 +10,7 @@ DATASETS = {
     'IMDB-BINARY': IMDBBinary,
     'IMDB-MULTI': IMDBMulti,
     'NCI1': NCI1,
+    'AIDS': AIDS,
     'ENZYMES': Enzymes,
     'PROTEINS': Proteins,
     'DD': DD,
@@ -20,8 +21,6 @@ DATASETS = {
     'hiv': HIV,
     'bace':BACE,
     'bbpb':BBPB,
-
-
 }
 
 SYN_DATASETS = {

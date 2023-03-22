@@ -1,16 +1,18 @@
 model:
-  - GIN
+  - EGIN
 device:
   - cuda:0
 batch_size:
-  - 64
-  # - 128
+  # - 64
+  - 32
 learning_rate:
   - 0.001
 classifier_epochs:
-  - 200
+  - 150
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
-  - [64, 62, 32]
+  - 300
+layer_num:
+  - 5
 optimizer:
   - Adam
 scheduler:
@@ -23,8 +25,9 @@ train_eps:
 l2:
   - 0.
 aggregation:
-  # - mean
-  - sum
+  - mean
+  # - max
+  # - sum
 gradient_clipping:
   - null
 dropout:
@@ -40,19 +43,22 @@ shuffle:
 resume:
   - False
 
-additional_features:
-  # - use_random
-  # - rand_id@dist:4
-  - degree
+# additional_features:
+#   # - use_random
+#   # - rand_id@dist:4
+#   - degree
   # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
   #        xxx without use_ is created by node_feature_register, e.g., degree;rand_id@total:3
 # print different features.
 
 node_attribute:
-  - False
+  - True
 
 shuffle_feature:
   - False
 
-norm_feature:
+roc_auc:
   - True
+
+sampler:
+  - imbalanced

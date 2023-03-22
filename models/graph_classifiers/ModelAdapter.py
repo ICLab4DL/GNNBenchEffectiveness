@@ -46,7 +46,6 @@ class ModelMix(torch.nn.Module):
 
         # self.gin_gated = GIN(hid_out_dim, 1, config)
         # self.ln_gated = Linear(hid_out_dim, 1)
-        
         self.alpha = nn.Parameter(torch.tensor(0.01))
         # softmax ???
         # self.sf = Softmax(dim=-1)
@@ -75,9 +74,9 @@ class ModelMix(torch.nn.Module):
         
         # att = self.sf(torch.cat([h1, h2], dim=-1))
         # NOTE: energy the softmax:
-        alpha = F.sigmoid(self.alpha)
-        p1 = F.log_softmax(out1, dim=-1)
-        p2 = F.log_softmax(out2, dim=-1)
+        alpha = torch.sigmoid(self.alpha)
+        p1 = torch.log_softmax(out1, dim=-1)
+        p2 = torch.log_softmax(out2, dim=-1)
 
         with torch.no_grad():
             alpha_2 = 1- alpha.item()

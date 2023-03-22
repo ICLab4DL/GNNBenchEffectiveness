@@ -38,10 +38,15 @@ class Data(data.Data):
         return m
     
     def from_pyg_data(cur:data):
+        # NOTE:to float and long
+    
+        # cur.x = torch.tensor(cur.x).float()
+        cur.y = torch.tensor(cur.y).long().squeeze()
+
         return Data(x=cur.x,
                  edge_index=cur.edge_index,
                  edge_attr=cur.edge_attr,
-                 y=cur.y.long().squeeze(),
+                 y=cur.y,
                  laplacians=None,
                  v_plus=None)
         

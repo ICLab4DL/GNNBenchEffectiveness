@@ -8,7 +8,7 @@ batch_size:
 learning_rate:
   - 0.001
 classifier_epochs:
-  - 200
+  - 150
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
   - [64, 62, 32]
 optimizer:
@@ -24,7 +24,8 @@ l2:
   - 0.
 aggregation:
   # - mean
-  - sum
+  - max
+  # - sum
 gradient_clipping:
   - null
 dropout:
@@ -53,3 +54,9 @@ node_attribute:
 
 shuffle_feature:
   - False
+
+roc_auc:
+  - True
+
+sampler:
+  - imbalanced

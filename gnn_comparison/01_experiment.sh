@@ -28,16 +28,19 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dt=0317
+dt=0322
 gpu=01
-conf_file='config_GIN_lzd.yml'
+conf_file='config_EGNN_lzd_attr.yml'
 dats='IMDB-MULTI COLLAB'
 dats='PATTERN'
 
+dats='AIDS'
+dats='hiv'
+unique
 for dat in ${dats};do
 
-echo 'running only degree: '${dat}
-tag=only_degree_${dat}
+echo 'running only attr: '${dat}
+tag=EGNN_only_attr_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &

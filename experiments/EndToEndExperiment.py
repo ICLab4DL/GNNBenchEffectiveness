@@ -2,6 +2,15 @@ from models.gnn_wrapper.NetWrapper import NetWrapper
 
 from experiments.Experiment import Experiment
 
+import torch
+
+def get_sampleweight(labels):
+    total = len(labels)
+    class_sample_count = torch.unique(torch.tensor(labels), return_counts=True)[1]
+    weight = class_sample_count.float()/total
+    # need normalize.
+    print('weight: ', weight, weight.shape)
+    return weight
 
 class EndToEndExperiment(Experiment):
 
@@ -26,7 +35,7 @@ class EndToEndExperiment(Experiment):
             
         return dataset
         
-        
+    
     def run_valid(self, dataset_getter, logger, other=None):
         """
         This function returns the training and validation or test accuracy
@@ -52,7 +61,12 @@ class EndToEndExperiment(Experiment):
         print('dataset dim features', dataset.dim_features)
         
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target, config=self.model_config)
-        net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'], config=self.model_config)
+        # NOTE: add weight
+
+        labels = [i.y for i in train_loader.dataset]
+        weight = get_sampleweight(labels)
+
+        net = NetWrapper(model, loss_function=loss_class(weight=weight.to(self.model_config['device'])), device=self.model_config['device'], config=self.model_config)
 
 
         optimizer = optim_class(model.parameters(),
@@ -93,10 +107,13 @@ class EndToEndExperiment(Experiment):
                                                                 shuffle=shuffle)
         test_loader = dataset_getter.get_test(dataset, self.model_config['batch_size'], shuffle=shuffle)
 
+        labels = [i.y for i in train_loader.dataset]
+        weight = get_sampleweight(labels)
+
         print('--------- self model config:', self.model_config)
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target,
                             config=self.model_config)
-        net = NetWrapper(model, loss_function=loss_class(), device=self.model_config['device'], config=self.model_config)
+        net = NetWrapper(model, loss_function=loss_class(weight=weight.to(self.model_config['device'])), device=self.model_config['device'], config=self.model_config)
 
         optimizer = optim_class(model.parameters(),
                                 lr=self.model_config['learning_rate'], weight_decay=self.model_config['l2'])

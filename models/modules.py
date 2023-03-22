@@ -28,25 +28,24 @@ class ClassificationLoss(nn.Module):
 
 
 class BinaryClassificationLoss(ClassificationLoss):
-    def __init__(self, reduction=None):
+    def __init__(self, reduction=None,weight=None):
         super().__init__()
         if reduction is not None:
-            self.loss = nn.BCEWithLogitsLoss(reduction=reduction)
+            self.loss = nn.BCEWithLogitsLoss(reduction=reduction, weight=weight)
         else:
-            self.loss = nn.BCEWithLogitsLoss()
+            self.loss = nn.BCEWithLogitsLoss(weight=weight)
 
     def _get_correct(self, outputs):
         return outputs > 0.5
 
 
-
 class MixDecoupleClassificationLoss(ClassificationLoss):
-    def __init__(self, reduction=None):
+    def __init__(self, reduction=None, weight=None):
         super().__init__()
         if reduction is None:
-            self.loss = nn.NLLLoss()
+            self.loss = nn.NLLLoss(weight=weight)
         else:
-            self.loss = nn.NLLLoss(reduction=reduction)
+            self.loss = nn.NLLLoss(reduction=reduction, weight=weight)
 
     def _get_correct(self, outputs):
         return torch.argmax(outputs, dim=1)
@@ -54,12 +53,12 @@ class MixDecoupleClassificationLoss(ClassificationLoss):
 
 
 class MulticlassClassificationLoss(ClassificationLoss):
-    def __init__(self, reduction=None):
+    def __init__(self, reduction=None, weight=None):
         super().__init__()
         if reduction is not None:
-            self.loss = nn.CrossEntropyLoss(reduction=reduction)
+            self.loss = nn.CrossEntropyLoss(reduction=reduction,weight=weight)
         else:
-            self.loss = nn.CrossEntropyLoss()
+            self.loss = nn.CrossEntropyLoss(weight=weight)
 
     def _get_correct(self, outputs):
         return torch.argmax(outputs, dim=1)

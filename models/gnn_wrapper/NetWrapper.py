@@ -30,8 +30,9 @@ class NetWrapper:
         loss_all = 0
         acc_all = 0
         auc_roc = 0
-        for data in train_loader:
-
+        for i, data in enumerate(train_loader):
+            if i == len(train_loader)-1:
+                continue
             data = data.to(self.device)
             optimizer.zero_grad()
             output = model(data)
@@ -64,9 +65,9 @@ class NetWrapper:
 
         if self.classification:
             if self.roc_auc:
-                return acc_all / len(train_loader.dataset), loss_all / len(train_loader.dataset)
-            else:
                 return acc_all / len(train_loader.dataset), loss_all / len(train_loader.dataset), auc_roc/len(train_loader.dataset)
+            else:
+                return acc_all / len(train_loader.dataset), loss_all / len(train_loader.dataset)
         else:
             return None, loss_all / len(train_loader.dataset)
 
@@ -96,13 +97,16 @@ class NetWrapper:
                 loss_all += loss.item() * num_graphs
                 acc_all += acc.item() * num_graphs
                 if self.roc_auc:
-                    auc_roc += roc_auc_score(data.y, torch.argmax(output[0], dim=-1))
+                    auc_roc += roc_auc_score(data.y.detach().cpu().numpy(), torch.argmax(output[0], dim=-1).detach().cpu().numpy())
             else:
                 loss = self.loss_fun(data.y, *output)
                 loss_all += loss.item()
 
         if self.classification:
-            return acc_all / len(loader.dataset), loss_all / len(loader.dataset)
+            if self.roc_auc:
+                return acc_all / len(loader.dataset), loss_all / len(loader.dataset), auc_roc / len(loader.dataset)
+            else:
+                return acc_all / len(loader.dataset), loss_all / len(loader.dataset)
         else:
             return None, loss_all / len(loader.dataset)
 
@@ -118,7 +122,7 @@ class NetWrapper:
         time_per_epoch = []
 
         for epoch in range(1, max_epochs+1):
-            
+
             start = time.time()
             if self.roc_auc:
                 train_acc, train_loss, train_roc_auc = self._train(train_loader, optimizer, clipping)
@@ -127,8 +131,13 @@ class NetWrapper:
 
             # TODO: calculate norm before clipping 
             total_norm = 0.0
+            print('model summary:', self.model)
             for p in self.model.parameters():
-                param_norm = p.grad.data.norm(2)
+                if p.grad is None:
+                    param_norm = p.norm(2)
+                else:
+                    param_norm = p.grad.data.norm(2)
+                    
                 total_norm += param_norm.item() ** 2
             total_norm = total_norm ** (1. / 2)
             

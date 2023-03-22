@@ -1,7 +1,7 @@
 import my_utils
 from dataset_utils import node_feature_utils
 from datasets.tu_utils import parse_tu_data, create_graph_from_tu_data, get_dataset_node_num, create_graph_from_nx
-from datasets.sampler import RandomSampler
+from datasets.sampler import RandomSampler, ImbalancedDatasetSampler
 from datasets.dataset import GraphDataset, GraphDatasetSubset
 from datasets.dataloader import DataLoader
 from datasets.data import Data
@@ -63,7 +63,7 @@ class GraphDatasetManager:
             self.use_pagerank = use_pagerank
             self.use_eigen = use_eigen
             self.use_deepwalk = use_deepwalk
-                        
+
         self.use_node_degree = use_node_degree
         self.use_node_attrs = use_node_attrs
         self.use_one = use_one
@@ -106,10 +106,14 @@ class GraphDatasetManager:
         self.dataset = GraphDataset(torch.load(
             self.processed_dir / f"{self.name}.pt"))
         print('dataset len: ', len(self.dataset))
-        splits_filename = self.processed_dir / f"{self.name}_splits.json"
+        if 'split_file' in self.config:
+            prefix = self.config['split_file']
+            splits_filename = self.processed_dir / f"{prefix}_{self.name}_splits.json"
+        else:
+            splits_filename = self.processed_dir / f"{self.name}_splits.json"
         if not splits_filename.exists():
             self.splits = []
-            self._make_splits()
+            self._make_splits(splits_filename)
         else:
             self.splits = json.load(open(splits_filename, "r"))
             print('load splits:', splits_filename)
@@ -122,6 +126,11 @@ class GraphDatasetManager:
 
         if self.additional_graph_features is not None:
             self._add_graph_features()
+
+        self.sampler = None
+        if 'sampler' in self.config:
+            self.sampler = self.config['sampler']
+
 
     @property
     def init_method(self):
@@ -413,7 +422,7 @@ class GraphDatasetManager:
     def _download(self):
         raise NotImplementedError
 
-    def _make_splits(self):
+    def _make_splits(self, filename):
         """
         DISCLAIMER: train_test_split returns a SUBSET of the input indexes,
             whereas StratifiedKFold.split returns the indexes of the k subsets, starting from 0 to ...!
@@ -483,13 +492,18 @@ class GraphDatasetManager:
 
                 self.splits.append(split)
 
-        filename = self.processed_dir / f"{self.name}_splits.json"
         with open(filename, "w") as f:
             json.dump(self.splits[:], f, cls=NumpyEncoder)
 
     def _get_loader(self, dataset, batch_size=1, shuffle=True):
+
         # dataset = GraphDataset(data)
-        sampler = RandomSampler(dataset) if shuffle is True else None
+        if self.sampler is None:
+            sampler = RandomSampler(dataset) if shuffle is True else None
+        elif self.sampler == 'imbalanced':
+            sampler = ImbalancedDatasetSampler(dataset)
+        else:
+            raise NotImplementedError
 
         # 'shuffle' needs to be set to False when instantiating the DataLoader,
         # because pytorch  does not allow to use a custom sampler with shuffle=True.
@@ -508,6 +522,7 @@ class GraphDatasetManager:
         outer_idx = outer_idx or 0
 
         idxs = self.splits[outer_idx]["test"]
+
         test_data = GraphDatasetSubset(self.dataset.get_data(), idxs)
 
         if len(test_data) == 0:
@@ -537,93 +552,69 @@ class GraphDatasetManager:
         return train_loader, val_loader
 
 
-class SmilesDataset:
-    def __init__(self, dataset, smiles) -> None:
-        self.dataset = dataset
-        self.smiles = smiles
+    
+from rdkit.Chem.Scaffolds import MurckoScaffold
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from sklearn.model_selection import train_test_split
+from rdkit.Chem.rdmolops import FastFindRings
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
-    
-    def __len__(self):
-        return len(self.dataset)
-    
 class MoleculeDatasetManager(GraphDatasetManager):
     classification = True
-    from collections import defaultdict
-    from functools import partial
-    from itertools import accumulate, chain
 
-    import numpy as np
-    import dgl.backend as F
-    from dgl.data.utils import split_dataset, Subset
-    from rdkit import Chem
-    from rdkit.Chem import rdMolDescriptors
-    from rdkit.Chem.rdmolops import FastFindRings
-    from rdkit.Chem import AllChem
-    from rdkit.Chem.Scaffolds import MurckoScaffold
-
-    @staticmethod
-    def get_ordered_scaffold_sets(molecules, scaffold_func):
+    def _scaffold_split(self, dataset, scaffold_func='decompose'):
      
-        assert scaffold_func in ['decompose', 'smiles'], \
-            "Expect scaffold_func to be 'decompose' or 'smiles', " \
-            "got '{}'".format(scaffold_func)
 
-        scaffolds = defaultdict(list)
-        for i, mol in enumerate(molecules):
-            # For mols that have not been sanitized, we need to compute their ring information
-            try:
-                FastFindRings(mol)
-                if scaffold_func == 'decompose':
-                    mol_scaffold = Chem.MolToSmiles(AllChem.MurckoDecompose(mol))
-                if scaffold_func == 'smiles':
-                    mol_scaffold = MurckoScaffold.MurckoScaffoldSmiles(
-                        mol=mol, includeChirality=False)
-                # Group molecules that have the same scaffold
-                scaffolds[mol_scaffold].append(i)
-            except:
-                print('Failed to compute the scaffold for molecule {:d} '
-                      'and it will be excluded.'.format(i + 1))
+        smiles = [d.smiles for d in dataset]
+        molecules = [Chem.MolFromSmiles(s, sanitize=None) for s in smiles]
 
-        # Order groups of molecules by first comparing the size of groups
-        # and then the index of the first compound in the group.
-        scaffolds = {key: sorted(value) for key, value in scaffolds.items()}
-        scaffold_sets = [
-            scaffold_set for (scaffold, scaffold_set) in sorted(
-                scaffolds.items(), key=lambda x: (len(x[1]), x[1][0]), reverse=True)
-        ]
+        def get_scaffold_sets(molecules, scaffold_func):
+            res_dict = {}
+            if scaffold_func == 'decompose':
+                for i, mol in enumerate(molecules):
+                    FastFindRings(mol)
+                    res_dict[i] = Chem.MolToSmiles(AllChem.MurckoDecompose(mol))
+            elif scaffold_func == 'smiles':
+                for i, mol in enumerate(molecules):
+                    FastFindRings(mol)
+                    res_dict[i] =MurckoScaffold.MurckoScaffoldSmiles(mol=mol, includeChirality=False) 
+            else:
+                raise NotImplementedError
+            return res_dict
 
-        return scaffold_sets # [[1,23,24], [123]...] sorted group of each scaffold
+        scaffold_dict = get_scaffold_sets(molecules, scaffold_func)
+        scaffolds_set = list(set(scaffold_dict.values()))
+   
+        train_scaffolds, test_scaffolds = train_test_split(scaffolds_set, test_size=0.1)
+        train_scaffolds, val_scaffolds = train_test_split(train_scaffolds, test_size=0.1)
 
+        train_indices = [i for i in range(len(molecules)) if scaffold_dict[i] in train_scaffolds]
+        test_indices = [i for i in range(len(molecules))  if scaffold_dict[i] in test_scaffolds]
+        val_indices = [i for i in range(len(molecules)) if scaffold_dict[i] in val_scaffolds]
+        # scaffold split, train : 32462, test: 3702, val:4963, total:41127
+        print(f'scaffold split, train : {len(train_indices)}, test: {len(test_indices)}, val:{len(val_indices)}')
+        return train_indices, test_indices, val_indices
+    
 
-    def _k_fold_split(dataset, mols=None, sanitize=True,
-                     k=5, log_every_n=1000, scaffold_func='decompose'):
+    # def _random_folds(self, dataset):
+    #     # NOTE:split along y
+    #     label_dict = defaultdict(list)
+    #     for i, d in enumerate(dataset):
+    #         label_dict[d.y.item()].append(i)
+
+    #     train_splits, test_splits, val_splits = [], [], []
+    #     for _, v in label_dict.items():
+    #         tr, te = train_test_split(v, test_size=0.1)
+    #         train_splits.extend(tr)
+    #         test_splits.extend(te)
+    #         tr, vl = train_test_split(tr, test_size=0.1)
+    #         train_splits.extend(tr)
+    #         val_splits.extend(vl)
         
-      
-        assert k >= 2, 'Expect the number of folds to be no smaller than 2, got {:d}'.format(k)
+    #     return train_splits, test_splits, val_splits
 
-        molecules = prepare_mols(dataset, mols, sanitize)
-        scaffold_sets = ScaffoldSplitter.get_ordered_scaffold_sets(
-            molecules, log_every_n, scaffold_func)
 
-        # scaffold_sets: [[1,23,24], [123]...] sorted group of each scaffold
 
-        # k buckets that form a relatively balanced partition of the dataset
-        index_buckets = [[] for _ in range(k)]
-        for group_indices in scaffold_sets:
-            bucket_chosen = int(np.argmin([len(bucket) for bucket in index_buckets]))
-            index_buckets[bucket_chosen].extend(group_indices)
-
-        all_folds = []
-        for i in range(k):
-            if log_every_n is not None:
-                print('Processing fold {:d}/{:d}'.format(i + 1, k))
-            train_indices = list(chain.from_iterable(index_buckets[:i] + index_buckets[i + 1:]))
-            val_indices = index_buckets[i]
-            all_folds.append((Subset(dataset, train_indices), Subset(dataset, val_indices)))
-
-        return all_folds
     def _download(self):
         # TODO: write to file
         """
@@ -639,17 +630,26 @@ class MoleculeDatasetManager(GraphDatasetManager):
         # load from raw:
         cur_dataset = MoleculeNet(root='DATA', name=self.name)
         print(f'len: {len(cur_dataset)}')
-        
-        # TODO: splits:
-        from dgllife.utils import ScaffoldSplitter
-        from dgllife.utils.splitters
-        
-        smdataset = SmilesDataset(cur_dataset, smiles=[i.smiles for i in cur_dataset])
-        splits = ScaffoldSplitter.k_fold_split(smdataset, mols=None, sanitize=True, k=5, log_every_n=1000, scaffold_func='decompose')
-        print(len(splits))
-        
+        all_data = [Data.from_pyg_data(d) for d in cur_dataset]
+
         torch.save(all_data, self.processed_dir / f"{self.name}.pt")
         print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+
+        if 'mol_split' in self.config:
+            if self.config['mol_split']:
+                splits = []
+                for _ in range(self.outer_k):
+                    tr, te, vl = self._scaffold_split(cur_dataset)
+                    splits.append({ "test": te, 
+                            'model_selection': [{'train':tr,
+                                                "validation":vl}]})
+                
+
+                filename = self.processed_dir / f"{self.name}_splits.json"
+                with open(filename, "w") as f:
+                    json.dump(splits, f, cls=NumpyEncoder)
+
+                print(f"mol splits saved: {filename}")
 
 
 class GNNBenchmarkDatasetManager(GraphDatasetManager):
@@ -1237,18 +1237,18 @@ class CIFAR10(GNNBenchmarkDatasetManager):
 
 class HIV(MoleculeDatasetManager):
     name = "hiv"
-    _dim_features = 3
-    _dim_target = 10
+    _dim_features = 9
+    _dim_target = 2
 
 class BACE(MoleculeDatasetManager):
     name = "bace"
     _dim_features = 3
-    _dim_target = 10
+    _dim_target = 2
 
 class BBPB(MoleculeDatasetManager):
     name = "bbpb"
     _dim_features = 3
-    _dim_target = 10
+    _dim_target = 2
 
 
 class PPI(PPIDatasetManager):
@@ -1263,6 +1263,13 @@ class NCI1(TUDatasetManager):
     _dim_features = 37
     _dim_target = 2
     max_num_nodes = 111
+
+
+class AIDS(TUDatasetManager):
+    name = "AIDS"
+    _dim_features = 4
+    _dim_target = 2
+    max_num_nodes = 3782
 
 
 class RedditBinary(TUDatasetManager):

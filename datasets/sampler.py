@@ -1,6 +1,24 @@
 import torch
 from torch.utils.data import sampler
 
+import torch
+from torch.utils.data import DataLoader, WeightedRandomSampler
+	
+class ImbalancedDatasetSampler(WeightedRandomSampler):
+    def __init__(self, dataset, num_samples=None):
+        self.num_samples = len(dataset) if num_samples is None else num_samples
+
+        # 计算每个样本的权重
+        targets = [d.y for d in dataset]
+        class_sample_count = torch.unique(torch.tensor(targets), return_counts=True)[1]
+        weight = 1. / class_sample_count.float()
+        # need normalize.
+        print('weight: ', weight)
+        samples_weight = weight[targets]
+        self.samples_weight = torch.FloatTensor(samples_weight)
+
+        super().__init__(self.samples_weight, self.num_samples, replacement=True)
+
 
 class RandomSampler(sampler.RandomSampler):
     """

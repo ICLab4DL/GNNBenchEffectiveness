@@ -22,21 +22,24 @@ dat='NCI1'
 dat='ENZYMES'
 
 
-
-gpu=01
-dt=0313
 # conf_file='config_Adapter.yml'
 
 # degree + attributes:
-conf_file='config_GIN_lzd_shuffle.yml'
 
 # dats='NCI1 ENZYMES'
 
-dats='IMDB-MULTI COLLAB NCI1 ENZYMES'
+dt=0322
+gpu=00
+conf_file='config_GIN_lzd_attr.yml'
+dats='IMDB-MULTI COLLAB'
+dats='PATTERN'
+
+dats='hiv'
+
 for dat in ${dats};do
 
-echo 'running only degree: '${dat}
-tag=degree_shuffle_${dat}
+echo 'running only attr max pool: '${dat}
+tag=max_pool_only_attr_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
