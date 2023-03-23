@@ -28,18 +28,20 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dt=0322
-gpu=00
-conf_file='config_GIN_lzd_attr.yml'
+dt=0323
+gpu=01
+conf_file='config_EGNN_lzd_mix.yml'
 dats='IMDB-MULTI COLLAB'
 dats='PATTERN'
 
+dats='AIDS'
 dats='hiv'
+dats='ogbg_molhiv'
 
 for dat in ${dats};do
 
-echo 'running only attr max pool: '${dat}
-tag=max_pool_only_attr_${dat}
+echo 'running mix degree attr: '${dat}
+tag=EGNN_mix_degree_attr_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &

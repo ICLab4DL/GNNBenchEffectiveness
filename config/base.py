@@ -7,7 +7,7 @@ from models.graph_classifiers.DeepMultisets import DeepMultisets
 from models.graph_classifiers.MolecularFingerprint import MolecularFingerprint
 from models.schedulers.ECCScheduler import ECCLR
 from models.utils.EarlyStopper import Patience, GLStopper
-from models.graph_classifiers.ModelAdapter import ModelAdapter, ModelMix
+from models.graph_classifiers.ModelAdapter import ModelAdapter, ModelMix, MolMix
 from models.graph_classifiers.GIN import GIN, EGNN
 from models.graph_classifiers.DiffPool import DiffPool
 from models.graph_classifiers.ECC import ECC
@@ -46,11 +46,14 @@ class Config:
         'hiv': HIV,
         'bace':BACE,
         'bbpb':BBPB,
+        'ogbg_molhiv':OGBHIV,
+        'ogbg_ppa':OGBPPA
     }
 
     models = {
         'Adapter': ModelAdapter,
         'Mix': ModelMix,
+        'MolMix': MolMix,
         'GIN': GIN,
         'EGIN': EGNN,
         'ECC': ECC,
@@ -84,7 +87,7 @@ class Config:
 
     early_stoppers = {
         'GLStopper': GLStopper,
-        'Patience': Patience
+        'Patience': Patience,
     }
 
     def __init__(self, **attrs):

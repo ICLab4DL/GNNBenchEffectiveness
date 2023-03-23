@@ -102,7 +102,6 @@ class HoldOutSelector:
         :param other:
         :return:
         """
-
         # Create the experiment object which will be responsible for running a specific experiment
         experiment = experiment_class(config, exp_config_name)
 

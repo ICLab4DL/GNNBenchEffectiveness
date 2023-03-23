@@ -30,6 +30,9 @@ from torch_geometric.datasets import GNNBenchmarkDataset, TUDataset
 from torch_geometric.datasets import PPI as PPIDataset
 from torch_geometric.datasets import QM9, MoleculeNet
 
+
+from ogb.graphproppred import PygGraphPropPredDataset, Evaluator
+
 sys.path.append(os.getcwd())
 
 
@@ -521,6 +524,9 @@ class GraphDatasetManager:
     def get_test_fold(self, outer_idx, batch_size=1, shuffle=True):
         outer_idx = outer_idx or 0
 
+        if outer_idx - 1 > len(self.splits):
+            return None, None
+
         idxs = self.splits[outer_idx]["test"]
 
         test_data = GraphDatasetSubset(self.dataset.get_data(), idxs)
@@ -536,6 +542,9 @@ class GraphDatasetManager:
         outer_idx = outer_idx or 0
         inner_idx = inner_idx or 0
 
+        if outer_idx - 1 > len(self.splits):
+            return None, None
+        
         idxs = self.splits[outer_idx]["model_selection"][inner_idx]
         train_data = GraphDatasetSubset(self.dataset.get_data(), idxs["train"])
         print('idxs keys:', idxs.keys())
@@ -550,6 +559,57 @@ class GraphDatasetManager:
             val_loader = self._get_loader(val_data, batch_size, shuffle)
 
         return train_loader, val_loader
+
+
+
+class OGBMoleculeDatasetManager(GraphDatasetManager):
+    classfication =True
+
+    def _download(self):
+        # TODO: write to file
+        """
+        name (string): The name of the dataset (one of :obj:`"PATTERN"`,
+            :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
+            :obj:`"TSP"`, :obj:`"CSL"`)
+        """
+
+        # elif args.dataset == 'ogbg-ppa':
+        # if args.dataset == 'ogbg-molhiv':
+
+        dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+        # dataset = PygGraphPropPredDataset(name=args.dataset, root=ar, transform=add_zeros)
+        del dataset
+        print('Downloaded')
+
+    def _process(self):
+        # TODO: combine trian, val, test:
+        # load from raw:
+        dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+        print(f'len: {len(dataset)}')
+        all_data = [Data.from_pyg_data(d) for d in dataset]
+
+        torch.save(all_data, self.processed_dir / f"{self.name}.pt")
+        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+        split_idx = dataset.get_idx_split()
+
+        if 'mol_split' in self.config:
+            if self.config['mol_split']:
+                tr = [i.item() for i in split_idx['train'].numpy()]
+                vl= [i.item() for i in split_idx['valid'].numpy()]
+                te = [i.item() for i in split_idx['test'].numpy()]
+
+                splits = [{ "test": te,
+                            'model_selection': [{'train':tr,
+                                                "validation":vl}]}]
+                
+                filename = self.processed_dir / f"{self.name}_splits.json"
+                with open(filename, "w") as f:
+                    json.dump(splits, f, cls=NumpyEncoder)
+
+                print(f"mol splits saved: {filename}")
+        else:
+            print('not use mol split')
+
 
 
     
@@ -1234,6 +1294,20 @@ class CIFAR10(GNNBenchmarkDatasetManager):
     _dim_features = 3
     _dim_target = 10
 
+"""
+        # elif args.dataset == 'ogbg-ppa':
+        # if args.dataset == 'ogbg-molhiv':
+"""
+
+class OGBHIV(OGBMoleculeDatasetManager):
+    name = 'ogbg-molhiv'
+    _dim_features = 9
+    _dim_target = 1
+
+class OGBPPA(OGBMoleculeDatasetManager):
+    name = 'ogbg-ppa'
+    _dim_features = 9
+    _dim_target = 1
 
 class HIV(MoleculeDatasetManager):
     name = "hiv"

@@ -24,12 +24,16 @@ class NetWrapper:
 
     def _train(self, train_loader, optimizer, clipping=None):
         model = self.model.to(self.device)
-
+        
         model.train()
 
         loss_all = 0
         acc_all = 0
         auc_roc = 0
+
+        y_true = []
+        y_pred = []
+
         for i, data in enumerate(train_loader):
             if i == len(train_loader)-1:
                 continue
@@ -37,11 +41,9 @@ class NetWrapper:
             optimizer.zero_grad()
             output = model(data)
 
-            if not isinstance(output, tuple):
-                output = (output,)
-
             if self.classification:
-                loss, acc = self.loss_fun(data.y, *output)
+
+                loss, acc = self.loss_fun(data.y.float().view(output.shape), *(output,))
                 loss.backward()
                 try:
                     num_graphs = data.num_graphs
@@ -50,10 +52,8 @@ class NetWrapper:
 
                 loss_all += loss.item() * num_graphs
                 acc_all += acc.item() * num_graphs
-                if self.roc_auc:
-                    auc_roc += roc_auc_score(data.y.detach().cpu().numpy(), torch.argmax(output[0], dim=-1).detach().cpu().numpy())
             else:
-                loss = self.loss_fun(data.y, *output)
+                loss = self.loss_fun(data.y.float().view(output.shape), *output)
                 loss.backward()
                 loss_all += loss.item()
             
@@ -61,11 +61,20 @@ class NetWrapper:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), clipping)
             optimizer.step()
 
-        # TODO: add auc-roc
+            if self.roc_auc:
+                y_true.append(data.y.view(output.shape).detach().cpu())
+                y_pred.append(output.detach().cpu())
+
+
+        y_true = torch.cat(y_true, dim=0).numpy()
+        y_pred = torch.cat(y_pred, dim=0).numpy()
+        if self.roc_auc:
+            auc_roc = roc_auc_score(y_true, y_pred)
+
 
         if self.classification:
             if self.roc_auc:
-                return acc_all / len(train_loader.dataset), loss_all / len(train_loader.dataset), auc_roc/len(train_loader.dataset)
+                return acc_all / len(train_loader.dataset), loss_all / len(train_loader.dataset), auc_roc
             else:
                 return acc_all / len(train_loader.dataset), loss_all / len(train_loader.dataset)
         else:
@@ -78,17 +87,15 @@ class NetWrapper:
         loss_all = 0
         acc_all = 0
         auc_roc = 0
+        y_true = []
+        y_pred = []
 
         for data in loader:
             data = data.to(self.device)
             output = model(data)
 
-            if not isinstance(output, tuple):
-                output = (output,)
-
             if self.classification:
-                loss, acc = self.loss_fun(data.y, *output)
-
+                loss, acc = self.loss_fun(data.y.float().view(output.shape), *(output,))
                 try:
                     num_graphs = data.num_graphs
                 except TypeError:
@@ -96,15 +103,22 @@ class NetWrapper:
 
                 loss_all += loss.item() * num_graphs
                 acc_all += acc.item() * num_graphs
-                if self.roc_auc:
-                    auc_roc += roc_auc_score(data.y.detach().cpu().numpy(), torch.argmax(output[0], dim=-1).detach().cpu().numpy())
             else:
-                loss = self.loss_fun(data.y, *output)
+                loss = self.loss_fun(data.y.float().view(output.shape), *(output,))
                 loss_all += loss.item()
+
+            if self.roc_auc:
+                y_true.append(data.y.view(output.shape).detach().cpu())
+                y_pred.append(output.detach().cpu())
+
+        y_true = torch.cat(y_true, dim=0).numpy()
+        y_pred = torch.cat(y_pred, dim=0).numpy()
+        if self.roc_auc:
+            auc_roc = roc_auc_score(y_true, y_pred)
 
         if self.classification:
             if self.roc_auc:
-                return acc_all / len(loader.dataset), loss_all / len(loader.dataset), auc_roc / len(loader.dataset)
+                return acc_all / len(loader.dataset), loss_all / len(loader.dataset), auc_roc
             else:
                 return acc_all / len(loader.dataset), loss_all / len(loader.dataset)
         else:
@@ -131,7 +145,6 @@ class NetWrapper:
 
             # TODO: calculate norm before clipping 
             total_norm = 0.0
-            print('model summary:', self.model)
             for p in self.model.parameters():
                 if p.grad is None:
                     param_norm = p.norm(2)
@@ -160,16 +173,28 @@ class NetWrapper:
                     val_acc, val_loss = self.classify_graphs(validation_loader)
 
                 # Early stopping (lazy if evaluation)
-                if early_stopper is not None and early_stopper.stop(epoch, val_loss, val_acc,
-                                                                    test_loss, test_acc,
-                                                                    train_loss, train_acc):
-                    msg = f'Stopping at epoch {epoch}, best is {early_stopper.get_best_vl_metrics()}'
-                    if logger is not None:
-                        logger.log(msg)
-                        print(msg)
-                    else:
-                        print(msg)
-                    break
+                if self.roc_auc:
+                    if early_stopper is not None and early_stopper.stop(epoch, val_loss, val_roc_auc,
+                                                                        test_loss, test_roc_auc,
+                                                                        train_loss, train_roc_auc):
+                        msg = f'Stopping at epoch {epoch}, best is {early_stopper.get_best_vl_metrics()}'
+                        if logger is not None:
+                            logger.log(msg)
+                            print(msg)
+                        else:
+                            print(msg)
+                        break
+                else:
+                    if early_stopper is not None and early_stopper.stop(epoch, val_loss, val_acc,
+                                                                        test_loss, test_acc,
+                                                                        train_loss, train_acc):
+                        msg = f'Stopping at epoch {epoch}, best is {early_stopper.get_best_vl_metrics()}'
+                        if logger is not None:
+                            logger.log(msg)
+                            print(msg)
+                        else:
+                            print(msg)
+                        break
 
             if epoch % log_every == 0 or epoch == 1:
                 msg = f'Epoch: {epoch}, TR loss: {train_loss} TR acc: {train_acc}, VL loss: {val_loss} VL acc: {val_acc} ' \

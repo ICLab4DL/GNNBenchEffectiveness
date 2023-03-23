@@ -1,40 +1,43 @@
 model:
   - GIN
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
-  # - 64
-  - 128
+  - 64
+  # - 32
 learning_rate:
   - 0.001
 classifier_epochs:
-  - 150
+  - 100
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
-  - [64, 62, 32]
+  - [64, 256, 64]
+layer_num:
+  - 5
 optimizer:
   - Adam
 scheduler:
   - null
 loss:
-  - MulticlassClassificationLoss
+  - BinaryClassificationLoss
 train_eps:
   # - true
   - false
 l2:
   - 0.
 aggregation:
-  # - mean
-  - max
+  - mean
+  # - max
   # - sum
 gradient_clipping:
   - null
+
 dropout:
   - 0.5
 early_stopper:
   -
     class: Patience
     args:
-      patience: 200
+      patience: 30
       use_loss: False
 shuffle:
   - True
@@ -58,5 +61,8 @@ shuffle_feature:
 roc_auc:
   - True
 
-sampler:
-  - imbalanced
+# sampler:
+#   - imbalanced
+
+mol_split:
+  - True

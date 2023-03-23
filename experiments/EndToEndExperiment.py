@@ -65,8 +65,10 @@ class EndToEndExperiment(Experiment):
 
         labels = [i.y for i in train_loader.dataset]
         weight = get_sampleweight(labels)
+        weight = weight.to(self.model_config['device'])
+        weight = None
 
-        net = NetWrapper(model, loss_function=loss_class(weight=weight.to(self.model_config['device'])), device=self.model_config['device'], config=self.model_config)
+        net = NetWrapper(model, loss_function=loss_class(weight=weight), device=self.model_config['device'], config=self.model_config)
 
 
         optimizer = optim_class(model.parameters(),
@@ -76,7 +78,7 @@ class EndToEndExperiment(Experiment):
             scheduler = sched_class(optimizer)
         else:
             scheduler = None
-
+    
         train_loss, train_acc, val_loss, val_acc, _, _, _ = net.train(train_loader=train_loader,
                                                                    max_epochs=self.model_config['classifier_epochs'],
                                                                    optimizer=optimizer, scheduler=scheduler,
@@ -109,11 +111,13 @@ class EndToEndExperiment(Experiment):
 
         labels = [i.y for i in train_loader.dataset]
         weight = get_sampleweight(labels)
+        weight = weight.to(self.model_config['device'])
+        weight = None
 
         print('--------- self model config:', self.model_config)
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target,
                             config=self.model_config)
-        net = NetWrapper(model, loss_function=loss_class(weight=weight.to(self.model_config['device'])), device=self.model_config['device'], config=self.model_config)
+        net = NetWrapper(model, loss_function=loss_class(weight=weight), device=self.model_config['device'], config=self.model_config)
 
         optimizer = optim_class(model.parameters(),
                                 lr=self.model_config['learning_rate'], weight_decay=self.model_config['l2'])

@@ -97,4 +97,3 @@ class Patience(EarlyStopper):
             else:
                 self.counter += 1
                 return self.counter >= self.patience
-

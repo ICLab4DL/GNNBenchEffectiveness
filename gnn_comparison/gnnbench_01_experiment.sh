@@ -28,24 +28,22 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dt=0317
-gpu=01
-conf_file='config_GIN_lzd.yml'
+dt=0323
+gpu=00
+conf_file='config_GIN_lzd_mix.yml'
 dats='IMDB-MULTI COLLAB'
-dats='CIFAR10'
+dats='PATTERN'
 
+dats='AIDS'
+dats='hiv'
+dats='ogbg_molhiv'
 
-dats='PPI'
 for dat in ${dats};do
 
-echo 'running only degree: '${dat}
-tag=only_degree_${dat}
+echo 'running mix attr degree: '${dat}
+tag=GIN_mix_attr_degree_${dat}
 
-nohup python3 -u Launch_Experiments.py \
---outer-folds 1 \
---outer-processes 1 \
---inner-folds 1 \
---config-file gnn_comparison/${conf_file} \
+nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'

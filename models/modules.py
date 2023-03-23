@@ -14,7 +14,6 @@ class ClassificationLoss(nn.Module):
         :return: loss and accuracy values
         """
         outputs = outputs[0]
-
         loss = self.loss(outputs, targets)
         accuracy = self._calculate_accuracy(outputs, targets)
         return loss, accuracy
@@ -34,6 +33,7 @@ class BinaryClassificationLoss(ClassificationLoss):
             self.loss = nn.BCEWithLogitsLoss(reduction=reduction, weight=weight)
         else:
             self.loss = nn.BCEWithLogitsLoss(weight=weight)
+
 
     def _get_correct(self, outputs):
         return outputs > 0.5

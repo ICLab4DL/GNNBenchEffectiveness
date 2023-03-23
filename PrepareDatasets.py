@@ -21,6 +21,8 @@ DATASETS = {
     'hiv': HIV,
     'bace':BACE,
     'bbpb':BBPB,
+    'ogbg_molhiv':OGBHIV,
+    'ogbg_ppa':OGBPPA
 }
 
 SYN_DATASETS = {

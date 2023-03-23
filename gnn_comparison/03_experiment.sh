@@ -22,24 +22,29 @@ dat='NCI1'
 dat='ENZYMES'
 
 
-
-gpu=01
-dt=0313
 # conf_file='config_Adapter.yml'
 
 # degree + attributes:
-conf_file='config_GIN_lzd_pagerank.yml'
 
 # dats='NCI1 ENZYMES'
 
-dats='COLLAB NCI1'
+dt=0323
+gpu=01
+conf_file='config_GIN_lzd_degree.yml'
+dats='IMDB-MULTI COLLAB'
+dats='PATTERN'
+
+dats='AIDS'
+dats='hiv'
+dats='ogbg_molhiv'
+
 for dat in ${dats};do
 
 echo 'running only degree: '${dat}
-tag=pagerank_${dat}
+tag=GIN_only_degree${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
---dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
+--dataset-name ${dat} --result-folder results/result_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'
 echo 'tail -f logs/'${gpu}_${dt}_${tag}'_nohup.log'
