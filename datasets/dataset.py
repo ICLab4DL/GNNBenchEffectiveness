@@ -12,8 +12,10 @@ class GraphDataset:
         return len(self.data)
 
     def get_targets(self):
-        targets = [d.y.item() for d in self.data]
-        return np.array(targets)
+        if self.data[0].y.shape[0] > 1:
+            return np.stack([d.y for d in self.data], axis=0)
+        else:
+            return np.array([d.y.item() for d in self.data])
 
     def get_data(self):
         return self.data
@@ -64,5 +66,8 @@ class GraphDatasetSubset(GraphDataset):
         return len(self.indices)
 
     def get_targets(self):
-        targets = [self.data[i].y.item() for i in self.indices]
-        return np.array(targets)
+        if self.data[0].y.shape[0] > 1:
+            return np.stack([self.data[i].y for i in self.indices], axis=0)
+        else:
+            return np.array([self.data[i].y.item() for i in self.indices])
+        

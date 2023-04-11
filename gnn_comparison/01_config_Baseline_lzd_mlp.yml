@@ -3,16 +3,17 @@ model:
 device:
   - cuda:0
 batch_size:
-  - 128
+  - 64
 hidden_units:
-  - 256
+  - 300
 learning_rate:
+  - 0.0001
   - 0.001
   - 0.01
 l2:
   - 0.0
 classifier_epochs:
-  - 1000
+  - 150
 optimizer:
   - Adam
   # - SGD
@@ -20,6 +21,7 @@ scheduler:
   - null
 loss:
   - MulticlassClassificationLoss
+  - BinaryClassificationLoss
 gradient_clipping:
   - null
 early_stopper:
@@ -42,11 +44,34 @@ shuffle:
 # 'avg_cc': node_cc_avg_feature,
 # 'cycle': graph_cycle_feature
 
-additional_graph_features:
-  - stats_degree,avgd
+# 'stats_degree': graph_stats_degree,
+# 'degree_dist': graph_degree_dist,
+# 'avg_degree': graph_avg_degree,
+# 'avg_cc': node_cc_avg_feature,
+# 'cycle': graph_cycle_feature,
+# 'avgd': graph_avgDN_feature,
+# 'invariant':graph_invariant
 
+additional_graph_features:
+  - avgd
+  - avg_degree
+  
 dropout:
-  - 0.4
+  - 0.5
 
 norm_feature:
   - True
+
+roc_auc:
+  - True
+
+node_attribute:
+  - False
+
+
+sampler:
+  - imbalanced
+
+mol_split:
+  - True
+

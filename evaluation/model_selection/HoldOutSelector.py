@@ -121,12 +121,15 @@ class HoldOutSelector:
 
         dataset_getter.set_inner_k(None)  # need to stay this way
 
-        training_score, validation_score = experiment.run_valid(dataset_getter, logger, other)
+        metrics = experiment.run_valid(dataset_getter, logger, other)
+        
+        selection_dict['TR_score'] = float(metrics.train_acc)
+        selection_dict['VL_score'] = float(metrics.val_acc)
+        
+        selection_dict['TR_roc_auc'] = float(metrics.train_roc_auc)
+        selection_dict['VL_roc_auc'] = float(metrics.val_roc_auc)
 
-        selection_dict['TR_score'] = float(training_score)
-        selection_dict['VL_score'] = float(validation_score)
-
-        logger.log('TR Accuracy: ' + str(training_score) + ' VL Accuracy: ' + str(validation_score))
+        logger.log('TR Accuracy: ' + str(metrics.train_acc) + ' VL Accuracy: ' + str(metrics.val_acc))
 
         with open(config_filename, 'w') as fp:
             json.dump(selection_dict, fp)

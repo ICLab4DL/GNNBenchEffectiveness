@@ -28,7 +28,7 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dt=0323
+dt=0329
 gpu=00
 conf_file='config_GIN_lzd_decouple_adapter.yml'
 dats='IMDB-MULTI COLLAB'
@@ -37,11 +37,12 @@ dats='PATTERN'
 dats='AIDS'
 dats='hiv'
 dats='ogbg_molhiv'
+dats='MNIST'
 
 for dat in ${dats};do
 
 echo 'running decouple attr degree: '${dat}
-tag=MolMix_decouple_attr_degree_${dat}
+tag=Adapter_decouple_attr_degree_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} --result-folder results/result_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &

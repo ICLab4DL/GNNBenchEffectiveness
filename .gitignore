@@ -7,6 +7,7 @@ tboard/
 dataset/
 *.log
 *.pkl
+*.zip
 
 graphsage-simple
 graphsage-simple/*

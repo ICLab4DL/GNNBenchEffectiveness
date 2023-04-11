@@ -8,7 +8,7 @@ from evaluation.risk_assessment.K_Fold_Assessment import KFoldAssessment
 from experiments.EndToEndExperiment import EndToEndExperiment
 
 
-def main(config_file, dataset_name,
+def main( model_configurations,
          outer_k, outer_processes, inner_k, inner_processes, result_folder, debug=False):
 
     # Needed to avoid thread spawning, conflicts with multi-processing. You may set a number > 1 but take into account
@@ -17,7 +17,6 @@ def main(config_file, dataset_name,
 
     experiment_class = EndToEndExperiment
 
-    model_configurations = Grid(config_file, dataset_name)
     model_configuration = Config(**model_configurations[0])
 
     exp_path = os.path.join(result_folder, f'{model_configuration.exp_name}_assessment')

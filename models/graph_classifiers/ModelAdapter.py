@@ -86,8 +86,6 @@ class ModelMix(torch.nn.Module):
         # out = self.dropout(self.ln(torch.cat([out1,out2], dim=-1)))
 
         return out
-    
-
 
 
 class MolMix(torch.nn.Module):

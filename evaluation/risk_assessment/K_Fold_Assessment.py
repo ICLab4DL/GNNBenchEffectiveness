@@ -31,6 +31,10 @@ class KFoldAssessment:
 
         outer_TR_scores = []
         outer_TS_scores = []
+        
+        outer_TR_ROCAUC = []
+        outer_TE_ROCAUC = []
+        
         assessment_results = {}
 
         for i in range(1, self.outer_folds+1):
@@ -43,17 +47,29 @@ class KFoldAssessment:
 
                     outer_TR_scores.append(outer_fold_scores['OUTER_TR'])
                     outer_TS_scores.append(outer_fold_scores['OUTER_TS'])
-
+                    
+                    outer_TR_ROCAUC.append(outer_fold_scores['OUTER_TR_ROCAUC'])
+                    outer_TE_ROCAUC.append(outer_fold_scores['OUTER_TE_ROCAUC'])
+                    
             except Exception as e:
                 print(e)
 
         outer_TR_scores = np.array(outer_TR_scores)
         outer_TS_scores = np.array(outer_TS_scores)
-
+        outer_TR_ROCAUC = np.array(outer_TR_ROCAUC)
+        outer_TE_ROCAUC = np.array(outer_TE_ROCAUC)
+        
         assessment_results['avg_TR_score'] = outer_TR_scores.mean()
         assessment_results['std_TR_score'] = outer_TR_scores.std()
         assessment_results['avg_TS_score'] = outer_TS_scores.mean()
         assessment_results['std_TS_score'] = outer_TS_scores.std()
+
+        
+        assessment_results['avg_TR_ROCAUC'] = outer_TR_ROCAUC.mean()
+        assessment_results['std_TR_ROCAUC'] = outer_TR_ROCAUC.std()
+        assessment_results['avg_TE_ROCAUC'] = outer_TE_ROCAUC.mean()
+        assessment_results['std_TE_ROCAUC'] = outer_TE_ROCAUC.std()
+        
 
         with open(os.path.join(self.__NESTED_FOLDER, self._ASSESSMENT_FILENAME), 'w') as fp:
             json.dump(assessment_results, fp)
@@ -119,21 +135,33 @@ class KFoldAssessment:
         dataset_getter.set_inner_k(None)  # needs to stay None
 
         training_scores, test_scores = [], []
+        training_ruc_aucs, test_ruc_aucs = [], []
 
         # Mitigate bad random initializations
         for i in range(3):
-            training_score, test_score = experiment.run_test(dataset_getter, logger, other)
-            print(f'Final training run {i + 1}: {training_score}, {test_score}')
+            metrics = experiment.run_test(dataset_getter, logger, other)
+            print(f"Final training run {i + 1}: {metrics.train_acc}, {metrics.test_acc}, {metrics.train_roc_auc}, {metrics.test_roc_auc},")
 
-            training_scores.append(training_score)
-            test_scores.append(test_score)
+            training_scores.append(metrics.train_acc)
+            test_scores.append(metrics.test_acc)
 
+            training_ruc_aucs.append(metrics.train_roc_auc)
+            test_ruc_aucs.append(metrics.test_roc_auc)
+                               
         training_score = sum(training_scores) / 3
         test_score = sum(test_scores) / 3
-
-        logger.log('End of Outer fold. TR score: ' + str(training_score) + ' TS score: ' + str(test_score))
+        training_ruc_auc = np.mean(np.array(training_ruc_aucs))
+        test_ruc_auc = np.mean(np.array(test_ruc_aucs))
+        
+        # TODO: add roc:
+        logger.log(f"End of Outer fold. TR score:  {training_score} TS score: {test_score} \
+            training_ruc_auc: {training_ruc_auc}, test_ruc_auc: {test_ruc_auc}")
 
         with open(os.path.join(exp_path, self._OUTER_RESULTS_FILENAME), 'w') as fp:
-            json.dump({'best_config': best_config, 'OUTER_TR': training_score, 'OUTER_TS': test_score}, fp)
+            json.dump({'best_config': best_config, 'OUTER_TR': training_score,
+                       'OUTER_TS': test_score,
+                       'OUTER_TR_ROCAUC': training_ruc_auc,
+                       'OUTER_TE_ROCAUC': test_ruc_auc
+                       }, fp)
 
 

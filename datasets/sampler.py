@@ -10,6 +10,8 @@ class ImbalancedDatasetSampler(WeightedRandomSampler):
 
         # 计算每个样本的权重
         targets = [d.y for d in dataset]
+        print('tragets len"', len(targets))
+        print('tragets 0: ', targets[0])
         class_sample_count = torch.unique(torch.tensor(targets), return_counts=True)[1]
         weight = 1. / class_sample_count.float()
         # need normalize.

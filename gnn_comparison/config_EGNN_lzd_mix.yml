@@ -1,20 +1,20 @@
 model:
-  - GIN
+  - MolMix
 device:
   - cuda:0
 batch_size:
-  - 64
-  # - 32
+  - 128
 learning_rate:
   - 0.001
+  - 0.0001
 classifier_epochs:
-  - 100
-# hidden_units:  # Note: GIN add a first layer that simply adds up all node features
+  - 200
 #   - 300
-
+hidden_dim:
+  - 256
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
-  - [64, 128, 64]
-
+  - [64, 256, 64]
+  - [64, 64, 64, 64]
 layer_num:
   - 5
 optimizer:
@@ -27,11 +27,11 @@ train_eps:
   # - true
   - false
 l2:
-  - 0.
+  - 0.00001
 aggregation:
   - mean
   # - max
-  # - sum
+  - sum
 gradient_clipping:
   - null
 
@@ -41,7 +41,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 30
+      patience: 50
       use_loss: False
 shuffle:
   - True

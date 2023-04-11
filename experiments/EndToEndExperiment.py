@@ -1,7 +1,7 @@
 from models.gnn_wrapper.NetWrapper import NetWrapper
 
 from experiments.Experiment import Experiment
-
+from models.utils.EarlyStopper import ClassificationMetrics
 import torch
 
 def get_sampleweight(labels):
@@ -36,14 +36,13 @@ class EndToEndExperiment(Experiment):
         return dataset
         
     
-    def run_valid(self, dataset_getter, logger, other=None):
+    def run_valid(self, dataset_getter, logger, other=None) -> ClassificationMetrics:
         """
         This function returns the training and validation or test accuracy
         :return: (training accuracy, validation/test accuracy)
         """
 
         # print(self.model_config, dataset_getter.outer_k, dataset_getter.inner_k)
-
 
       
         model_class = self.model_config.model
@@ -58,14 +57,17 @@ class EndToEndExperiment(Experiment):
         
         train_loader, val_loader = dataset_getter.get_train_val(dataset, self.model_config['batch_size'],
                                                                 shuffle=shuffle)
+        
         print('dataset dim features', dataset.dim_features)
         
         model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target, config=self.model_config)
         # NOTE: add weight
-
-        labels = [i.y for i in train_loader.dataset]
-        weight = get_sampleweight(labels)
-        weight = weight.to(self.model_config['device'])
+        labels = dataset.get_labels()
+        # labels = [i.y for i in train_loader.dataset]
+        # labels = train_loader.data.y
+        # weight = get_sampleweight(labels)
+        # weight = weight.to(self.model_config['device'])
+        
         weight = None
 
         net = NetWrapper(model, loss_function=loss_class(weight=weight), device=self.model_config['device'], config=self.model_config)
@@ -79,16 +81,16 @@ class EndToEndExperiment(Experiment):
         else:
             scheduler = None
     
-        train_loss, train_acc, val_loss, val_acc, _, _, _ = net.train(train_loader=train_loader,
-                                                                   max_epochs=self.model_config['classifier_epochs'],
-                                                                   optimizer=optimizer, scheduler=scheduler,
-                                                                   clipping=clipping,
-                                                                   validation_loader=val_loader,
-                                                                   early_stopping=stopper_class,
-                                                                   logger=logger)
-        return train_acc, val_acc
+        metrics = net.train(train_loader=train_loader,
+                                                    max_epochs=self.model_config['classifier_epochs'],
+                                                    optimizer=optimizer, scheduler=scheduler,
+                                                    clipping=clipping,
+                                                    validation_loader=val_loader,
+                                                    early_stopping=stopper_class,
+                                                    logger=logger)
+        return metrics
 
-    def run_test(self, dataset_getter, logger, other=None):
+    def run_test(self, dataset_getter, logger, other=None) -> ClassificationMetrics:
         """
         This function returns the training and test accuracy. DO NOT USE THE TEST FOR TRAINING OR EARLY STOPPING!
         :return: (training accuracy, test accuracy)
@@ -110,8 +112,8 @@ class EndToEndExperiment(Experiment):
         test_loader = dataset_getter.get_test(dataset, self.model_config['batch_size'], shuffle=shuffle)
 
         labels = [i.y for i in train_loader.dataset]
-        weight = get_sampleweight(labels)
-        weight = weight.to(self.model_config['device'])
+        # weight = get_sampleweight(labels)
+        # weight = weight.to(self.model_config['device'])
         weight = None
 
         print('--------- self model config:', self.model_config)
@@ -127,10 +129,9 @@ class EndToEndExperiment(Experiment):
         else:
             scheduler = None
 
-        train_loss, train_acc, val_loss, val_acc, test_loss, test_acc, _ = \
-            net.train(train_loader=train_loader, max_epochs=self.model_config['classifier_epochs'],
+        metrics = net.train(train_loader=train_loader, max_epochs=self.model_config['classifier_epochs'],
                       optimizer=optimizer, scheduler=scheduler, clipping=clipping,
                       validation_loader=val_loader, test_loader=test_loader, early_stopping=stopper_class,
                       logger=logger)
 
-        return train_acc, test_acc
+        return metrics

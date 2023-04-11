@@ -4,7 +4,7 @@ from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 from datasets.manager import *
 from models.graph_classifiers.DGCNN import DGCNN
 from models.graph_classifiers.DeepMultisets import DeepMultisets
-from models.graph_classifiers.MolecularFingerprint import MolecularFingerprint
+from models.graph_classifiers.MolecularFingerprint import MolecularFingerprint, AtomMLP, MolecularGraphMLP
 from models.schedulers.ECCScheduler import ECCLR
 from models.utils.EarlyStopper import Patience, GLStopper
 from models.graph_classifiers.ModelAdapter import ModelAdapter, ModelMix, MolMix
@@ -42,12 +42,18 @@ class Config:
         'MUTAG': Mutag,
         "CSL": CSL,
         'CIFAR10': CIFAR10,
+        'MNIST': MNIST,
         'PPI':PPI,
         'hiv': HIV,
         'bace':BACE,
         'bbpb':BBPB,
         'ogbg_molhiv':OGBHIV,
-        'ogbg_ppa':OGBPPA
+        'ogbg_ppa':OGBPPA,
+        'PTC': PTC,
+        'QM9':QM9,
+        'ogbg_moltox21': OGBTox21,   
+        'ogbg-molbbbp': OGBBBBP,
+        'ogbg-molbace': OGBBACE,
     }
 
     models = {
@@ -55,13 +61,15 @@ class Config:
         'Mix': ModelMix,
         'MolMix': MolMix,
         'GIN': GIN,
-        'EGIN': EGNN,
+        'EGNN': EGNN,
         'ECC': ECC,
         "DiffPool": DiffPool,
         "DGCNN": DGCNN,
         "MolecularFingerprint": MolecularFingerprint,
+        "MolecularGraphMLP": MolecularGraphMLP,
         "DeepMultisets": DeepMultisets,
-        "GraphSAGE": GraphSAGE
+        "GraphSAGE": GraphSAGE,
+        "AtomMLP": AtomMLP,
     }
 
     losses = {
@@ -70,8 +78,6 @@ class Config:
         'NN4GMulticlassClassificationLoss': NN4GMulticlassClassificationLoss,
         'DiffPoolMulticlassClassificationLoss': DiffPoolMulticlassClassificationLoss,
         'MixDecoupleClassificationLoss':MixDecoupleClassificationLoss,
-        
-
     }
 
     optimizers = {
@@ -203,6 +209,11 @@ class Grid:
         assert self.num_configs > 0, 'No configurations available'
         return iter(self._configs)
 
+    def override_by_dict(self, args:dict):
+        for k, v in args.items():
+            for conf in self._configs:
+                conf[k] = v
+        
     def _grid_generator(self, cfgs_dict):
         keys = cfgs_dict.keys()
         result = {}

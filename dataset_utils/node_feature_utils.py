@@ -140,11 +140,11 @@ class MyIter(object):
         self.ite = iter(self.ite_obj)
     
 csd_dict = {}
-for d_name in DATASETS_NAMES:
-    f_name = f'{d_name}_degree_dist_shuffled.npy'
-    if os.path.exists(f_name):
-        csd_dict[d_name] = MyIter(np.load(f_name))
-        print(f'load node feauture: {f_name}\n')
+# for d_name in DATASETS_NAMES:
+#     f_name = f'{d_name}_degree_dist_shuffled.npy'
+#     if os.path.exists(f_name):
+#         csd_dict[d_name] = MyIter(np.load(f_name))
+#         print(f'load node feauture: {f_name}\n')
 
 
 
@@ -350,7 +350,6 @@ def graph_avgDN_feature(adj):
     # degrees = np.sum(adj, axis=1).astype(np.float32).reshape(N, 1)
     # mean_avg = np.mean(degrees).astype(np.float32)
     avgD = mean_avg / N
-    print('N:', N, 'avgD:', avgD, 'mean_avg:', mean_avg)
     return np.array(avgD).astype(np.float32).reshape(1)
 
 # TODO, d), graph feature pipeline.

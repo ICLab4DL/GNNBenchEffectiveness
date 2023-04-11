@@ -65,15 +65,26 @@ class Batch(data.Batch):
         # batch_graph_features:
         batch_graph_features = []
         for d in data_list:
-            copy_data.append(Data(x=d.x,
-                                  y=d.y,
-                                  edge_index=d.edge_index,
-                                  edge_attr=d.edge_attr,
-                                  v_outs=d.v_outs,
-                                  g_outs=d.g_outs,
-                                  e_outs=d.e_outs,
-                                  o_outs=d.o_outs)
-                             )
+            if d.y.shape[0] > 1:
+                copy_data.append(Data(x=d.x,
+                                    y=d.y.unsqueeze(dim=0),
+                                    edge_index=d.edge_index,
+                                    edge_attr=d.edge_attr,
+                                    v_outs=d.v_outs,
+                                    g_outs=d.g_outs,
+                                    e_outs=d.e_outs,
+                                    o_outs=d.o_outs)
+                                )
+            else:
+                copy_data.append(Data(x=d.x,
+                                y=d.y,
+                                edge_index=d.edge_index,
+                                edge_attr=d.edge_attr,
+                                v_outs=d.v_outs,
+                                g_outs=d.g_outs,
+                                e_outs=d.e_outs,
+                                o_outs=d.o_outs)
+                            )
             if hasattr(d, 'g_x'):
                 batch_graph_features.append(d.g_x)
 

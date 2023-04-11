@@ -17,12 +17,20 @@ DATASETS = {
     "MUTAG": Mutag,
     'CSL': CSL,
     'CIFAR10': CIFAR10,
+    'MNIST': MNIST,
     'PPI': PPI,
     'hiv': HIV,
     'bace':BACE,
     'bbpb':BBPB,
     'ogbg_molhiv':OGBHIV,
-    'ogbg_ppa':OGBPPA
+    'ogbg_ppa':OGBPPA,
+    'PTC': PTC,
+    'QM9':QM9,
+    'ogbg_moltox21': OGBTox21,
+    'ogbg-molbbbp': OGBBBBP,
+    'ogbg-molbace': OGBBACE,
+    
+    
 }
 
 SYN_DATASETS = {

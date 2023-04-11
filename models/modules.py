@@ -1,21 +1,23 @@
 import torch
 from torch import nn
-
+import torch.nn.functional as F
 
 class ClassificationLoss(nn.Module):
     def __init__(self):
         super().__init__()
         self.loss = None
 
-    def forward(self, targets, *outputs):
+    def forward(self, pred, targets):
         """
         :param targets:
         :param outputs:
         :return: loss and accuracy values
         """
-        outputs = outputs[0]
-        loss = self.loss(outputs, targets)
-        accuracy = self._calculate_accuracy(outputs, targets)
+        
+        # print('targets shape:', targets.shape)
+        # print('outputs shape:', pred.shape)
+        loss = self.loss(pred, targets)
+        accuracy = self._calculate_accuracy(pred, targets)
         return loss, accuracy
 
     def _get_correct(self, outputs):
@@ -27,13 +29,25 @@ class ClassificationLoss(nn.Module):
 
 
 class BinaryClassificationLoss(ClassificationLoss):
-    def __init__(self, reduction=None,weight=None):
+    def __init__(self, reduction=None, weight=None):
         super().__init__()
-        if reduction is not None:
-            self.loss = nn.BCEWithLogitsLoss(reduction=reduction, weight=weight)
-        else:
-            self.loss = nn.BCEWithLogitsLoss(weight=weight)
+        self.loss = nn.BCEWithLogitsLoss()
 
+    def __name__(self):
+        return "BinaryClassificationLoss"
+    
+    def forward(self, pred, targets):
+        """
+        :param targets:
+        :param outputs:
+        :return: loss and accuracy values
+        """
+        pred = pred.float()
+        if pred.size().numel() == targets.size().numel():
+            targets = targets.float().view(pred.shape)
+        else:
+            targets = F.one_hot(targets.long(), num_classes=2).float()
+        return super().forward(pred, targets)
 
     def _get_correct(self, outputs):
         return outputs > 0.5
@@ -50,6 +64,8 @@ class MixDecoupleClassificationLoss(ClassificationLoss):
     def _get_correct(self, outputs):
         return torch.argmax(outputs, dim=1)
 
+    def __name__(self):
+        return "MixDecoupleClassificationLoss"
 
 
 class MulticlassClassificationLoss(ClassificationLoss):
@@ -59,7 +75,19 @@ class MulticlassClassificationLoss(ClassificationLoss):
             self.loss = nn.CrossEntropyLoss(reduction=reduction,weight=weight)
         else:
             self.loss = nn.CrossEntropyLoss(weight=weight)
+            
+    def __name__(self):
+        return "MulticlassClassificationLoss"
 
+    def forward(self, pred, targets):
+        """
+        :param targets:
+        :param outputs:
+        :return: loss and accuracy values
+        """
+        targets = targets.squeeze().long()
+        return super().forward(pred, targets)
+    
     def _get_correct(self, outputs):
         return torch.argmax(outputs, dim=1)
 

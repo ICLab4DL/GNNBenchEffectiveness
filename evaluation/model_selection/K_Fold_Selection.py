@@ -114,7 +114,9 @@ class KFoldSelection:
             'avg_TR_score': 0.,
             'avg_VL_score': 0.,
             'std_TR_score': 0.,
-            'std_VL_score': 0.
+            'std_VL_score': 0.,
+            'avg_TR_roc_auc': 0.,
+            'avg_VL_roc_auc': 0.,
         }
 
         for k in range(self.folds):
@@ -125,24 +127,40 @@ class KFoldSelection:
             # Create the experiment object which will be responsible for running a specific experiment
             experiment = experiment_class(config, fold_exp_folder)
 
-            training_score, validation_score = experiment.run_valid(dataset_getter, logger, other)
+            metrics = experiment.run_valid(dataset_getter, logger, other)
 
-            logger.log(str(k+1) + ' split, TR Accuracy: ' + str(training_score) +
-                       ' VL Accuracy: ' + str(validation_score))
+            logger.log(f'{str(k+1)} split, TR Accuracy:  {metrics.train_acc} \
+                        TR ROCAUC: {metrics.train_roc_auc} \
+                        VL Accuracy:  {metrics.val_acc} \
+                        VL ROCAUC: {metrics.val_roc_auc}')
 
-            k_fold_dict['folds'][k]['TR_score'] = training_score
-            k_fold_dict['folds'][k]['VL_score'] = validation_score
+            k_fold_dict['folds'][k]['TR_score'] = metrics.train_acc
+            k_fold_dict['folds'][k]['VL_score'] = metrics.val_acc
+            
+            k_fold_dict['folds'][k]['TR_roc_auc'] = metrics.train_roc_auc
+            k_fold_dict['folds'][k]['VL_roc_auc'] = metrics.val_roc_auc
 
         tr_scores = np.array([k_fold_dict['folds'][k]['TR_score'] for k in range(self.folds)])
         vl_scores = np.array([k_fold_dict['folds'][k]['VL_score'] for k in range(self.folds)])
+        tr_roc_auc = np.array([k_fold_dict['folds'][k]['TR_roc_auc'] for k in range(self.folds)])
+        vl_roc_auc = np.array([k_fold_dict['folds'][k]['VL_roc_auc'] for k in range(self.folds)])
 
         k_fold_dict['avg_TR_score'] = tr_scores.mean()
         k_fold_dict['std_TR_score'] = tr_scores.std()
         k_fold_dict['avg_VL_score'] = vl_scores.mean()
         k_fold_dict['std_VL_score'] = vl_scores.std()
-
-        logger.log('TR avg is ' + str(k_fold_dict['avg_TR_score']) + ' std is ' + str(k_fold_dict['std_TR_score']) +
-                   ' VL avg is ' + str(k_fold_dict['avg_VL_score']) + ' std is ' + str(k_fold_dict['std_VL_score']))
+        
+        k_fold_dict['avg_TR_roc_auc'] = tr_roc_auc.mean()
+        k_fold_dict['std_TR_roc_auc'] = tr_roc_auc.std()
+        
+        k_fold_dict['avg_VL_roc_auc'] = vl_roc_auc.mean()
+        k_fold_dict['std_VL_roc_auc'] = vl_roc_auc.std()
+        
+        logger.log(f"TR avg is {k_fold_dict['avg_TR_score']} std is {k_fold_dict['std_TR_score']} \
+                   VL avg is {k_fold_dict['avg_VL_score']} std is {k_fold_dict['std_VL_score']} \
+                   TR ruc_auc avg is {k_fold_dict['avg_TR_roc_auc']} std is {k_fold_dict['std_TR_roc_auc']} \
+                   VL ruc_auc avg is {k_fold_dict['avg_VL_roc_auc']} std is {k_fold_dict['std_VL_roc_auc']}")
+        
 
         with open(config_filename, 'w') as fp:
             json.dump(k_fold_dict, fp)

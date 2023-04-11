@@ -28,19 +28,21 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dt=0323
+dt=0405
 gpu=00
+
 conf_file='config_GIN_lzd_mix.yml'
 dats='IMDB-MULTI COLLAB'
 dats='PATTERN'
 
-dats='AIDS'
 dats='hiv'
 dats='ogbg_molhiv'
+dats='MNIST'
+dats='AIDS'
 
 for dat in ${dats};do
 
-echo 'running mix attr degree: '${dat}
+echo 'running integrated mix attr degree: '${dat}
 tag=GIN_mix_attr_degree_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \

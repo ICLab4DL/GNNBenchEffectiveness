@@ -28,39 +28,24 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dats='PATTERN'
-dats='MUTAG NCI1 PROTEINS DD'
-dats='ogbg_molhiv'
-dats='CIFAR10'
-dats='COLLAB REDDIT-BINARY'
-dats='REDDIT-BINARY'
-dats='AIDS'
-
-model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp'
-
-dt=0410
+dt=0411
 gpu=01
-dats='ogbg-molbbbp'
+conf_file='config_atomencoder_attr.yml'
+dats='IMDB-MULTI COLLAB'
+dats='PATTERN'
 
-dats='ogbg_moltox21'
-
-model_set='GIN_lzd_attr'
+dats='AIDS'
+dats='hiv'
+dats='ogbg_molhiv'
 
 dats='ogbg_moltox21 ogbg-molbace'
-model_set='GIN_lzd_degree'
-
-for ms in ${model_set};do
-
-conf_file=config_${ms}.yml
 
 for dat in ${dats};do
 
-echo 'running '${conf_file}
-
-tag=${ms}_${dat}
+echo 'running atom encoder only attr: '${dat}
+tag=atomencoder_attr_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
---mol_split True \
 --outer-folds 1 \
 --inner-folds 1 \
 --ogb_evl True \
@@ -68,7 +53,5 @@ nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file}
 
 echo '    check log:'
 echo 'tail -f logs/'${gpu}_${dt}_${tag}'_nohup.log'
-
-done
 
 done

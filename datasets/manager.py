@@ -6,6 +6,7 @@ from datasets.dataset import GraphDataset, GraphDatasetSubset
 from datasets.dataloader import DataLoader
 from datasets.data import Data
 from datasets.synthetic_dataset_generator import *
+from models.modules import *
 from utils.encode_utils import NumpyEncoder
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.nn import functional as F
@@ -30,6 +31,8 @@ from torch_geometric.datasets import GNNBenchmarkDataset, TUDataset
 from torch_geometric.datasets import PPI as PPIDataset
 from torch_geometric.datasets import QM9, MoleculeNet
 
+from torch_geometric.data import DataLoader as torch_DataLoader
+import torch_geometric.utils as torch_utils
 
 from ogb.graphproppred import PygGraphPropPredDataset, Evaluator
 
@@ -83,6 +86,8 @@ class GraphDatasetManager:
         self.Graph_whole = None
         self.Graph_whole_pagerank = None
         self.Graph_whole_eigen = None
+        
+        self.adjs = None
 
         self.outer_k = outer_k
         assert (outer_k is not None and outer_k > 0) or outer_k is None
@@ -102,26 +107,51 @@ class GraphDatasetManager:
         if not (self.processed_dir / f"{self.name}.pt").exists():
             if not self.processed_dir.exists():
                 os.makedirs(self.processed_dir)
-            self._process() 
+            self._process()
 
         print('load dataset !')
-
-        self.dataset = GraphDataset(torch.load(
-            self.processed_dir / f"{self.name}.pt"))
+        self.splits_idx = None
+        if self.name.startswith('ogbg'):
+            self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+            self.splits_idx = self.dataset.get_idx_split()
+            self._dim_target = self.dataset.num_tasks
+            # NOTE: fill __data_list__
+            [_ for _ in self.dataset]
+        else:
+            self.dataset = GraphDataset(torch.load(
+                self.processed_dir / f"{self.name}.pt"))
+            
+            # NOTE: update _dim_target
+            targets = self.dataset.get_targets()
+            
+            dims = targets.dim() if isinstance(targets, torch.Tensor) else targets.ndim
+            if dims > 1:
+                self._dim_target = targets.shape[-1]
+            else:
+                self._dim_target = np.unique(targets).size
+                
+        print('!!!! _dim_target: ', self._dim_target)
         print('dataset len: ', len(self.dataset))
-        if 'split_file' in self.config:
-            prefix = self.config['split_file']
-            splits_filename = self.processed_dir / f"{prefix}_{self.name}_splits.json"
-        else:
-            splits_filename = self.processed_dir / f"{self.name}_splits.json"
-        if not splits_filename.exists():
-            self.splits = []
-            self._make_splits(splits_filename)
-        else:
-            self.splits = json.load(open(splits_filename, "r"))
-            print('load splits:', splits_filename)
-        print('split counts:', len(self.splits))
-        # TODO: if add more node features:
+        
+        
+        # Splits:
+        if self.splits_idx is None:
+            if 'split_file' in self.config:
+                prefix = self.config['split_file']
+                splits_filename = self.processed_dir / f"{prefix}_{self.name}_splits.json"
+            else:
+                splits_filename = self.processed_dir / f"{self.name}_splits.json"
+                
+            if not splits_filename.exists():
+                self.splits = []
+                self._make_splits(splits_filename)
+            else:
+                self.splits = json.load(open(splits_filename, "r"))
+                print('load splits:', splits_filename)
+            
+            print('split counts:', len(self.splits))
+            
+        # # TODO: if add more node features:
         if self.additional_features is not None:
             # TODO: pass node function?
             # node register
@@ -133,8 +163,14 @@ class GraphDatasetManager:
         self.sampler = None
         if 'sampler' in self.config:
             self.sampler = self.config['sampler']
-
-
+            
+    def get_labels(self):
+        if self.name.startswith('ogbg'):
+            return self.dataset.data.y
+        else:
+            return [i.y for i in self.dataset]
+            
+    
     @property
     def init_method(self):
         if self.use_random_normal:
@@ -156,9 +192,16 @@ class GraphDatasetManager:
     def dim_features(self):
         # TODO: check the graph level features:
         if self.additional_graph_features is not None:
-            self._dim_features = self.dataset.data[0].g_x.shape[-1]
+            if self.name.startswith('ogbg'):
+                self._dim_features = self.dataset[0].g_x.shape[-1]
+            else:
+                self._dim_features = self.dataset.data[0].g_x.shape[-1]
         else:
-            self._dim_features = self.dataset.data[0].x.size(1)
+            if self.name.startswith('ogbg'):
+                self._dim_features = self.dataset.__data_list__[0].x.shape[-1]
+            else:
+                self._dim_features = self.dataset.data[0].x.size(1)
+                
         print('input feature dimension: ', self._dim_features)
 
         # best for feature initialization based on the current implementation
@@ -169,6 +212,21 @@ class GraphDatasetManager:
         # feature initialization
         return self._dim_features
 
+    def get_dense_adjs(self, dataset):
+        adjs = []
+        if self.name.startswith('ogbg'):
+            for d in dataset:
+                if d.edge_index.numel() < 1:
+                    N = d.x.shape[0]
+                    adj = np.ones(shape=(N, N))
+                else:
+                    adj = torch_utils.to_dense_adj(d.edge_index).numpy()[0]
+                adjs.append(adj)
+        else:
+            adjs = [d.to_numpy_array() for d in dataset.data]
+            
+        return adjs
+
     def _add_graph_features(self):
         # TODO: add graph-wise features:
         self.additional_graph_features = self.additional_graph_features.strip().split(',')
@@ -177,7 +235,7 @@ class GraphDatasetManager:
             graph_fea_reg.register_by_str(feature_arg)
         self.graph_fea_reg = graph_fea_reg
 
-        adjs = [d.to_numpy_array() for d in self.dataset.data]
+        adjs = self.get_dense_adjs(self.dataset)
 
         # TODO: load from file if exist, if not exist, then save if it's the first fold test.
         # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
@@ -227,9 +285,16 @@ class GraphDatasetManager:
                     graph_features, along_axis=-1)
 
         # store in graph as graph not x, but g_x.
-        for i, d in enumerate(self.dataset.data):
-            # concatenate with pre features.
-            d.set_additional_attr('g_x', torch.FloatTensor(graph_features[i]))
+        # G6250
+        
+        if self.name.startswith('ogbg'):
+            for i in range(len(self.dataset.__data_list__)):
+                d = self.dataset.__data_list__[i]
+                d.g_x = torch.FloatTensor(graph_features[i])
+                self.dataset.__data_list__[i] = d
+        else:
+            for i, d in enumerate(self.dataset.data):
+                d.set_additional_attr('g_x', torch.FloatTensor(graph_features[i]))
 
         print('add graph feature done!')
 
@@ -253,10 +318,22 @@ class GraphDatasetManager:
         # get maximum node num:
         adjs = []
         max_N = 0
-        for d in self.dataset.data:
-            adjs.append(d.to_numpy_array())
-            if max_N < d.N:
-                max_N = d.N
+        if self.name.startswith('ogbg'):
+             for d in self.dataset:
+                N = d.x.shape[0]
+                if d.edge_index.numel() < 1:
+                    adj = np.ones(shape=(N, N))
+                else:
+                    # NOTE: if has no edges then failed !!!!
+                    adj = torch_utils.to_dense_adj(d.edge_index, max_num_nodes=N).numpy()[0]
+                    
+                adjs.append(adj)
+                max_N = N if N > max_N else max_N
+        else: 
+            for d in self.dataset.data:
+                adjs.append(d.to_numpy_array())
+                if max_N < d.N:
+                    max_N = d.N
 
         feature_names = self.node_fea_reg.get_registered()
         node_features = []
@@ -303,7 +380,6 @@ class GraphDatasetManager:
 
         # 2022.10.20, NOTE: normalize:
         # TODO: normalize through each graph ????
-        
         if 'norm_feature' in self.config:
             if self.config['norm_feature']:
                 print('normalize node features!!')
@@ -338,14 +414,20 @@ class GraphDatasetManager:
             
         # NOTE: composite [attr, additional, used] those 3 features:
         
-        for i, d in enumerate(self.dataset.data):
+        if self.name.startswith('ogbg'):
+            data_list = self.dataset.__data_list__
+        else:
+            data_list = self.dataset.data
+        
+        for i, d in enumerate(data_list):
             # concatenate with pre features.
             new_x = []
             if node_attribute:
                 new_x.append(d.x)
                 
             if addi_node_features is not None:
-                new_x.append(torch.FloatTensor(addi_node_features[i]))
+                addi_features = torch.FloatTensor(addi_node_features[i])
+                new_x.append(addi_features)
                 
             if used_features is not None:
                 all_feas = []
@@ -358,7 +440,11 @@ class GraphDatasetManager:
             if len(new_x) == 0:
                 raise EmptyNodeFeatureException
                 
-            d.x = torch.cat(new_x, axis=-1)
+            data_list[i].x = torch.cat(new_x, axis=-1)
+        
+        # print('self.dataset.__data_list__: ', self.dataset.__data_list__[0].x.shape)
+        # print('self.dataset.data shape: ', self.dataset.data.x.shape)
+        # print('next:', next(iter(self.dataset)).x.shape)
             
         # TODO: shuffle x among all node samples.
         if 'shuffle_feature' in self.config:
@@ -514,14 +600,22 @@ class GraphDatasetManager:
         # (in which case he should instantiate the sampler and set shuffle=False in the
         # DataLoader) or he does not (in which case he should set sampler=None
         # and shuffle=False when instantiating the DataLoader)
-
+        sampler = None
+        if self.name.startswith('ogbg'):
+            return torch_DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle)
+        
         return DataLoader(dataset,
                           batch_size=batch_size,
                           sampler=sampler,
-                          shuffle=False,  # if shuffle is not None, must stay false, ow is shuffle is false
+                          shuffle=True,  # if shuffle is not None, must stay false, ow is shuffle is false
                           pin_memory=True)
 
     def get_test_fold(self, outer_idx, batch_size=1, shuffle=True):
+        # NOTE: if ogb then return:
+        if self.splits_idx is not None:
+            test_loader = self._get_loader(self.dataset[self.splits_idx['test']], batch_size, shuffle)
+            return test_loader
+        
         outer_idx = outer_idx or 0
 
         if outer_idx - 1 > len(self.splits):
@@ -539,6 +633,13 @@ class GraphDatasetManager:
         return test_loader
 
     def get_model_selection_fold(self, outer_idx, inner_idx=None, batch_size=1, shuffle=True):
+        # NOTE: if ogb then return:
+        if self.splits_idx is not None:
+            train_loader = self._get_loader(self.dataset[self.splits_idx['train']], batch_size, shuffle)
+            val_loader = self._get_loader(self.dataset[self.splits_idx['valid']], batch_size, False)
+            return train_loader, val_loader
+        
+        
         outer_idx = outer_idx or 0
         inner_idx = inner_idx or 0
 
@@ -561,7 +662,6 @@ class GraphDatasetManager:
         return train_loader, val_loader
 
 
-
 class OGBMoleculeDatasetManager(GraphDatasetManager):
     classfication =True
 
@@ -571,12 +671,17 @@ class OGBMoleculeDatasetManager(GraphDatasetManager):
         name (string): The name of the dataset (one of :obj:`"PATTERN"`,
             :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
             :obj:`"TSP"`, :obj:`"CSL"`)
+            
+        Beside the two main datasets, we additionally provide 10 smaller datasets from MoleculeNet. 
+        They are ogbg-moltox21, ogbg-molbace, ogbg-molbbbp, ogbg-molclintox, ogbg-molmuv, ogbg-molsider, 
+        and ogbg-moltoxcast for (multi-task) binary classification, and ogbg-molesol, ogbg-molfreesolv, and ogbg-mollipo 
+        for regression. Evaluators are also provided for these datasets. These datasets can be used to stress-test molecule-specific 
+        methods or transfer learning [4].
         """
-
         # elif args.dataset == 'ogbg-ppa':
         # if args.dataset == 'ogbg-molhiv':
-
-        dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+        print('self. name:', self.name)
+        dataset = PygGraphPropPredDataset(name=self.name, root='dataset')
         # dataset = PygGraphPropPredDataset(name=args.dataset, root=ar, transform=add_zeros)
         del dataset
         print('Downloaded')
@@ -584,31 +689,32 @@ class OGBMoleculeDatasetManager(GraphDatasetManager):
     def _process(self):
         # TODO: combine trian, val, test:
         # load from raw:
-        dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
-        print(f'len: {len(dataset)}')
-        all_data = [Data.from_pyg_data(d) for d in dataset]
+        print('do nothing for pyg dataset')
+        # dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+        # print(f'len: {len(dataset)}')
+        # all_data = [Data.from_pyg_data(d) for d in dataset]
 
-        torch.save(all_data, self.processed_dir / f"{self.name}.pt")
-        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
-        split_idx = dataset.get_idx_split()
+        # torch.save(all_data, self.processed_dir / f"{self.name}.pt")
+        # print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+        # split_idx = dataset.get_idx_split()
 
-        if 'mol_split' in self.config:
-            if self.config['mol_split']:
-                tr = [i.item() for i in split_idx['train'].numpy()]
-                vl= [i.item() for i in split_idx['valid'].numpy()]
-                te = [i.item() for i in split_idx['test'].numpy()]
+        # if 'mol_split' in self.config:
+        #     if self.config['mol_split']:
+        #         tr = [i.item() for i in split_idx['train'].numpy()]
+        #         vl= [i.item() for i in split_idx['valid'].numpy()]
+        #         te = [i.item() for i in split_idx['test'].numpy()]
 
-                splits = [{ "test": te,
-                            'model_selection': [{'train':tr,
-                                                "validation":vl}]}]
+        #         splits = [{ "test": te,
+        #                     'model_selection': [{'train':tr,
+        #                                         "validation":vl}]}]
                 
-                filename = self.processed_dir / f"{self.name}_splits.json"
-                with open(filename, "w") as f:
-                    json.dump(splits, f, cls=NumpyEncoder)
+        #         filename = self.processed_dir / f"{self.name}_splits.json"
+        #         with open(filename, "w") as f:
+        #             json.dump(splits, f, cls=NumpyEncoder)
 
-                print(f"mol splits saved: {filename}")
-        else:
-            print('not use mol split')
+        #         print(f"mol splits saved: {filename}")
+        # else:
+        #     print('not use mol split')
 
 
 
@@ -790,6 +896,10 @@ class PPIDatasetManager(GraphDatasetManager):
 
 class TUDatasetManager(GraphDatasetManager):
     URL = "https://ls11-www.cs.tu-dortmund.de/people/morris/graphkerneldatasets/{name}.zip"
+    
+    "PTC_MR.zip"
+    "QM9.zip"
+    
     classification = True
 
     def _download(self):
@@ -1289,6 +1399,12 @@ class SyntheticManager(TUDatasetManager):
 
 
 
+class MNIST(GNNBenchmarkDatasetManager):
+    name = "MNIST"
+    _dim_features = 3
+    _dim_target = 10
+    
+
 class CIFAR10(GNNBenchmarkDatasetManager):
     name = "CIFAR10"
     _dim_features = 3
@@ -1299,15 +1415,36 @@ class CIFAR10(GNNBenchmarkDatasetManager):
         # if args.dataset == 'ogbg-molhiv':
 """
 
+
+class OGBBBBP(OGBMoleculeDatasetManager):
+    name = 'ogbg-molbbbp'
+    _dim_features = 9
+    _dim_target = None
+    
+class OGBBACE(OGBMoleculeDatasetManager):
+    name = 'ogbg-molbace'
+    _dim_features = 9
+    _dim_target = None
+
+    
+    
+class OGBTox21(OGBMoleculeDatasetManager):
+    name = 'ogbg-moltox21'
+    _dim_features = 9
+    _dim_target = None
+
+    
 class OGBHIV(OGBMoleculeDatasetManager):
     name = 'ogbg-molhiv'
     _dim_features = 9
-    _dim_target = 1
+    _dim_target = None
+
 
 class OGBPPA(OGBMoleculeDatasetManager):
     name = 'ogbg-ppa'
     _dim_features = 9
-    _dim_target = 1
+    _dim_target = None
+
 
 class HIV(MoleculeDatasetManager):
     name = "hiv"
@@ -1331,7 +1468,22 @@ class PPI(PPIDatasetManager):
     _dim_target = 121
 
 
-
+    "PTC_MR.zip"
+    "QM9.zip"
+    
+class PTC(TUDatasetManager):
+    name = "PTC_FM"
+    _dim_features = 37
+    _dim_target = 2
+    max_num_nodes = 111
+    
+class QM9(TUDatasetManager):
+    name = "QM9"
+    _dim_features = 37
+    _dim_target = 2
+    max_num_nodes = 111
+    
+    
 class NCI1(TUDatasetManager):
     name = "NCI1"
     _dim_features = 37
