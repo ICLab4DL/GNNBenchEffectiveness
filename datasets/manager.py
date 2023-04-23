@@ -677,7 +677,6 @@ class GraphDatasetManager:
         
         idxs = self.splits[outer_idx]["model_selection"][inner_idx]
         train_data = GraphDatasetSubset(self.dataset.get_data(), idxs["train"])
-        print('idxs keys:', idxs.keys())
         val_data = GraphDatasetSubset(
             self.dataset.get_data(), idxs["validation"])
 
