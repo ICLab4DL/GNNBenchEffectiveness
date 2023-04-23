@@ -8,6 +8,7 @@ dataset/
 *.log
 *.pkl
 *.zip
+*.tar.gz
 
 graphsage-simple
 graphsage-simple/*

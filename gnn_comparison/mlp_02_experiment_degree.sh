@@ -28,27 +28,51 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dt=0326
-gpu=01
-conf_file='config_fingerprint_attr.yml'
-dats='IMDB-MULTI COLLAB'
 dats='PATTERN'
-
-dats='AIDS'
-dats='hiv'
 dats='ogbg_molhiv'
+dats='CIFAR10'
+dats='COLLAB REDDIT-BINARY'
+dats='REDDIT-BINARY'
+dats='AIDS'
+
+
+model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
+
+dt=0423
+gpu=01
+dats='ogbg-molbbbp'
+dats='ogbg_moltox21'
+
+
+dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
+
+
+dats='MUTAG NCI1 PROTEINS DD COLLAB REDDIT-BINARY'
+model_set='Baseline_lzd_mlp'
+
+for ms in ${model_set};do
+
+conf_file=config_${ms}.yml
 
 for dat in ${dats};do
 
-echo 'running mlp single only attr: '${dat}
-tag=mlp_single_attr_${dat}
+echo 'running '${conf_file}
+
+tag=${ms}_${dat}
+
+# --outer-folds 1 \
+# --inner-folds 1 \
+# --ogb_evl True \
+# --mol_split True \
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
---outer-folds 1 \
---inner-folds 1 \
---dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
+--dataset-name ${dat} \
+--result-folder results/result_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'
 echo 'tail -f logs/'${gpu}_${dt}_${tag}'_nohup.log'
+
+
+done
 
 done
