@@ -332,6 +332,7 @@ def graph_invariant(adj):
     #N+2E
     return (N+ratio*E).reshape(1)
 
+
 @xargs
 def graph_avg_degree(adj):
     if not isinstance(adj, np.ndarray):
@@ -397,7 +398,6 @@ def composite_node_feature_list(node_features:list, padding=False, padding_len=1
         feas.append(each_fea)
         
     return feas
-
 
 
 def composite_node_features(*node_features, padding=False, padding_len=128, pad_value=0):

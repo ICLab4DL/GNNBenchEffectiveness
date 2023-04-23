@@ -12,6 +12,9 @@ dataset/
 graphsage-simple
 graphsage-simple/*
 
+figs/*
+figs
+
 result*/
 nohup*
 *.out

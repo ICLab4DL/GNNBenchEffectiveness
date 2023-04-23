@@ -54,6 +54,7 @@ class Config:
         'ogbg_moltox21': OGBTox21,   
         'ogbg-molbbbp': OGBBBBP,
         'ogbg-molbace': OGBBACE,
+        'syn_cc': SynCC,
     }
 
     models = {

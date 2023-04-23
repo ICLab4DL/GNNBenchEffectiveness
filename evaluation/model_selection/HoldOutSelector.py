@@ -123,13 +123,14 @@ class HoldOutSelector:
 
         metrics = experiment.run_valid(dataset_getter, logger, other)
         
-        selection_dict['TR_score'] = float(metrics.train_acc)
-        selection_dict['VL_score'] = float(metrics.val_acc)
+        selection_dict['TR_score'] = float(metrics.train_acc) if metrics.train_acc is not None else -1
+        selection_dict['VL_score'] = float(metrics.val_acc) if metrics.val_acc is not None else -1
         
-        selection_dict['TR_roc_auc'] = float(metrics.train_roc_auc)
-        selection_dict['VL_roc_auc'] = float(metrics.val_roc_auc)
+        selection_dict['TR_roc_auc'] = float(metrics.train_roc_auc) if metrics.train_roc_auc is not None else -1
+        selection_dict['VL_roc_auc'] = float(metrics.val_roc_auc) if metrics.val_roc_auc is not None else -1
 
-        logger.log('TR Accuracy: ' + str(metrics.train_acc) + ' VL Accuracy: ' + str(metrics.val_acc))
+        logger.log('TR Accuracy: ' + str(metrics.train_acc) + ' VL Accuracy: ' + str(metrics.val_acc)+ 
+                   ' TR_roc_auc: '+ str(selection_dict['TR_roc_auc']) + ' VL_roc_auc: ' + str(selection_dict['VL_roc_auc']))
 
         with open(config_filename, 'w') as fp:
             json.dump(selection_dict, fp)

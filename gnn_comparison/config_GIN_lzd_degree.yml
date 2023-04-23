@@ -3,7 +3,7 @@ model:
 device:
   - cuda:1
 batch_size:
-  - 128
+  # - 128
   - 64
 learning_rate:
   - 0.001
@@ -28,8 +28,8 @@ scheduler:
       step_size: 50
       gamma: 0.5
 loss:
-  # - MulticlassClassificationLoss
-  - BinaryClassificationLoss
+  - MulticlassClassificationLoss
+  # - BinaryClassificationLoss
 train_eps:
   # - true
   - false
@@ -68,10 +68,10 @@ shuffle_feature:
   - False
 
 roc_auc:
-  - True
+  - False
 
 # sampler:
 #   - imbalanced
 
 mol_split:
-  - True
+  - False

@@ -150,8 +150,9 @@ class KFoldAssessment:
                                
         training_score = sum(training_scores) / 3
         test_score = sum(test_scores) / 3
-        training_ruc_auc = np.mean(np.array(training_ruc_aucs))
-        test_ruc_auc = np.mean(np.array(test_ruc_aucs))
+        
+        training_ruc_auc = np.mean(np.array(training_ruc_aucs)) if training_ruc_aucs[0] is not None else -1
+        test_ruc_auc = np.mean(np.array(test_ruc_aucs)) if training_ruc_aucs[0] is not None else -1
         
         # TODO: add roc:
         logger.log(f"End of Outer fold. TR score:  {training_score} TS score: {test_score} \

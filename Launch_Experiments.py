@@ -13,6 +13,7 @@ def get_args():
     parser.add_argument('--experiment', dest='experiment', default='endtoend')
     parser.add_argument('--result-folder', dest='result_folder', default='RESULTS')
     parser.add_argument('--dataset-name', dest='dataset_name', default='none')
+    parser.add_argument('--dataset_para', dest='dataset_para',type=str, default='0.9')
     parser.add_argument('--outer-folds', dest='outer_folds', default=10)
     parser.add_argument('--outer-processes', dest='outer_processes', default=2)
     parser.add_argument('--inner-folds', dest='inner_folds', default=5)
@@ -37,8 +38,6 @@ if __name__ == "__main__":
 
     config_file = args.config_file
     experiment = args.experiment
-
-    
     
     for dataset_name in datasets:
         try:

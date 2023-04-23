@@ -3,11 +3,10 @@ model:
 device:
   - cuda:0
 batch_size:
-  - 128
+  - 64
 hidden_units:
   - 300
 learning_rate:
-  - 0.0001
   - 0.001
   - 0.01
 l2:
@@ -17,14 +16,13 @@ classifier_epochs:
 optimizer:
   - Adam
 activation: 
-  - sigmoid
   - relu
   # - SGD
 scheduler:
   - null
 loss:
-  # - MulticlassClassificationLoss
-  - BinaryClassificationLoss
+  - MulticlassClassificationLoss
+  # - BinaryClassificationLoss
 
 gradient_clipping:
   - null
@@ -57,7 +55,6 @@ shuffle:
 # 'invariant':graph_invariant
 
 additional_graph_features:
-  - avgd
   - avg_degree
   
 dropout:
@@ -67,7 +64,7 @@ norm_feature:
   - True
 
 roc_auc:
-  - True
+  - False
 
 node_attribute:
   - False
@@ -76,5 +73,5 @@ node_attribute:
 #   - imbalanced
   
 mol_split:
-  - True
+  - False
 

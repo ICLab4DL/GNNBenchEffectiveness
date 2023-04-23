@@ -30,7 +30,6 @@ class MolecularGraphMLP(torch.nn.Module):
         # TODO: use graph-wise feature: g_x 
         if 'g_x' in data:
             # print('using g_x:', data['g_x'][:20],data['g_x'][20:-1] )
-            
             if data['g_x'].dim() == 1:
                 h_g = data['g_x'].unsqueeze(dim=1)
             else:

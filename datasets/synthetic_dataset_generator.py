@@ -1,10 +1,12 @@
 import numpy as np
 import networkx as nx
-
+import os
 from functools import reduce
 import random
 import my_utils as utils
 # from scipy.sparse import coo_matrix
+
+import pickle as pk
 
 
 def connect_graphs(g1, g2):
@@ -173,3 +175,130 @@ def numerical_to_categorical(num_list):
     return labels
 
 
+import random
+from functools import reduce
+import pickle as pk
+import os
+
+from sklearn import preprocessing
+import networkx as nx
+import torch
+from torch_geometric.data import InMemoryDataset, Data
+from torch_geometric.utils import from_networkx
+
+# fixed node num, fixed average degree, CC ~ U(0.1, 0.5)
+
+def z_norm(x_data):
+    min_max_scaler = preprocessing.MinMaxScaler()
+    return min_max_scaler.fit_transform(x_data), min_max_scaler
+
+def mean_norm(x_data):
+    scaler = preprocessing.StandardScaler()
+    return scaler.fit_transform(x_data)
+
+
+def connect_graphs(g1, g2):
+    n1 = list(g1.nodes)
+    n2 = list(g2.nodes)
+    e1 = random.choices(n1, k=1)[0]
+    e2 = random.choices(n2, k=1)[0]
+    g_cur = nx.compose(g1, g2)
+    g_cur.add_edge(e1, e2)
+    return g_cur
+
+
+def random_connect_graph(graph_list:list):
+    # NOTE: relabeling the nodes.
+    
+    new_graphs = []
+    np.random.shuffle(graph_list)
+    node_idx = 0
+    for g in graph_list:
+        len_nodes = len(list(g.nodes))
+        mapping = {}
+        for i in range(len_nodes):
+            mapping[i] = i+node_idx
+        new_g = nx.relabel_nodes(g, mapping)
+        new_graphs.append(new_g)
+        node_idx += len_nodes
+        
+    g_all = reduce(connect_graphs, new_graphs)
+    
+    return g_all
+
+
+def add_square(G, sq_num):
+     
+    er_nodes = list(G.nodes)
+    node_num = len(er_nodes)
+    
+    added = [nx.cycle_graph(4) for _ in range(sq_num)]
+    
+    # line graphs:
+    
+    label_id = node_num
+    for i, tr in enumerate(added):
+        added[i] = nx.relabel_nodes(tr, {0: label_id, 1: label_id+1, 2: label_id+2, 3:label_id+3})
+        label_id+=4
+
+    for tr in added:
+        tr_nodes = list(tr.nodes)
+        G.add_edge(random.choice(er_nodes), random.choice(tr_nodes))
+        er_nodes = list(G.nodes)
+
+    for tr in added:
+        G = nx.compose(G, tr)
+    
+    return G
+
+
+def add_triangles(G, tris_num):
+    
+    er_nodes = list(G.nodes)
+    node_num = len(er_nodes)
+    
+    tris = [nx.complete_graph(3) for _ in range(tris_num)]
+    label_id = node_num
+    for i, tr in enumerate(tris):
+        tris[i] = nx.relabel_nodes(tr, {0: label_id, 1: label_id+1, 2: label_id+2})
+        label_id+=3
+
+    for tr in tris:
+        tr_nodes = list(tr.nodes)
+        G.add_edge(random.choice(er_nodes), random.choice(tr_nodes))
+
+    for tr in tris:
+        G = nx.compose(G, tr)
+    
+    return G
+
+
+def get_Y(ns, class_num, rs = None, is_uniform=True):
+    
+    sum_rs = np.sum([r**2 for r in rs])
+    print('sum_rs:', sum_rs)
+
+    scale = np.sqrt(12) if is_uniform else 1
+    sigma_y = 1
+
+    r_y = np.sqrt(1 - np.sum([r**2 for r in rs]))
+    rs.extend([r_y])
+        
+    Y = scale * sigma_y * (reduce(lambda x, y: x+y, map(lambda x: x[0]*x[1], zip(rs, ns))))
+
+    Y, _ = z_norm(Y.reshape(-1, 1))
+    Y = Y.squeeze()
+    Y = np.round(Y * (class_num-1)).astype(int)
+    
+    return Y
+
+
+def convert_to_torch_geometric_data(graphs, Y):
+    data_list = []
+    for i, graph in enumerate(graphs):
+        nx.set_node_attributes(graph, torch.randn(graph.number_of_nodes(), 3), 'x')
+        # nx.set_edge_attributes(graph, torch.randn(graph.number_of_edges(), 1), 'edge_attr')
+        data = from_networkx(graph)
+        data.y = torch.tensor([Y[i]], dtype=torch.long)
+        data_list.append(data)
+    return data_list

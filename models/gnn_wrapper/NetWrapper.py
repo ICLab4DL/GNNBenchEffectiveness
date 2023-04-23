@@ -43,7 +43,6 @@ class NetWrapper:
         y_pred = torch.cat(y_pred, dim=0)
         
         if self.evaluator is not None:
-            print('start evl: ')
             y_true = y_true.view(y_pred.shape)
             y_true = np.float32(y_true.numpy())
             y_pred = np.float32(y_pred.numpy().astype(np.float32))
@@ -59,6 +58,7 @@ class NetWrapper:
                 if y_pred.shape[-1] > 1:
                     y_pred = torch.argmax(y_pred, dim=-1)
                 y_true = y_true.view(y_pred.shape)
+                
                 auc_roc = roc_auc_score(y_true.numpy(), y_pred.numpy())
             
         if self.classification:
@@ -80,11 +80,12 @@ class NetWrapper:
         y_true = []
         y_pred = []
 
-
         for i, data in enumerate(train_loader):
-            if data.x.shape[0] == 1 or data.batch[-1] == 0: continue
-
-            if i == len(train_loader)-1:
+            if data.x.shape[0] == 1 or data.batch[-1] == 0: 
+                print('x shape:', data.x.shape)
+                continue
+            if i == len(train_loader):
+                print('len train_loader:', len(train_loader))
                 continue
             
             data = data.to(self.device)
@@ -112,10 +113,11 @@ class NetWrapper:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), clipping)
             optimizer.step()
 
-            if self.evaluator is not None or self.roc_auc:
-                y_true.append(data.y.detach().cpu())
-                y_pred.append(pred.detach().cpu())
-        
+            # if self.evaluator is not None or self.roc_auc:
+            y_true.append(data.y.detach().cpu())
+            y_pred.append(pred.detach().cpu())
+            
+            
         return self._cal_evl(train_loader, y_true, y_pred, acc_all, loss_all)
        
 
@@ -127,7 +129,6 @@ class NetWrapper:
         acc_all = 0
         y_true = []
         y_pred = []
-
         for data in loader:
             data = data.to(self.device)
             pred = model(data)
@@ -148,9 +149,9 @@ class NetWrapper:
                 loss_all += loss.item()
                 
             
-            if self.evaluator is not None or self.roc_auc:
-                y_true.append(data.y.detach().cpu())
-                y_pred.append(pred.detach().cpu())
+            # if self.evaluator is not None or self.roc_auc:
+            y_true.append(data.y.detach().cpu())
+            y_pred.append(pred.detach().cpu())
 
         return self._cal_evl(loader, y_true, y_pred, acc_all, loss_all)
     

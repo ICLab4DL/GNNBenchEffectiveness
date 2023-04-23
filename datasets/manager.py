@@ -41,6 +41,9 @@ sys.path.append(os.getcwd())
 
 # import k_gnn
 
+def is_pyg_dataset(d_name:str):
+    return d_name.startswith('ogb') or d_name.startswith('syn')
+
 class EmptyNodeFeatureException(Exception):
     def __init__(self) -> None:
         super().__init__("There is no node feature as input!!!")
@@ -117,6 +120,15 @@ class GraphDatasetManager:
             self._dim_target = self.dataset.num_tasks
             # NOTE: fill __data_list__
             [_ for _ in self.dataset]
+        elif self.name.startswith('syn'):
+            corr = self.corr
+            if 'dataset_para' in config:
+                corr = config['dataset_para']
+            
+            self.dataset = SynDataset(name=f'{self.name}_{corr}', root='DATA')
+            self._dim_target = self.dataset.num_tasks
+            # NOTE: fill __data_list__
+            [_ for _ in self.dataset]
         else:
             self.dataset = GraphDataset(torch.load(
                 self.processed_dir / f"{self.name}.pt"))
@@ -133,7 +145,6 @@ class GraphDatasetManager:
         print('!!!! _dim_target: ', self._dim_target)
         print('dataset len: ', len(self.dataset))
         
-        
         # Splits:
         if self.splits_idx is None:
             if 'split_file' in self.config:
@@ -145,6 +156,7 @@ class GraphDatasetManager:
             if not splits_filename.exists():
                 self.splits = []
                 self._make_splits(splits_filename)
+                print('make splits, len: ', len(self.splits))
             else:
                 self.splits = json.load(open(splits_filename, "r"))
                 print('load splits:', splits_filename)
@@ -165,7 +177,7 @@ class GraphDatasetManager:
             self.sampler = self.config['sampler']
             
     def get_labels(self):
-        if self.name.startswith('ogbg'):
+        if is_pyg_dataset(self.name):
             return self.dataset.data.y
         else:
             return [i.y for i in self.dataset]
@@ -192,12 +204,12 @@ class GraphDatasetManager:
     def dim_features(self):
         # TODO: check the graph level features:
         if self.additional_graph_features is not None:
-            if self.name.startswith('ogbg'):
+            if is_pyg_dataset(self.name):
                 self._dim_features = self.dataset[0].g_x.shape[-1]
             else:
                 self._dim_features = self.dataset.data[0].g_x.shape[-1]
         else:
-            if self.name.startswith('ogbg'):
+            if is_pyg_dataset(self.name):
                 self._dim_features = self.dataset.__data_list__[0].x.shape[-1]
             else:
                 self._dim_features = self.dataset.data[0].x.size(1)
@@ -214,7 +226,7 @@ class GraphDatasetManager:
 
     def get_dense_adjs(self, dataset):
         adjs = []
-        if self.name.startswith('ogbg'):
+        if is_pyg_dataset(self.name):
             for d in dataset:
                 if d.edge_index.numel() < 1:
                     N = d.x.shape[0]
@@ -236,6 +248,7 @@ class GraphDatasetManager:
         self.graph_fea_reg = graph_fea_reg
 
         adjs = self.get_dense_adjs(self.dataset)
+        
 
         # TODO: load from file if exist, if not exist, then save if it's the first fold test.
         # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
@@ -287,7 +300,7 @@ class GraphDatasetManager:
         # store in graph as graph not x, but g_x.
         # G6250
         
-        if self.name.startswith('ogbg'):
+        if is_pyg_dataset(self.name):
             for i in range(len(self.dataset.__data_list__)):
                 d = self.dataset.__data_list__[i]
                 d.g_x = torch.FloatTensor(graph_features[i])
@@ -318,7 +331,7 @@ class GraphDatasetManager:
         # get maximum node num:
         adjs = []
         max_N = 0
-        if self.name.startswith('ogbg'):
+        if is_pyg_dataset(self.name):
              for d in self.dataset:
                 N = d.x.shape[0]
                 if d.edge_index.numel() < 1:
@@ -414,7 +427,7 @@ class GraphDatasetManager:
             
         # NOTE: composite [attr, additional, used] those 3 features:
         
-        if self.name.startswith('ogbg'):
+        if is_pyg_dataset(self.name):
             data_list = self.dataset.__data_list__
         else:
             data_list = self.dataset.data
@@ -516,7 +529,7 @@ class GraphDatasetManager:
         DISCLAIMER: train_test_split returns a SUBSET of the input indexes,
             whereas StratifiedKFold.split returns the indexes of the k subsets, starting from 0 to ...!
         """
-
+        
         targets = self.dataset.get_targets()
         all_idxs = np.arange(len(targets))
 
@@ -554,7 +567,6 @@ class GraphDatasetManager:
             self.splits.append(split)
 
         else:  # cross validation assessment strategy
-
             outer_kfold = self.kfold_class(
                 n_splits=self.outer_k, shuffle=True)
 
@@ -601,7 +613,7 @@ class GraphDatasetManager:
         # DataLoader) or he does not (in which case he should set sampler=None
         # and shuffle=False when instantiating the DataLoader)
         sampler = None
-        if self.name.startswith('ogbg'):
+        if is_pyg_dataset(self.name):
             return torch_DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle)
         
         return DataLoader(dataset,
@@ -612,11 +624,18 @@ class GraphDatasetManager:
 
     def get_test_fold(self, outer_idx, batch_size=1, shuffle=True):
         # NOTE: if ogb then return:
-        if self.splits_idx is not None:
-            test_loader = self._get_loader(self.dataset[self.splits_idx['test']], batch_size, shuffle)
-            return test_loader
-        
         outer_idx = outer_idx or 0
+        
+        if is_pyg_dataset(self.name):
+            if self.splits_idx is not None:
+                test_loader = self._get_loader(self.dataset[self.splits_idx['test']], batch_size, shuffle)
+                
+                return test_loader
+            else:
+                idxs = self.splits[outer_idx]["test"]
+                test_loader = self._get_loader(self.dataset[idxs], batch_size, shuffle)
+                return test_loader
+        
 
         if outer_idx - 1 > len(self.splits):
             return None, None
@@ -634,15 +653,25 @@ class GraphDatasetManager:
 
     def get_model_selection_fold(self, outer_idx, inner_idx=None, batch_size=1, shuffle=True):
         # NOTE: if ogb then return:
-        if self.splits_idx is not None:
-            train_loader = self._get_loader(self.dataset[self.splits_idx['train']], batch_size, shuffle)
-            val_loader = self._get_loader(self.dataset[self.splits_idx['valid']], batch_size, False)
-            return train_loader, val_loader
-        
-        
+                
         outer_idx = outer_idx or 0
         inner_idx = inner_idx or 0
-
+        
+        if is_pyg_dataset(self.name):
+            if self.splits_idx is not None:
+                train_loader = self._get_loader(self.dataset[self.splits_idx['train']], batch_size, shuffle)
+                val_loader = self._get_loader(self.dataset[self.splits_idx['valid']], batch_size, False)
+                return train_loader, val_loader
+            else:
+                idxs = self.splits[outer_idx]["model_selection"][inner_idx]
+                print('dataset len: ',len(self.dataset))
+                print('trian dataset len: ',len(self.dataset[idxs["train"]]))
+                train_loader = self._get_loader(self.dataset[idxs["train"]], batch_size, shuffle)
+                print('len train:', len(train_loader))
+                
+                val_loader = self._get_loader(self.dataset[idxs['validation']], batch_size, False)
+                return train_loader, val_loader
+                
         if outer_idx - 1 > len(self.splits):
             return None, None
         
@@ -1251,8 +1280,38 @@ class TUDatasetManager(GraphDatasetManager):
         return feat_data
 
 
-class SyntheticManager(TUDatasetManager):
 
+class SynDataset(InMemoryDataset):
+    def __init__(self, data=None, name=None, root=None, transform=None, pre_transform=None):
+        super(SynDataset, self).__init__(root, transform, pre_transform)
+        if data is None:
+            data_path = os.path.join(root, f'{name}.pkl')
+            print('SynDataset load data_path:', data_path)
+            with open(data_path, 'rb') as f:
+                data = pk.load(f)
+                
+        self.num_tasks = len({int(i.y.item()) for i in data})
+        self.data, self.slices = self.collate(data)
+        self.name = name
+        self.root = root
+    
+    
+    def get_targets(self):
+        if self.__data_list__[0].y.shape[0] > 1:
+            return np.stack([d.y for d in self.__data_list__], axis=0)
+        else:
+            return np.array([d.y.item() for d in self.__data_list__])
+
+    def _download(self):
+        pass
+
+    def _process(self):
+        pass
+
+
+    
+    
+class SyntheticManager(TUDatasetManager):
     def _download(self):
         if self.name == 'CSL':
             graphs = generate_CSL(each_class_num=150, N=41, S=[2, 3, 4, 7])
@@ -1467,7 +1526,6 @@ class PPI(PPIDatasetManager):
     _dim_features = 50
     _dim_target = 121
 
-
     "PTC_MR.zip"
     "QM9.zip"
     
@@ -1573,3 +1631,37 @@ class MDG(SyntheticManager):
     _dim_features = 1
     _dim_target = 3
     max_num_nodes = 200
+
+
+class SynManager(GraphDatasetManager):
+    
+    def _process(self):
+        pass
+    def _download(self):
+        pass
+    
+class SynCC(SynManager):
+    name = "syn_cc_0.9"
+    _dim_features = 1
+    _dim_target = 10
+    max_num_nodes = 100
+  
+class SynCC(SynManager):
+    name = "syn_cc_0.9"
+    _dim_features = 1
+    _dim_target = 10
+    max_num_nodes = 100
+    
+class SynCC(SynManager):
+    name = "syn_cc_0.9"
+    _dim_features = 1
+    _dim_target = 10
+    max_num_nodes = 100
+    
+class SynCC(SynManager):
+    name = "syn_cc"
+    corr = "0.9"
+    _dim_features = 1
+    _dim_target = 10
+    max_num_nodes = 100
+    
