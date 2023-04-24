@@ -664,10 +664,7 @@ class GraphDatasetManager:
                 return train_loader, val_loader
             else:
                 idxs = self.splits[outer_idx]["model_selection"][inner_idx]
-                print('dataset len: ',len(self.dataset))
-                print('trian dataset len: ',len(self.dataset[idxs["train"]]))
                 train_loader = self._get_loader(self.dataset[idxs["train"]], batch_size, shuffle)
-                print('len train:', len(train_loader))
                 
                 val_loader = self._get_loader(self.dataset[idxs['validation']], batch_size, False)
                 return train_loader, val_loader
