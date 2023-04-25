@@ -37,8 +37,9 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
 dats='MUTAG NCI1 PROTEINS DD COLLAB REDDIT-BINARY'
+dats='REDDIT-MULTI'
 
-dt=0423
+dt=0424
 gpu=01
 
 dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'

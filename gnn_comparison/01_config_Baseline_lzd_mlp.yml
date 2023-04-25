@@ -9,11 +9,10 @@ hidden_units:
 learning_rate:
   - 0.0001
   - 0.001
-  - 0.01
 l2:
   - 0.0
 classifier_epochs:
-  - 150
+  - 200
 optimizer:
   - Adam
   # - SGD
@@ -21,7 +20,7 @@ scheduler:
   - null
 loss:
   - MulticlassClassificationLoss
-  - BinaryClassificationLoss
+  # - BinaryClassificationLoss
 gradient_clipping:
   - null
 early_stopper:
@@ -33,7 +32,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 500
+      patience: 50
       use_loss: True
 shuffle:
   - True

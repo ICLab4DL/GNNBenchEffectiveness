@@ -12,7 +12,8 @@ class GraphDataset:
         return len(self.data)
 
     def get_targets(self):
-        if self.data[0].y.shape[0] > 1:
+
+        if len(self.data[0].y.shape) > 0 and self.data[0].y.shape[0] > 1:
             return np.stack([d.y for d in self.data], axis=0)
         else:
             return np.array([d.y.item() for d in self.data])

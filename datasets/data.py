@@ -65,6 +65,9 @@ class Batch(data.Batch):
         # batch_graph_features:
         batch_graph_features = []
         for d in data_list:
+            if len(d.y.shape) < 1:
+                d.y = d.y.reshape(1)
+                
             if d.y.shape[0] > 1:
                 copy_data.append(Data(x=d.x,
                                     y=d.y.unsqueeze(dim=0),
