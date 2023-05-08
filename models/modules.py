@@ -13,7 +13,6 @@ class ClassificationLoss(nn.Module):
         :param outputs:
         :return: loss and accuracy values
         """
-        
         # print('targets shape:', targets.shape)
         # print('outputs shape:', pred.shape)
         loss = self.loss(pred, targets)

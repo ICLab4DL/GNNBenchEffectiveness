@@ -50,12 +50,12 @@ dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
 model_set='EGNN_lzd_attr EGNN_lzd_mix'
 
 
-
 dats='syn_cc'
-model_set='Baseline_lzd_mlp'
+model_set='Baseline_lzd_mlp_02'
 
 # paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
-paras='0.1 0.2 0.3 0.4 0.5'
+# paras='0.1 0.2 0.3 0.4 0.5'
+paras='0.5 0.6 0.7 0.8 0.9'
 
 
 for ms in ${model_set};do

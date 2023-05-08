@@ -43,7 +43,12 @@ class NetWrapper:
         y_pred = torch.cat(y_pred, dim=0)
         
         if self.evaluator is not None:
-            y_true = y_true.view(y_pred.shape)
+            if y_pred.numel() == y_true.numel():
+                y_true = y_true.view(y_pred.shape)
+            else:
+                y_pred = torch.argmax(y_pred, dim=-1).squeeze()
+                y_pred = y_pred.view(y_true.shape)
+                
             y_true = np.float32(y_true.numpy())
             y_pred = np.float32(y_pred.numpy().astype(np.float32))
             y_true[y_true < 0] = np.nan
@@ -81,9 +86,11 @@ class NetWrapper:
         y_pred = []
 
         for i, data in enumerate(train_loader):
-            if data.x.shape[0] == 1 or data.batch[-1] == 0: 
+            
+            if 'g_x' not in data and (data.x.shape[0] == 1 or data.batch[-1] == 0):
                 print('x shape:', data.x.shape)
                 continue
+                
             if i == len(train_loader):
                 print('len train_loader:', len(train_loader))
                 continue
@@ -93,9 +100,14 @@ class NetWrapper:
             pred = model(data)
 
             if self.classification:
-                is_labeled = data.y == data.y
-                loss, acc = self.loss_fun(pred.to(torch.float32)[is_labeled],
-                                     data.y.to(torch.float32)[is_labeled])
+                if data.y.shape == pred.shape:
+                    # NOTE: multi label and multi classification
+                    is_labeled = data.y == data.y
+                    loss, acc = self.loss_fun(pred.to(torch.float32)[is_labeled],
+                                        data.y.to(torch.float32)[is_labeled])
+                else:
+                    loss, acc = self.loss_fun(pred.to(torch.float32), data.y.to(torch.float32))
+                    
                 loss.backward()
                 try:
                     num_graphs = data.num_graphs
@@ -134,9 +146,14 @@ class NetWrapper:
             pred = model(data)
 
             if self.classification:
-                is_labeled = data.y == data.y
-                loss, acc = self.loss_fun(pred.to(torch.float32)[is_labeled],
-                                     data.y.to(torch.float32)[is_labeled])
+                if data.y.shape == pred.shape:
+                    # NOTE: multi label and multi classification
+                    is_labeled = data.y == data.y
+                    loss, acc = self.loss_fun(pred.to(torch.float32)[is_labeled],
+                                        data.y.to(torch.float32)[is_labeled])
+                else:
+                    loss, acc = self.loss_fun(pred.to(torch.float32), data.y.to(torch.float32))
+                    
                 try:
                     num_graphs = data.num_graphs
                 except TypeError:

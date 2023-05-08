@@ -1,22 +1,20 @@
 model:
   - GIN
 device:
-  - cuda:1
+  - cuda:0
 batch_size:
-  # - 128
-  - 64
+  - 128
+  # - 64
 learning_rate:
   - 0.001
-  - 0.0001
 classifier_epochs:
   - 200
 # hidden_units:  # Note: GIN add a first layer that simply adds up all node features
 #   - 300
 
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
-  - [64, 256, 64]
+  # - [64, 256, 64]
   - [64, 64, 64, 64]
-
 layer_num:
   - 5
 optimizer:

@@ -50,6 +50,8 @@ echo 'running config_fingerprint_attr: '${dat}
 tag=${conf_file}_${dat}
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
+--outer-folds 1 \
+--inner-folds 1 \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'

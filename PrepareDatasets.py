@@ -30,8 +30,6 @@ DATASETS = {
     'ogbg-molbbbp': OGBBBBP,
     'ogbg-molbace': OGBBACE,
     'syn_cc': SynCC,
-    
-    
 }
 
 SYN_DATASETS = {

@@ -88,6 +88,7 @@ class Batch(data.Batch):
                                 e_outs=d.e_outs,
                                 o_outs=d.o_outs)
                             )
+                
             if hasattr(d, 'g_x'):
                 batch_graph_features.append(d.g_x)
 

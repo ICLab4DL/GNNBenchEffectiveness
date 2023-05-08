@@ -117,7 +117,13 @@ class GraphDatasetManager:
         if self.name.startswith('ogbg'):
             self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
             self.splits_idx = self.dataset.get_idx_split()
-            self._dim_target = self.dataset.num_tasks
+            
+            if self.dataset.num_tasks == 1:
+                self._dim_target = self.dataset.num_classes
+            else:
+                self._dim_target = self.dataset.num_tasks
+                
+            print('ogbg _dim_target:', self._dim_target)
             # NOTE: fill __data_list__
             [_ for _ in self.dataset]
         elif self.name.startswith('syn'):
@@ -333,7 +339,7 @@ class GraphDatasetManager:
         max_N = 0
         if is_pyg_dataset(self.name):
              for d in self.dataset:
-                N = d.x.shape[0]
+                N = d.num_nodes
                 if d.edge_index.numel() < 1:
                     adj = np.ones(shape=(N, N))
                 else:
@@ -683,7 +689,7 @@ class GraphDatasetManager:
             val_loader = None
         else:
             val_loader = self._get_loader(val_data, batch_size, shuffle)
-
+        
         return train_loader, val_loader
 
 
@@ -696,6 +702,22 @@ class OGBMoleculeDatasetManager(GraphDatasetManager):
         name (string): The name of the dataset (one of :obj:`"PATTERN"`,
             :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
             :obj:`"TSP"`, :obj:`"CSL"`)
+            
+            ogbg-molbace
+            ogbg-molbbbp
+            ogbg-molclintox
+            ogbg-molmuv
+            ogbg-molpcba
+            ogbg-molsider
+            ogbg-moltox21
+            ogbg-moltoxcast
+            ogbg-molhiv
+            ogbg-molesol
+            ogbg-molfreesolv
+            ogbg-mollipo
+            ogbg-molchembl
+            ogbg-ppa
+            ogbg-code2
             
         Beside the two main datasets, we additionally provide 10 smaller datasets from MoleculeNet. 
         They are ogbg-moltox21, ogbg-molbace, ogbg-molbbbp, ogbg-molclintox, ogbg-molmuv, ogbg-molsider, 

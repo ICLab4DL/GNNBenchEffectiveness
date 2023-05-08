@@ -39,7 +39,7 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
 
-dt=0422
+dt=0507
 gpu=01
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
@@ -49,11 +49,12 @@ dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
 
 model_set='EGNN_lzd_attr EGNN_lzd_mix'
 
-
-
 dats='syn_cc'
 model_set='GIN_lzd_degree'
-paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
+# paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
+paras='0.1 0.2 0.3 0.4 0.5'
+paras='0.1 0.2'
+
 for ms in ${model_set};do
 
 conf_file=config_${ms}.yml
