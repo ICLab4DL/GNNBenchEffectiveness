@@ -1,29 +1,26 @@
 model:
-  - MolecularGraphMLP
+  - MolecularFingerprint
 device:
   - cuda:0
 batch_size:
-  - 64
+  - 128
 hidden_units:
   - 300
 learning_rate:
+  - 0.0001
   - 0.001
-  - 0.01
 l2:
   - 0.0
 classifier_epochs:
   - 200
 optimizer:
   - Adam
-activation: 
-  - relu
   # - SGD
 scheduler:
   - null
 loss:
   - MulticlassClassificationLoss
   # - BinaryClassificationLoss
-
 gradient_clipping:
   - null
 early_stopper:
@@ -35,27 +32,10 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 50
+      patience: 30
       use_loss: True
-
 shuffle:
   - True
-
-#   'stats_degree': graph_stats_degree,
-# 'avg_degree': graph_avg_degree,
-# 'avg_cc': node_cc_avg_feature,
-# 'cycle': graph_cycle_feature
-
-# 'stats_degree': graph_stats_degree,
-# 'degree_dist': graph_degree_dist,
-# 'avg_degree': graph_avg_degree,
-# 'avg_cc': node_cc_avg_feature,
-# 'cycle': graph_cycle_feature,
-# 'avgd': graph_avgDN_feature,
-# 'invariant':graph_invariant
-
-additional_graph_features:
-  - avg_degree
   
 dropout:
   - 0.5
@@ -68,12 +48,12 @@ roc_auc:
 
 node_attribute:
   - False
-  
+
 # sampler:
 #   - imbalanced
-  
+
 mol_split:
   - False
 
 edge_attr:
-  - False
+  - True

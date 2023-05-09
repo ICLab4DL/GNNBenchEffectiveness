@@ -105,8 +105,8 @@ class EGINConv(MessagePassing):
         # else:
         #     self.edge_encoder.reset_parameters()
 
-    def forward(self, x, edge_index, edge_attr):
-        # edge_embedding = self.edge_encoder(edge_attr)
+    def forward(self, x, edge_index, edge_attr=None):
+        edge_embedding = self.edge_encoder(edge_attr)
         # out = self.mlp((1 + self.eps) * x +
         #                self.propagate(edge_index, x=x, edge_attr=edge_embedding))
         out = self.mlp((1 + self.eps) * x +

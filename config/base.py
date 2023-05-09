@@ -15,6 +15,7 @@ from models.graph_classifiers.GraphSAGE import GraphSAGE
 from models.modules import (BinaryClassificationLoss, MulticlassClassificationLoss,
                             NN4GMulticlassClassificationLoss, DiffPoolMulticlassClassificationLoss, MixDecoupleClassificationLoss)
 
+from models.ppa.gnn import OGBGNN
 
 from copy import deepcopy
 from .utils import read_config_file
@@ -63,6 +64,7 @@ class Config:
         'MolMix': MolMix,
         'GIN': GIN,
         'EGNN': EGNN,
+        'OGBGNN': OGBGNN,
         'ECC': ECC,
         "DiffPool": DiffPool,
         "DGCNN": DGCNN,

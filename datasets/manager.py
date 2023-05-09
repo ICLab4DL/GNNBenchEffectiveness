@@ -30,6 +30,7 @@ import os
 from torch_geometric.datasets import GNNBenchmarkDataset, TUDataset
 from torch_geometric.datasets import PPI as PPIDataset
 from torch_geometric.datasets import QM9, MoleculeNet
+from torch_geometric.nn import MessagePassing
 
 from torch_geometric.data import DataLoader as torch_DataLoader
 import torch_geometric.utils as torch_utils
@@ -38,8 +39,35 @@ from ogb.graphproppred import PygGraphPropPredDataset, Evaluator
 
 sys.path.append(os.getcwd())
 
+# import k_gnn
+
+class EdgeAggregator(MessagePassing):
+    def __init__(self):
+        super(EdgeAggregator, self).__init__(aggr = "add")
+
+    def forward(self, x, edge_index, edge_attr):
+        out = self.propagate(edge_index, x=x, edge_attr=edge_attr)
+        return out
+
+    def message(self, x_j=0, edge_attr=0):
+        # x_j == 0
+        return x_j + edge_attr
+
+    def update(self, aggr_out):
+        return aggr_out
+    
+edge_aggregator = EdgeAggregator()
+
+def add_zeros(data):
+    data.x = torch.zeros((data.num_nodes, 1), dtype=torch.long)
+    return data
 
 # import k_gnn
+def add_edge_attr(data):
+    data = add_zeros(data)
+    data.x = edge_aggregator(data.x, data.edge_index, data.edge_attr)
+    return data
+
 
 def is_pyg_dataset(d_name:str):
     return d_name.startswith('ogb') or d_name.startswith('syn')
@@ -115,7 +143,19 @@ class GraphDatasetManager:
         print('load dataset !')
         self.splits_idx = None
         if self.name.startswith('ogbg'):
-            self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+            print('self.name:', self.name)
+            print(self.name == 'ogbg-ppa')
+            if self.name == 'ogbg-ppa':
+                edge_attr = False
+                if 'edge_attr' in config:
+                    edge_attr = config['edge_attr']
+                if edge_attr:
+                    self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA', transform=add_edge_attr)
+                else:
+                    self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA', transform=add_zeros)
+            else:
+                self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
+                
             self.splits_idx = self.dataset.get_idx_split()
             
             if self.dataset.num_tasks == 1:
@@ -216,7 +256,8 @@ class GraphDatasetManager:
                 self._dim_features = self.dataset.data[0].g_x.shape[-1]
         else:
             if is_pyg_dataset(self.name):
-                self._dim_features = self.dataset.__data_list__[0].x.shape[-1]
+                self._dim_features = self.dataset[0].x.shape[-1]
+                # self._dim_features = self.dataset.__data_list__[0].x.shape[-1]
             else:
                 self._dim_features = self.dataset.data[0].x.size(1)
                 
@@ -895,15 +936,17 @@ class GNNBenchmarkDatasetManager(GraphDatasetManager):
         torch.save(all_data, self.processed_dir / f"{self.name}.pt")
         print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
 
-        split = [{ "test": [i for i in range(splits[0]+splits[1], len(all_data))], 
-                 'model_selection': [{'train':[i for i in range(0, splits[0])],
-                                      "validation":[i for i in range(splits[0], splits[0]+splits[1])]}]}]
+        # TODO: ignore splits:
         
-        filename = self.processed_dir / f"{self.name}_splits.json"
-        with open(filename, "w") as f:
-            json.dump(split, f, cls=NumpyEncoder)
+        # split = [{ "test": [i for i in range(splits[0]+splits[1], len(all_data))], 
+        #          'model_selection': [{'train':[i for i in range(0, splits[0])],
+        #                               "validation":[i for i in range(splits[0], splits[0]+splits[1])]}]}]
+        
+        # filename = self.processed_dir / f"{self.name}_splits.json"
+        # with open(filename, "w") as f:
+        #     json.dump(split, f, cls=NumpyEncoder)
 
-        print(f"saved: {filename}")
+        # print(f"saved: {filename}")
 
 
 class PPIDatasetManager(GraphDatasetManager):
@@ -1467,13 +1510,11 @@ class SyntheticManager(TUDatasetManager):
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
 
 
-
         """
         name (string): The name of the dataset (one of :obj:`"PATTERN"`,
             :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
             :obj:`"TSP"`, :obj:`"CSL"`)
         """
-
 
 
 class MNIST(GNNBenchmarkDatasetManager):

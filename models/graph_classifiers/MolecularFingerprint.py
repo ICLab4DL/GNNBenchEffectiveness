@@ -41,7 +41,7 @@ class MolecularGraphMLP(torch.nn.Module):
             return result
                 
         return self.mlp(global_add_pool(data.x, data.batch))
-
+    
 
 
 class MolecularFingerprint(torch.nn.Module):

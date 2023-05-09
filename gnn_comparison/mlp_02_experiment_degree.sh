@@ -40,8 +40,9 @@ model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix
 
 
 
-dt=0507
+dt=0508
 gpu=01
+
 
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
