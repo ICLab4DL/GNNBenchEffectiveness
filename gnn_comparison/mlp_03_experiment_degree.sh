@@ -39,12 +39,17 @@ model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix
 dats='MUTAG NCI1 PROTEINS DD COLLAB REDDIT-BINARY'
 dats='REDDIT-MULTI'
 
-dt=0424
+dt=0511
 gpu=01
 
-dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
+dats='CIFAR10 MNIST'
 
-model_set='Baseline_lzd_mlp_mol'
+# this is multilabel, cannot split.
+# dats='ogbg_moltox21' 
+
+dats='ogbg_molhiv'
+
+model_set='Baseline_lzd_mlp'
 
 for ms in ${model_set};do
 
@@ -56,12 +61,13 @@ echo 'running '${conf_file}
 
 tag=${ms}_${dat}
 
+# --outer-folds 1 \
+# --inner-folds 1 \
+# --ogb_evl True \
+# --mol_split True \
+
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} \
---outer-folds 1 \
---inner-folds 1 \
---ogb_evl True \
---mol_split True \
 --result-folder results/result_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'

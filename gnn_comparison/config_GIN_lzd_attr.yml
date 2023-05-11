@@ -1,21 +1,19 @@
 model:
   - GIN
 device:
-  - cuda:1
+  - cuda:0
 batch_size:
   - 128
   # - 64
 learning_rate:
-  - 0.01
   - 0.001
 classifier_epochs:
-  - 500
+  - 200
 # hidden_units:  # Note: GIN add a first layer that simply adds up all node features
 #   - 300
 
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
-  - [64, 256, 64]
-  - [64, 64, 64, 64]
+  - [64, 300, 300, 64]
 
 layer_num:
   - 5
@@ -28,8 +26,8 @@ scheduler:
       step_size: 50
       gamma: 0.5
 loss:
-  # - MulticlassClassificationLoss
-  - BinaryClassificationLoss
+  - MulticlassClassificationLoss
+  # - BinaryClassificationLoss
 train_eps:
   # - true
   - false
@@ -37,7 +35,6 @@ l2:
   - 0.
 aggregation:
   - mean
-  - sum
 gradient_clipping:
   - null
 dropout:
@@ -46,7 +43,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 100
+      patience: 30
       use_loss: False
 shuffle:
   - True
@@ -75,3 +72,6 @@ roc_auc:
 
 # mol_split:
 #   - True
+
+use_10_fold:
+  - True

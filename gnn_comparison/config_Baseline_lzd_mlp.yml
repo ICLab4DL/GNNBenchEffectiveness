@@ -1,14 +1,13 @@
 model:
   - MolecularGraphMLP
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
-  - 64
+  - 128
 hidden_units:
   - 300
 learning_rate:
   - 0.001
-  - 0.01
 l2:
   - 0.0
 classifier_epochs:
@@ -35,7 +34,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 50
+      patience: 30
       use_loss: True
 
 shuffle:
@@ -77,3 +76,6 @@ mol_split:
 
 edge_attr:
   - False
+
+use_10_fold:
+  - True

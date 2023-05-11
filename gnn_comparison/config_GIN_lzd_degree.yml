@@ -1,7 +1,7 @@
 model:
   - GIN
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
   # - 64
@@ -34,7 +34,6 @@ l2:
   - 0.
 aggregation:
   - mean
-  - sum
 gradient_clipping:
   - null
 dropout:
@@ -69,6 +68,9 @@ roc_auc:
 
 # sampler:
 #   - imbalanced
+
+use_10_fold:
+  - True
 
 mol_split:
   - False

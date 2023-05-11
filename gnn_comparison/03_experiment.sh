@@ -31,22 +31,27 @@ dat='ENZYMES'
 dats='PATTERN'
 dats='MUTAG NCI1 PROTEINS DD'
 dats='ogbg_molhiv'
-dats='CIFAR10'
 dats='COLLAB REDDIT-BINARY'
 dats='REDDIT-BINARY'
 dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp'
 
-dt=0410
+dt=0510
 gpu=01
 dats='ogbg-molbbbp'
-
 dats='ogbg_moltox21'
 
 model_set='GIN_lzd_attr'
 
-dats='ogbg_moltox21 ogbg-molbace'
+
+dats='CIFAR10 MNIST'
+
+dats='ogbg_molhiv ogbg-molbace'
+
+
+model_set='GIN_lzd_attr'
+
 model_set='GIN_lzd_degree'
 
 for ms in ${model_set};do
@@ -59,11 +64,12 @@ echo 'running '${conf_file}
 
 tag=${ms}_${dat}
 
+# --mol_split True \
+# --outer-folds 1 \
+# --inner-folds 1 \
+# --ogb_evl True \
+
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
---mol_split True \
---outer-folds 1 \
---inner-folds 1 \
---ogb_evl True \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'

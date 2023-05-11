@@ -1,7 +1,7 @@
 model:
   - MolecularFingerprint
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
 hidden_units:
@@ -56,4 +56,7 @@ mol_split:
   - False
 
 edge_attr:
+  - True
+
+use_10_fold:
   - True

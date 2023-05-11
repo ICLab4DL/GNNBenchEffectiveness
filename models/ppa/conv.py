@@ -12,15 +12,16 @@ class GINConv(MessagePassing):
         '''
             emb_dim (int): node embedding dimensionality
         '''
-
         super(GINConv, self).__init__(aggr = "add")
 
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(emb_dim, 2*emb_dim), torch.nn.BatchNorm1d(2*emb_dim), torch.nn.ReLU(), torch.nn.Linear(2*emb_dim, emb_dim))
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(emb_dim, 2*emb_dim), torch.nn.BatchNorm1d(2*emb_dim), 
+                                       torch.nn.ReLU(), torch.nn.Linear(2*emb_dim, emb_dim))
         self.eps = torch.nn.Parameter(torch.Tensor([0]))
 
         self.edge_encoder = torch.nn.Linear(7, emb_dim)
 
     def forward(self, x, edge_index, edge_attr):
+        x = x.squeeze()
         edge_embedding = self.edge_encoder(edge_attr)
         out = self.mlp((1 + self.eps) *x + self.propagate(edge_index, x=x, edge_attr=edge_embedding))
 
@@ -196,6 +197,7 @@ class GNN_node_Virtualnode(torch.nn.Module):
         h_list = [self.node_encoder(x)]
         for layer in range(self.num_layer):
             ### add message from virtual nodes to graph nodes
+            
             h_list[layer] = h_list[layer] + virtualnode_embedding[batch]
 
             ### Message passing among graph nodes

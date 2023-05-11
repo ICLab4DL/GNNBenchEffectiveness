@@ -11,7 +11,7 @@ from torch_scatter import scatter_mean
 class OGBGNN(torch.nn.Module):
 
     def __init__(self, dim_features, dim_target, config, num_layer = 5, emb_dim = 300, 
-                    gnn_type = 'gin', virtual_node = True, residual = False, 
+                    gnn_type = 'gin', virtual_node = False, residual = False, 
                     drop_ratio = 0.5, JK = "last", graph_pooling = "mean"):
         '''
             num_tasks (int): number of labels to be predicted

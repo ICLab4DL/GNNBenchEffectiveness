@@ -155,7 +155,7 @@ class GraphDatasetManager:
                     self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA', transform=add_zeros)
             else:
                 self.dataset = PygGraphPropPredDataset(name=self.name, root='DATA')
-                
+            
             self.splits_idx = self.dataset.get_idx_split()
             
             if self.dataset.num_tasks == 1:
@@ -166,6 +166,9 @@ class GraphDatasetManager:
             print('ogbg _dim_target:', self._dim_target)
             # NOTE: fill __data_list__
             [_ for _ in self.dataset]
+            
+            self.targets = self.dataset.data.y.squeeze().numpy()
+            
         elif self.name.startswith('syn'):
             corr = self.corr
             if 'dataset_para' in config:
@@ -191,6 +194,15 @@ class GraphDatasetManager:
         print('!!!! _dim_target: ', self._dim_target)
         print('dataset len: ', len(self.dataset))
         
+        use_10_fold = False
+        
+        if 'use_10_fold' in config:
+            use_10_fold = config['use_10_fold']
+            
+        if use_10_fold:
+            # create new splits
+            self.splits_idx = None
+                
         # Splits:
         if self.splits_idx is None:
             if 'split_file' in self.config:
@@ -576,8 +588,11 @@ class GraphDatasetManager:
         DISCLAIMER: train_test_split returns a SUBSET of the input indexes,
             whereas StratifiedKFold.split returns the indexes of the k subsets, starting from 0 to ...!
         """
-        
-        targets = self.dataset.get_targets()
+        if self.targets is None:
+            targets = self.dataset.get_targets()
+        else:
+            targets = self.targets
+            
         all_idxs = np.arange(len(targets))
 
         if self.outer_k is None:  # holdout assessment strategy
@@ -617,6 +632,10 @@ class GraphDatasetManager:
             outer_kfold = self.kfold_class(
                 n_splits=self.outer_k, shuffle=True)
 
+            print(len(all_idxs))
+            print(np.isnan(targets).any())
+            print('targets: ', targets.shape)
+            
             for train_ok_split, test_ok_split in outer_kfold.split(X=all_idxs, y=targets):
                 split = {
                     "test": all_idxs[test_ok_split], 'model_selection': []}
@@ -711,6 +730,13 @@ class GraphDatasetManager:
                 return train_loader, val_loader
             else:
                 idxs = self.splits[outer_idx]["model_selection"][inner_idx]
+                
+                print(type(idxs))
+                print(len(idxs))
+                print(type(idxs["train"]))
+                print(len(idxs["train"]))
+                print(idxs["train"][0])
+                
                 train_loader = self._get_loader(self.dataset[idxs["train"]], batch_size, shuffle)
                 
                 val_loader = self._get_loader(self.dataset[idxs['validation']], batch_size, False)
