@@ -174,7 +174,7 @@ if __name__ == "__main__":
             
             f_Y = get_mean_std_corr(labels, labels)[:2]
         
-        
+         
         # F6: cycles:
         avg_cyc = [nfu.graph_cycle_feature(adj=adj,k='4-5-6-7') for adj in adjs]
         f_cyc4 = get_mean_std_corr([c[0] for c in avg_cyc], labels)

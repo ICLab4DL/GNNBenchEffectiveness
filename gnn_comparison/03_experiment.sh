@@ -17,7 +17,6 @@ dat='REDDIT-BINARY'
 dat='IMDB-BINARY' # no attribute
 dat="PROTEINS"
 dat='MUTAG'
-dat='DD'
 dat='NCI1'
 dat='ENZYMES'
 
@@ -29,7 +28,6 @@ dat='ENZYMES'
 # dats='NCI1 ENZYMES'
 
 dats='PATTERN'
-dats='MUTAG NCI1 PROTEINS DD'
 dats='ogbg_molhiv'
 dats='COLLAB REDDIT-BINARY'
 dats='REDDIT-BINARY'
@@ -37,7 +35,7 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp'
 
-dt=0510
+dt=0516
 gpu=01
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
@@ -45,14 +43,19 @@ dats='ogbg_moltox21'
 model_set='GIN_lzd_attr'
 
 
+dats='MUTAG NCI1 PROTEINS DD'
+
+
 dats='CIFAR10 MNIST'
 
 dats='ogbg_molhiv ogbg-molbace'
 
 
-model_set='GIN_lzd_attr'
+dats='DD'
 
 model_set='GIN_lzd_degree'
+
+model_set='GIN_lzd_attr'
 
 for ms in ${model_set};do
 
