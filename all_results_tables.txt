@@ -1,0 +1,22 @@
+\begin{table*}[t]
+\small
+\begin{tabular}{llllll}
+\hline
+Dataset & $\mathcal{M}^{\text{Baseline}}_\textbf{A}$ &  $\mathcal{M}^{\text{GNN}}_\textbf{A}$ &  $\mathcal{M}^{\text{GIN}}_\textbf{A}$ &  $\mathcal{M}^{\text{GraphKernel}}_\textbf{A}$ &  $\mathcal{M}^{\text{GIN}}_\textbf{S}$ \\
+ MUTAG        & 83.5 $\pm$ 8.85    & 84.09 $\pm$ 7.34 & 78.65 $\pm$ 10.15 & 86.23 $\pm$ 8.5  & 83.81 $\pm$ 5.8  \\
+ PROTEINS     & 73.96 $\pm$ 3.72   & 74.24 $\pm$ 3.74 & 60.32 $\pm$ 1.0   & 72.5 $\pm$ 2.58  & 70.52 $\pm$ 2.91 \\
+ DD           & 76.23 $\pm$ 3.16   & 71.76 $\pm$ 2.02 & 62.39 $\pm$ 1.89  & 76.06 $\pm$ 3.21 & 62.67 $\pm$ 2.5  \\
+ NCI1         & 66.71 $\pm$ 2.09   & 80.55 $\pm$ 1.91 & 50.38 $\pm$ 0.83  & 62.5 $\pm$ 1.79  & 74.59 $\pm$ 1.65 \\
+ ENZYMES      & 29.67 $\pm$ 5.74   & 41.78 $\pm$ 3.92 & 17.56 $\pm$ 1.93  & 25.0 $\pm$ 3.33  & 28.33 $\pm$ 4.24 \\
+ molhiv       & 96.49 $\pm$ 0.01   & 96.92 $\pm$ 0.14 & 96.53 $\pm$ 0.05  & 51.0 $\pm$ 0.0   & 96.69 $\pm$ 0.09 \\
+ ogbg-molbace & 69.62 $\pm$ 3.95   & 79.86 $\pm$ 2.9  & 54.33 $\pm$ 0.17  & 0.0 $\pm$ 0.0    & 79.55 $\pm$ 3.54 \\
+ moltox21     & 91.05 $\pm$ 0.0    & 91.31 $\pm$ 0.0  & 90.43 $\pm$ 0.0   & 0.0 $\pm$ 0.0    & 90.53 $\pm$ 0.0  \\
+ AIDS         & 192.27 $\pm$ 11.88 & 98.27 $\pm$ 1.68 & 98.15 $\pm$ 1.05  & 0.0 $\pm$ 0.0    & 99.38 $\pm$ 0.62 \\
+ MNIST        & 24.1 $\pm$ 0.33    & 78.48 $\pm$ 0.72 & 9.86 $\pm$ 0.01   & 0.0 $\pm$ 0.0    & 11.74 $\pm$ 1.49 \\
+ CIFAR10      & 25.27 $\pm$ 0.6    & 49.87 $\pm$ 0.4  & 10.0 $\pm$ 0.0    & 14.62 $\pm$ 0.0  & 11.13 $\pm$ 0.99 \\
+ IMDB-MULTI   & nan $\pm$ nan      & nan $\pm$ nan    & 42.31 $\pm$ 4.54  & 0.0 $\pm$ 0.0    & 45.93 $\pm$ 4.19 \\
+ IMDB-BINARY  & nan $\pm$ nan      & nan $\pm$ nan    & 67.53 $\pm$ 4.25  & 0.0 $\pm$ 0.0    & 70.4 $\pm$ 2.51  \\
+ ppa          & 20.12 $\pm$ 0.0    & 24.05 $\pm$ 0.0  & 9.28 $\pm$ 0.0    & 0.0 $\pm$ 0.0    & 64.19 $\pm$ 0.0  \\
+\hline
+\end{tabular}
+\end{table*}

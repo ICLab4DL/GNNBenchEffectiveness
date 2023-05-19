@@ -1,45 +1,15 @@
 import importlib
-import random
-import argparse
-import configparser
 import numpy as np
 import networkx as nx
-from collections import defaultdict
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch_sparse
-from torch import Tensor
-from torch.nn import Linear
-from torch.utils.data import DataLoader
-from torch.utils.data import TensorDataset
-import torch.optim as optim
-
-from torch_geometric.utils import negative_sampling, to_networkx
-from typing import Union, Tuple
-from torch_geometric.typing import OptPairTensor, Adj, OptTensor, Size
-from torch_sparse import SparseTensor, matmul
-from torch_geometric.nn.conv import MessagePassing
-
-from ogb.linkproppred import PygLinkPropPredDataset, Evaluator
-
+# load splits as datasets:
+import torch_geometric.utils as torch_utils
+    
 
 import networkx as nx
-import seaborn as sns
-from matplotlib.colors import ListedColormap
-import matplotlib.pyplot as plt
-
-import scipy
-import math
 
 
-from dataset_utils import node_feature_utils
 from dataset_utils.node_feature_utils import *
-import my_utils as utils
-
-importlib.reload(utils)
-
 
 
 # Load specific dataset:
@@ -49,8 +19,6 @@ sys.path.append(os.getcwd())
 
 
 from PrepareDatasets import DATASETS
-import my_utils
-import dataset_utils
 
 
 print(DATASETS.keys())
@@ -95,51 +63,28 @@ data_names = ['REDDIT-BINARY', 'COLLAB', 'IMDB-BINARY','IMDB-MULTI']
 data_names = ['REDDIT-BINARY', 'COLLAB']
 
 data_names = ['PROTEINS', 'ENZYMES', 'NCI1', 'DD', 'MUTAG']
-
+data_names = []
 
 datasets_obj = {}
-for k, v in DATASETS.items():
-    if k not in data_names:
-        continue
-    
-    print('loaded dataset, name:', k)
-    dat = v(use_node_attrs=True)
-    datasets_obj[k] = dat
-    print(type(dat.dataset.get_data()))
-    
+
     
 def get_each_folder(data_name, fold_id, batch_size=1):
     
     fold_test = datasets_obj[data_name].get_test_fold(fold_id, batch_size=batch_size, shuffle=True).dataset
+    
     fold_train, fold_val = datasets_obj[data_name].get_model_selection_fold(fold_id, inner_idx=None,
                                                                           batch_size=batch_size, shuffle=True)
     fold_train = fold_train.dataset
     fold_val = fold_val.dataset
     
-    # train_G = [pyg_utils.to_networkx(d, node_attrs=['x']) for d in fold_train.get_subset()]
-    # test_G = [pyg_utils.to_networkx(d, node_attrs=['x']) for d in fold_test.get_subset()]
-    # print('x: ',train_G[0].nodes[0]['x'])
+    train_adjs = get_dense_adjs(fold_train, datasets_obj[data_name].name)
+    test_adjs = get_dense_adjs(fold_test, datasets_obj[data_name].name)
     
-    train_adjs, test_adjs = [], []
-    train_y, test_y = [], []
+    train_y = [d.y for d in fold_train]
     
-    def node_fea_to_dict(node_fea):
-        res = {}
-        for i in range(node_fea.shape[0]):
-            res[i] = node_fea[i]
-        return res
-        
-    for d in fold_train.get_subset():
-        train_y.append(d.y.item())
-        train_adjs.append([d.to_numpy_array()])
-
-    for d in fold_test.get_subset():
-        test_y.append(d.y.item())
-        test_adjs.append([d.to_numpy_array()])
-        
+    test_y = [d.y for d in fold_test]
+    
     return train_adjs, test_adjs, train_y, test_y
-    # do not use val for kernel methods.
-#     for d in fold.dataset.get_subset():
 
 
 import numpy as np
@@ -173,8 +118,8 @@ def train_with_wl_kernel(wl_kernel, train_adj_matrices, test_adj_matrices, train
         nx_gs = []
         all_node_labels = []
         for m in adjs:
-            nx_g = nx.from_numpy_array(m[0])
-            N = m[0].shape[0]
+            nx_g = nx.from_numpy_array(m)
+            N = m.shape[0]
             node_labels = {i:0 for i in range(N)}
             nx_gs.append(nx_g)
             all_node_labels.append(node_labels)
@@ -212,12 +157,34 @@ def train_with_wl_kernel(wl_kernel, train_adj_matrices, test_adj_matrices, train
 # MUTAG = fetch_dataset("MUTAG", verbose=False)
 # G, y = MUTAG.data, MUTAG.target
 # print('G10:', G[0])
+def is_pyg_dataset(d_name:str):
+    return d_name.startswith('ogb') or d_name.startswith('syn')
+
+def get_dense_adjs(dataset, dataset_name):
+    adjs = []
+
+    if is_pyg_dataset(dataset_name):
+        for d in dataset:
+            if d.edge_index.numel() < 1:
+                N = d.x.shape[0]
+                adj = np.ones(shape=(N, N))
+            else:
+                adj = torch_utils.to_dense_adj(d.edge_index).numpy()[0]
+            adjs.append(adj)
+    else:
+        # NOTE: not correct, need to be fixed
+        if hasattr(dataset, 'dataset'):
+            adjs = [d.to_numpy_array() for d in dataset.dataset]
+        else:
+            adjs = [d.to_numpy_array() for d in dataset]
+        
+    return adjs
+
 
 def train_with_kernel(gk, dataset_name):
     res=[]
     for i in range(10):
-        G_train, G_test, y_train, y_test = get_each_folder(dataset_name,i)
-        
+        G_train, G_test, y_train, y_test = get_each_folder(dataset_name, i)
         # G_train = [g for g in graph_from_networkx(G_train,node_labels_tag='x')]
         # G_test = [g for g in graph_from_networkx(G_test,node_labels_tag='x')]
         # print('G_train 10:',G_train[:10])
@@ -254,5 +221,13 @@ import sys
 if __name__ == '__main__':
     data_name = sys.argv[-1]
     print('dataset name: ', data_name)
+    data_names = [data_name]
+    for k, v in DATASETS.items():
+        if k not in data_names:
+            continue
+        print('loaded dataset, name:', k)
+        dat = v(use_node_attrs=True)
+        datasets_obj[k] = dat
+        
     train_with_kernel(WeisfeilerLehman(n_iter=25), data_name)
     

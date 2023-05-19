@@ -50,7 +50,6 @@ dats='CIFAR10 MNIST'
 
 dats='ogbg_molhiv ogbg-molbace'
 
-
 dats='DD'
 
 model_set='GIN_lzd_degree'
