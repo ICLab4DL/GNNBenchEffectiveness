@@ -39,19 +39,18 @@ model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix
 dats='MUTAG NCI1 PROTEINS DD COLLAB REDDIT-BINARY'
 dats='REDDIT-MULTI'
 
-dt=0517
+dt=0521
 gpu=01
 
 
 
 dats='CIFAR10 MNIST'
 
-dats='ogbg-molbace ogbg_molhiv'
-
 
 dats='ENZYMES DD PROTEINS'
 dats='AIDS'
 
+dats='ogbg-molbace ogbg_molhiv'
 model_set='Baseline_lzd_fingerprint_attr'
 
 for ms in ${model_set};do

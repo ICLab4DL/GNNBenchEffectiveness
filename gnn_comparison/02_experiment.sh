@@ -39,12 +39,13 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp'
 
-dt=0408
+dt=0521
 gpu=01
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
 
 dats='ogbg_moltox21 ogbg-molbace'
+
 model_set='GIN_lzd_attr'
 
 model_set='EGNN_lzd_attr'
@@ -59,10 +60,11 @@ echo 'running '${conf_file}
 
 tag=${ms}_${dat}
 
+# --outer-folds 1 \
+# --inner-folds 1 \
+
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --mol_split True \
---outer-folds 1 \
---inner-folds 1 \
 --ogb_evl True \
 --dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 

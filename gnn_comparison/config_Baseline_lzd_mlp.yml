@@ -1,7 +1,7 @@
 model:
   - MolecularGraphMLP
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
 hidden_units:
@@ -63,7 +63,7 @@ norm_feature:
   - True
 
 roc_auc:
-  - False
+  - True
 
 node_attribute:
   - False

@@ -1535,13 +1535,11 @@ class SyntheticManager(TUDatasetManager):
                 G.__class__()
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
 
-
         """
         name (string): The name of the dataset (one of :obj:`"PATTERN"`,
             :obj:`"CLUSTER"`, :obj:`"MNIST"`, :obj:`"CIFAR10"`,
             :obj:`"TSP"`, :obj:`"CSL"`)
         """
-
 
 class MNIST(GNNBenchmarkDatasetManager):
     name = "MNIST"

@@ -40,17 +40,17 @@ model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix
 
 
 
-dt=0511
+dt=0522
 gpu=01
-
 
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
-dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
 dats='MUTAG NCI1 PROTEINS DD COLLAB REDDIT-BINARY'
 dats='IMDB-BINARY IMDB-MULTI'
 
 
+
+dats='ogbg-molbace ogbg_molhiv'
 dats='ogbg_ppa'
 model_set='Baseline_lzd_mlp_edge_attr'
 

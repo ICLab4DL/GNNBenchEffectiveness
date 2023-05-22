@@ -3,6 +3,7 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
+import torch_geometric.utils as torch_utils
 
 from dataset_utils.node_feature_utils import *
 import sys,os
@@ -94,14 +95,16 @@ def extract_features(adjs, labels):
     
     def get_mean_std_corr(features, labels):
         
+        features = np.array(features).squeeze()
         mean = np.array(np.mean(features))
         std = np.array(np.std(features))
         # print(np.isnan(mean).any(), np.isnan(std).any())
         x = np.array(features).reshape(-1)
         # NOTE: if multilabel, use the average of all labels:
-        if len(labels[0].shape) > 1:
+        y = np.array(labels).squeeze()
+        if y.ndim > 1:
             corrs = []
-            y = np.concatenate(labels, axis=0)
+            print(y.shape)
             for i in range(y.shape[1]):
                 # ignore nan in y[:, i]
                 not_nan = ~np.isnan(y[:, i])
@@ -113,9 +116,6 @@ def extract_features(adjs, labels):
                 corrs.append(corr)
             corr = np.mean(corrs)
         else:
-            y = np.array(labels)
-            # NOTE:
-            
             not_nan = ~np.isnan(y)
             x_nn = x[not_nan]
             y_nn = y[not_nan]
@@ -147,22 +147,20 @@ def extract_features(adjs, labels):
     
     # F5: labels
     # calculate each dimension of labels:
+    Y = np.array(labels).squeeze()
     
-    if len(labels[0].shape)> 1 and labels[0].shape[1] > 1:
+    if Y.ndim > 1:
         f_Ys = []
-        Y = np.concatenate(labels, axis=0)
-        for i in range(labels[0].shape[0]):
+        for i in range(Y.shape[1]):
             y_i = Y[:, i]
             print('y_i: ', y_i.shape)
             y_i = y_i[~np.isnan(y_i)]
             print('y_i not nan: ', y_i.shape)
-            
             f_Ys.append(get_mean_std_corr(y_i, y_i)[:2])
         f_Y = np.concatenate(f_Ys)
         f_Y = np.mean(f_Ys, axis=0)
     else:
-        
-        f_Y = get_mean_std_corr(labels, labels)[:2]
+        f_Y = get_mean_std_corr(Y, Y)[:2]
     
     
     # F6: cycles:
@@ -175,6 +173,7 @@ def extract_features(adjs, labels):
         
     feas = np.concatenate([f_avgD, f_avgCC, f_avgDN, f_avgN, f_Y, f_cyc4, f_cyc5, f_cyc6, f_cyc7], axis=0)
     return feas
+
 
 # construct E of each fold, and plot
 
@@ -216,13 +215,22 @@ def get_dense_adjs(dataset, dataset_name):
     adjs = []
 
     if is_pyg_dataset(dataset_name):
-        for d in dataset:
-            if d.edge_index.numel() < 1:
-                N = d.x.shape[0]
-                adj = np.ones(shape=(N, N))
-            else:
-                adj = torch_utils.to_dense_adj(d.edge_index).numpy()[0]
-            adjs.append(adj)
+        if hasattr(dataset, 'dataset'):
+            for d in dataset.dataset:
+                if d.edge_index.numel() < 1:
+                    N = d.x.shape[0]
+                    adj = np.ones(shape=(N, N))
+                else:
+                    adj = torch_utils.to_dense_adj(d.edge_index).numpy()[0]
+                adjs.append(adj)
+        else:
+            for d in dataset:
+                if d.edge_index.numel() < 1:
+                    N = d.x.shape[0]
+                    adj = np.ones(shape=(N, N))
+                else:
+                    adj = torch_utils.to_dense_adj(d.edge_index).numpy()[0]
+                adjs.append(adj)
     else:
         # NOTE: not correct, need to be fixed
         if hasattr(dataset, 'dataset'):
@@ -257,23 +265,22 @@ def get_E(Acc_MLP_avg_degree, Acc_GNN_degree, Acc_MLP_attr, Acc_GNN_attr, is_abs
 
 def get_new_E(Acc_MLP_attr, Acc_GNN_attr, Acc_MLP_avg_degree, Acc_GNN_degree, Y_num, is_abs=True):
     factor = 0.5
-    if Acc_MLP_avg_degree is None:
-        E_struct = 0
-        factor = 1
+    # class_factor = np.log2(Y_num) 
+    class_factor = 1.0
+
+    if is_abs:
+        E_struct = abs(Acc_GNN_degree - Acc_MLP_avg_degree) * (100 -  min(Acc_MLP_avg_degree, Acc_GNN_degree))/(100 - 100.0/Y_num) * class_factor
     else:
-        if is_abs:
-            E_struct = abs(Acc_GNN_degree - Acc_MLP_avg_degree) * (100 -  min(Acc_MLP_avg_degree, Acc_GNN_degree)) * Y_num / (100 - 100/Y_num)
-        else:
-             E_struct = (Acc_GNN_degree - Acc_MLP_avg_degree) * (100 -  min(Acc_MLP_avg_degree, Acc_GNN_degree)) * Y_num / (100 - 100/Y_num)
-    
+            E_struct = (Acc_GNN_degree - Acc_MLP_avg_degree) * (100 -  min(Acc_MLP_avg_degree, Acc_GNN_degree)) * Y_num / (100 - 100.0/Y_num)
+
     if Acc_MLP_attr is None:
         E_attribute = 0
         factor = 1
     else:
         if is_abs:
-            E_attribute = abs(Acc_GNN_attr - Acc_MLP_attr) * (100 - min(Acc_MLP_attr, Acc_GNN_attr)) * Y_num / (100 -100/Y_num)
+            E_attribute = abs(Acc_GNN_attr - Acc_MLP_attr) * (100 - min(Acc_MLP_attr, Acc_GNN_attr)) / (100 -100.0/Y_num)  * class_factor 
         else:
-            E_attribute = (Acc_GNN_attr - Acc_MLP_attr) * (100 - min(Acc_MLP_attr, Acc_GNN_attr)) * Y_num / (100 -100/Y_num)
+            E_attribute = (Acc_GNN_attr - Acc_MLP_attr) * (100 - min(Acc_MLP_attr, Acc_GNN_attr)) * Y_num / (100 -100.0/Y_num)
     return (E_struct+E_attribute) * factor
 
 # %%
@@ -293,6 +300,7 @@ def E_datasets(dataset,
     mutag_splits = []
 
     if as_whole:
+        print('__as whole__')
         adjs = get_dense_adjs(dataset, dataset.name)
         labels = dataset.get_labels()
         feas = extract_features(adjs=adjs, labels=labels)
@@ -327,17 +335,28 @@ def load_datasets(file_name):
         datasets = pk.load(f)
     return datasets
 
-
-
 # pref = 'whole_'
 
-pref = 'new_'
+
+
 def generate_save_regression_dataset(dataset_name:str,
                                      MLP_log_path_attr=None, GNN_log_path_attr=None,
                                      MLP_log_path_degree=None, GNN_log_path_degree=None,
-                                     as_whole=False):
-    
+                                     as_whole=False, return_E=False, dim_y=None, fold=10):
     data_names = [dataset_name]
+    
+    if return_E:
+        MLP_test_acc_attr = get_test_acc(MLP_log_path_attr, fold=fold, as_whole=as_whole)
+        GNN_test_acc_attr = get_test_acc(GNN_log_path_attr, fold=fold, as_whole=as_whole)
+        MLP_test_acc_struct = get_test_acc(MLP_log_path_degree, fold=fold, as_whole=as_whole)
+        GNN_test_acc_struct = get_test_acc(GNN_log_path_degree, fold=fold, as_whole=as_whole)
+        print('MLP_test_acc_attr', MLP_test_acc_attr)
+        print('GNN_test_acc_attr', GNN_test_acc_attr)
+        print('MLP_test_acc_struct', MLP_test_acc_struct)
+        print('GNN_test_acc_struct', GNN_test_acc_struct)
+        
+        return get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, GNN_test_acc_struct, dim_y)
+            
     datasets_obj = {}
     for k, v in DATASETS.items():
         if k not in data_names:
@@ -352,163 +371,206 @@ def generate_save_regression_dataset(dataset_name:str,
                                 MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
     # mutag_datasets = E_datasets(dataset, MLP_log_path_degree, GNN_log_path_degree, MLP_log_path_degree, GNN_log_path_degree)
 
+    if as_whole:
+        pref = 'whole_'
+    else:
+        pref = 'new_'
+        
     save_datasets(cur_datasets, f'{pref}{dataset_name.lower()}_datasets.pkl')
     
     
-def generate_mutag(as_whole=False):
+def generate_mutag(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_GIN_0327_finger_mlp_attr_multicrossen_MUTAG/MolecularFingerprint_MUTAG_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0423_Baseline_lzd_mlp_MUTAG/MolecularGraphMLP_MUTAG_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0403_GIN_degree_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('MUTAG', MLP_log_path_attr, GNN_log_path_attr,
-                                     MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+
+    return generate_save_regression_dataset('MUTAG', MLP_log_path_attr, GNN_log_path_attr,
+                                     MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                     return_E=return_E, dim_y=dim_y, fold=fold)
 
 
-def generate_DD(as_whole=False):
+def generate_DD(as_whole=False, return_E=False, dim_y=None, fold=10):
         
     MLP_log_path_attr = f'./results/result_0516_Baseline_lzd_fingerprint_attr_DD/MolecularFingerprint_DD_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0516_GIN_lzd_attr_DD/GIN_DD_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0516_Baseline_lzd_mlp_DD/MolecularGraphMLP_DD_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0516_GIN_lzd_degree_DD/GIN_DD_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('DD', MLP_log_path_attr, GNN_log_path_attr, 
-                                     MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    return generate_save_regression_dataset('DD', MLP_log_path_attr, GNN_log_path_attr, 
+                                     MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                    return_E=return_E, dim_y=dim_y, fold=fold)
 
 
-def generate_PROTEINS(as_whole=False):
+def generate_PROTEINS(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_GIN_0327_finger_mlp_attr_crossen_PROTEINS/MolecularFingerprint_PROTEINS_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0423_Baseline_lzd_mlp_PROTEINS/MolecularGraphMLP_PROTEINS_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0403_GIN_degree_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('PROTEINS', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    return generate_save_regression_dataset('PROTEINS', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
 
-def generate_ENZYMES(as_whole=False):
+
+def generate_ENZYMES(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0516_Baseline_lzd_fingerprint_attr_ENZYMES/MolecularFingerprint_ENZYMES_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_ENZYMES/GIN_ENZYMES_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0516_Baseline_lzd_mlp_ENZYMES/MolecularGraphMLP_ENZYMES_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0403_GIN_degree_ENZYMES/GIN_ENZYMES_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('ENZYMES', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    return generate_save_regression_dataset('ENZYMES', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
 
 
-def generate_CIFAR10(as_whole=False):
+def generate_CIFAR10(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0510_Baseline_lzd_fingerprint_attr_CIFAR10/MolecularFingerprint_CIFAR10_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0510_GIN_lzd_attr_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_mlp_CIFAR10/MolecularGraphMLP_CIFAR10_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('CIFAR10', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    return generate_save_regression_dataset('CIFAR10', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
 
-def generate_MNIST(as_whole=False):
-        
-    MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_mlp_MNIST/MolecularGraphMLP_MNIST_assessment/10_NESTED_CV'
-    GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_MNIST/GIN_MNIST_assessment/10_NESTED_CV'
+def generate_MNIST(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0510_Baseline_lzd_fingerprint_attr_MNIST/MolecularFingerprint_MNIST_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0510_GIN_lzd_attr_MNIST/GIN_MNIST_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('MNIST', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_mlp_MNIST/MolecularGraphMLP_MNIST_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_MNIST/GIN_MNIST_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('MNIST', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
     
-def generate_AIDS(as_whole=False):
-    MLP_log_path_degree = f'./results/result_GIN_0405_graph_mlp_avgDegree_AIDS/MolecularGraphMLP_AIDS_assessment/10_NESTED_CV'
-    GNN_log_path_degree = f'./results/result_GIN_0405_GIN_degree_AIDS/GIN_AIDS_assessment/10_NESTED_CV'
+def generate_AIDS(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0517_Baseline_lzd_fingerprint_attr_AIDS/MolecularFingerprint_AIDS_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0405_GIN_attr_AIDS/GIN_AIDS_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('AIDS', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    MLP_log_path_degree = f'./results/result_GIN_0405_graph_mlp_avgDegree_AIDS/MolecularGraphMLP_AIDS_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0405_GIN_degree_AIDS/GIN_AIDS_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('AIDS', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
     
 
-def generate_NCI1(as_whole=False):
-    MLP_log_path_degree = f'./results/result_0423_Baseline_lzd_mlp_NCI1/MolecularGraphMLP_NCI1_assessment/10_NESTED_CV'
-    GNN_log_path_degree = f'./results/result_GIN_0403_GIN_degree_NCI1/GIN_NCI1_assessment/10_NESTED_CV'
+def generate_NCI1(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_GIN_0327_finger_mlp_attr_multicrossen_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('NCI1', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    MLP_log_path_degree = f'./results/result_0423_Baseline_lzd_mlp_NCI1/MolecularGraphMLP_NCI1_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0403_GIN_degree_NCI1/GIN_NCI1_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('NCI1', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
 
 
-def generate_IMDB_B(as_whole=False):
-
+def generate_IMDB_B(as_whole=False, return_E=False, dim_y=None, fold=10):
+    # MLP_log_path_attr = f'./results/result_GIN_0327_finger_mlp_attr_multicrossen_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV'
+    # GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0424_Baseline_lzd_mlp_IMDB-BINARY/MolecularGraphMLP_IMDB-BINARY_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0226_load_degree_norm/GIN_IMDB-BINARY_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('IMDB-BINARY', MLP_log_path_attr=None, GNN_log_path_attr=None,
+                                        MLP_log_path_degree=MLP_log_path_degree,
+                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
+
+
+
+def generate_IMDB_M(as_whole=False, return_E=False, dim_y=None, fold=10):
     # MLP_log_path_attr = f'./results/result_GIN_0327_finger_mlp_attr_multicrossen_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV'
     # GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('IMDB-BINARY', MLP_log_path_attr=None, GNN_log_path_attr=None,
-                                        MLP_log_path_degree=MLP_log_path_degree,
-                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole)
-
-
-
-def generate_IMDB_M(as_whole=False):
-
-
     MLP_log_path_degree = f'./results/result_0424_Baseline_lzd_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0313_only_degree_IMDB-MULTI/GIN_IMDB-MULTI_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('IMDB-MULTI', MLP_log_path_attr=None, GNN_log_path_attr=None,
+                                        MLP_log_path_degree=MLP_log_path_degree,
+                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
+
+
+def generate_COLLAB(as_whole=False, return_E=False, dim_y=None, fold=10):
+    MLP_log_path_degree = f'./results/result_0423_Baseline_lzd_mlp_COLLAB/MolecularGraphMLP_COLLAB_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0313_only_degree_COLLAB/GIN_COLLAB_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('COLLAB', MLP_log_path_attr=None, GNN_log_path_attr=None,
+                                        MLP_log_path_degree=MLP_log_path_degree,
+                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
+
+def generate_REDDITB(as_whole=False, return_E=False, dim_y=None, fold=10):
+    MLP_log_path_degree = f'./results/result_0423_Baseline_lzd_mlp_REDDIT-BINARY/MolecularGraphMLP_REDDIT-BINARY_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0403_GIN_degree_REDDIT-BINARY/GIN_REDDIT-BINARY_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('REDDIT-BINARY', MLP_log_path_attr=None, GNN_log_path_attr=None,
+                                        MLP_log_path_degree=MLP_log_path_degree,
+                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
+
+def generate_IMDB_M(as_whole=False, return_E=False, dim_y=None, fold=10):
     # MLP_log_path_attr = f'./results/result_GIN_0327_finger_mlp_attr_multicrossen_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV'
     # GNN_log_path_attr = f'./results/result_GIN_0404_GIN_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV'
-    generate_save_regression_dataset('IMDB-MULTI', MLP_log_path_attr=None, GNN_log_path_attr=None,
+    MLP_log_path_degree = f'./results/result_0424_Baseline_lzd_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0313_only_degree_IMDB-MULTI/GIN_IMDB-MULTI_assessment/10_NESTED_CV'
+    return generate_save_regression_dataset('IMDB-MULTI', MLP_log_path_attr=None, GNN_log_path_attr=None,
                                         MLP_log_path_degree=MLP_log_path_degree,
-                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole)
+                                        GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
     
 
-def generate_HIV(as_whole=False):
+def generate_HIV(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0511_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0510_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
 
-    generate_save_regression_dataset('ogbg_molhiv', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    return generate_save_regression_dataset('ogbg_molhiv', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
     
-def generate_tox21(as_whole=False):
+    
+def generate_tox21(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_GIN_0411_atomencoder_attr_ogbg_moltox21/AtomMLP_ogbg_moltox21_assessment/1_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0409_EGNN_lzd_attr_ogbg_moltox21/EGNN_ogbg_moltox21_assessment/1_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0424_Baseline_lzd_mlp_mol_ogbg_moltox21/MolecularGraphMLP_ogbg_moltox21_assessment/1_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0410_GIN_lzd_degree_ogbg_moltox21/GIN_ogbg_moltox21_assessment/1_NESTED_CV'
+    as_whole = True
+    return generate_save_regression_dataset('ogbg_moltox21', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                        return_E=return_E, dim_y=dim_y, fold=fold)
 
-    generate_save_regression_dataset('ogbg_moltox21', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
-    
-
-
-def generate_bace(as_whole=False):
+def generate_bace(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0510_Baseline_lzd_fingerprint_attr_ogbg-molbace/MolecularFingerprint_ogbg-molbace_assessment/10_NESTED_CV'
     GNN_log_path_attr = f'./results/result_GIN_0510_GIN_lzd_attr_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_mlp_ogbg-molbace/MolecularGraphMLP_ogbg-molbace_assessment/10_NESTED_CV'
     GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV'
-
-    generate_save_regression_dataset('ogbg-molbace', MLP_log_path_attr, GNN_log_path_attr,
-                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
-def generate_ppa(as_whole=False):
-
+    return generate_save_regression_dataset('ogbg-molbace', MLP_log_path_attr, GNN_log_path_attr,
+                                        MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                         return_E=return_E, dim_y=dim_y, fold=fold)
+    
+    
+def generate_ppa(as_whole=False, return_E=False, dim_y=None, fold=10):
     MLP_log_path_attr = f'./results/result_0508_Baseline_lzd_mlp_edge_attr_ogbg_ppa/MolecularFingerprint_ogbg_ppa_assessment/1_NESTED_CV'
     GNN_log_path_attr = f'./results/result_0508_GIN_lzd_degree_ogbg_ppa_/GIN_ogbg_ppa_assessment/1_NESTED_CV'
     MLP_log_path_degree = f'./results/result_0507_Baseline_lzd_mlp_ogbg_ppa/MolecularGraphMLP_ogbg_ppa_assessment/1_NESTED_CV'
     GNN_log_path_degree = f'./results/result_0508_GIN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV'
-    
-    generate_save_regression_dataset('ogbg_ppa', MLP_log_path_attr, GNN_log_path_attr,
-                                     MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+    as_whole = True
+    return generate_save_regression_dataset('ogbg_ppa', MLP_log_path_attr, GNN_log_path_attr,
+                                     MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                      return_E=return_E, dim_y=dim_y, fold=fold)
         
 
 # %%
-# generate_mutag()
-# generate_NCI1()
-# generate_AIDS()
+# as_whole = True
+
+# generate_mutag(as_whole)
+# generate_NCI1(as_whole)
+# generate_AIDS(as_whole)
+# generate_bace(as_whole)
+# generate_DD(as_whole)
+# generate_ENZYMES(as_whole)
+# generate_PROTEINS(as_whole)
+# generate_HIV(as_whole)
+# generate_tox21(as_whole)
+# generate_ppa(as_whole)
+# generate_IMDB_M(as_whole)
+# generate_IMDB_B(as_whole)
+# generate_REDDITB(as_whole)
+# generate_COLLAB(as_whole)
+# generate_CIFAR10(as_whole)
+# generate_MNIST(as_whole)
 
 
-# generate_bace()
-# generate_DD()
-# generate_ENZYMES()
-# generate_PROTEINS()
-# generate_HIV()
-# generate_tox21()
-# generate_ppa()
-
-# generate_IMDB_M()
-# generate_IMDB_B()
-# TODO: reddit_Binary
-# TODO: COLLAB
-
-generate_CIFAR10()
 
 
-# generate_MNIST()

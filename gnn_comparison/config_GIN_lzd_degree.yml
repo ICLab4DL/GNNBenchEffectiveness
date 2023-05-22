@@ -64,7 +64,7 @@ shuffle_feature:
   - False
 
 roc_auc:
-  - False
+  - True
 
 # sampler:
 #   - imbalanced
