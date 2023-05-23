@@ -63,7 +63,7 @@ import json
 
 _OUTER_RESULTS_FILENAME = 'outer_results.json'
 
-def get_test_acc(data_root_path, fold=10, as_whole=False):
+def get_test_acc(data_root_path, fold=10, as_whole=False, roc_auc=False):
     if data_root_path is None:
         return None if as_whole else [None for _ in range(fold)]
     
@@ -72,7 +72,7 @@ def get_test_acc(data_root_path, fold=10, as_whole=False):
         # load file to json, and return avg_TS_score and std_TS_score from json
         with open(assess_path, 'r') as fp:
             assess_results = json.load(fp)
-            return float(assess_results['avg_TS_score'])
+            return float(assess_results['avg_TS_score']) if not roc_auc else float(assess_results['avg_TE_ROCAUC'])
     
     outer_TR_scores,outer_TS_scores,outer_TR_ROCAUC,outer_TE_ROCAUC = [],[],[],[]
     for i in range(1, fold+1):
@@ -84,11 +84,11 @@ def get_test_acc(data_root_path, fold=10, as_whole=False):
             outer_TR_scores.append(outer_fold_scores['OUTER_TR'])
             outer_TS_scores.append(outer_fold_scores['OUTER_TS'])
             
-            if 'OUTER_TR_ROCAUC' in outer_fold_scores:
+            if 'OUTER_TE_ROCAUC' in outer_fold_scores:
                 outer_TR_ROCAUC.append(outer_fold_scores['OUTER_TR_ROCAUC'])
                 outer_TE_ROCAUC.append(outer_fold_scores['OUTER_TE_ROCAUC'])
 
-    return outer_TS_scores
+    return outer_TE_ROCAUC if roc_auc else outer_TS_scores
 
 
 def extract_features(adjs, labels):
@@ -287,14 +287,14 @@ def get_new_E(Acc_MLP_attr, Acc_GNN_attr, Acc_MLP_avg_degree, Acc_GNN_degree, Y_
 
 def E_datasets(dataset, 
                MLP_log_path_attr=None, GNN_log_path_attr=None, 
-               MLP_log_path_struct=None, GNN_log_path_struct=None, fold=10, as_whole=False):
+               MLP_log_path_struct=None, GNN_log_path_struct=None, fold=10, as_whole=False,roc_auc=False):
     
     
-    MLP_test_acc_attr = get_test_acc(MLP_log_path_attr, fold=fold, as_whole=as_whole)
-    GNN_test_acc_attr = get_test_acc(GNN_log_path_attr, fold=fold, as_whole=as_whole)
+    MLP_test_acc_attr = get_test_acc(MLP_log_path_attr, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
+    GNN_test_acc_attr = get_test_acc(GNN_log_path_attr, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
     
-    MLP_test_acc_struct = get_test_acc(MLP_log_path_struct, fold=fold, as_whole=as_whole)
-    GNN_test_acc_struct = get_test_acc(GNN_log_path_struct, fold=fold, as_whole=as_whole)
+    MLP_test_acc_struct = get_test_acc(MLP_log_path_struct, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
+    GNN_test_acc_struct = get_test_acc(GNN_log_path_struct, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
 
     print('_dim_targets: ', dataset._dim_target)
     mutag_splits = []
@@ -342,14 +342,15 @@ def load_datasets(file_name):
 def generate_save_regression_dataset(dataset_name:str,
                                      MLP_log_path_attr=None, GNN_log_path_attr=None,
                                      MLP_log_path_degree=None, GNN_log_path_degree=None,
-                                     as_whole=False, return_E=False, dim_y=None, fold=10):
+                                     as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
     data_names = [dataset_name]
     
     if return_E:
-        MLP_test_acc_attr = get_test_acc(MLP_log_path_attr, fold=fold, as_whole=as_whole)
-        GNN_test_acc_attr = get_test_acc(GNN_log_path_attr, fold=fold, as_whole=as_whole)
-        MLP_test_acc_struct = get_test_acc(MLP_log_path_degree, fold=fold, as_whole=as_whole)
-        GNN_test_acc_struct = get_test_acc(GNN_log_path_degree, fold=fold, as_whole=as_whole)
+        MLP_test_acc_attr = get_test_acc(MLP_log_path_attr, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
+        GNN_test_acc_attr = get_test_acc(GNN_log_path_attr, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
+        MLP_test_acc_struct = get_test_acc(MLP_log_path_degree, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
+        GNN_test_acc_struct = get_test_acc(GNN_log_path_degree, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
+        
         print('MLP_test_acc_attr', MLP_test_acc_attr)
         print('GNN_test_acc_attr', GNN_test_acc_attr)
         print('MLP_test_acc_struct', MLP_test_acc_struct)
@@ -368,7 +369,7 @@ def generate_save_regression_dataset(dataset_name:str,
     dataset = datasets_obj[dataset_name]
     
     cur_datasets = E_datasets(dataset, MLP_log_path_attr, GNN_log_path_attr,
-                                MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole)
+                                MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole, roc_auc=False):
     # mutag_datasets = E_datasets(dataset, MLP_log_path_degree, GNN_log_path_degree, MLP_log_path_degree, GNN_log_path_degree)
 
     if as_whole:
@@ -510,10 +511,15 @@ def generate_IMDB_M(as_whole=False, return_E=False, dim_y=None, fold=10):
     
 
 def generate_HIV(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr = f'./results/result_0511_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV'
-    GNN_log_path_attr = f'./results/result_GIN_0510_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
-    MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV'
-    GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
+    # MLP_log_path_attr = f'./results/result_0511_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV'
+    # GNN_log_path_attr = f'./results/result_GIN_0510_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
+    # MLP_log_path_degree = f'./results/result_0510_Baseline_lzd_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV'
+    # GNN_log_path_degree = f'./results/result_GIN_0510_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
+    # roc:
+    MLP_log_path_attr = f'./results/result_0521_Baseline_lzd_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV'
+    GNN_log_path_attr = f'./results/result_GIN_0521_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
+    MLP_log_path_degree = f'./results/result_0521_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV'
+    GNN_log_path_degree = f'./results/result_GIN_0521_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV'
 
     return generate_save_regression_dataset('ogbg_molhiv', MLP_log_path_attr, GNN_log_path_attr,
                                         MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
