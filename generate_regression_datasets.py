@@ -681,7 +681,7 @@ def get_outer_final(acc_log_path):
         # "avg_TE_ROCAUC": 0.6298793940035297, "std_TE_ROCAUC":
         if 'avg_TE_ROCAUC' in assess_results:
             return [(float(assess_results['avg_TS_score']), float(assess_results['std_TS_score'])),
-                    (float(assess_results['avg_TE_ROCAUC']), float(assess_results['std_TE_ROCAUC']))]
+                    (100 * float(assess_results['avg_TE_ROCAUC']), 100 * float(assess_results['std_TE_ROCAUC']))]
         else:
             return [(float(assess_results['avg_TS_score']), float(assess_results['std_TS_score'])), (np.nan, np.nan)]
 
