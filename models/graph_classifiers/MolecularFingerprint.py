@@ -18,9 +18,8 @@ class MolecularGraphMLP(torch.nn.Module):
         self.act_func = nn.ReLU
         if 'activation' in config and config['activation'] == 'sigmoid':
             self.act_func = nn.Sigmoid
-        
-        self.mlp = torch.nn.Sequential(nn.BatchNorm1d(dim_features),
-                                       torch.nn.Linear(dim_features, hidden_dim), self.act_func(),
+        self.bn1 = nn.BatchNorm1d(dim_features)
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(dim_features, hidden_dim), self.act_func(),
                                        nn.Dropout(dropout),
                                     #    torch.nn.Linear(hidden_dim, hidden_dim), nn.Sigmoid(),
                                     #    nn.Dropout(dropout),
@@ -35,6 +34,8 @@ class MolecularGraphMLP(torch.nn.Module):
             else:
                 h_g = data['g_x']
             
+            if h_g.shape[0] > 1:
+                h_g = self.bn1(h_g)
             result = self.mlp(h_g)
             
             # print('result: ', result)

@@ -16,9 +16,6 @@ def format_time(avg_time):
     minutes, seconds = divmod(remainder, 60)
     return f"{hours:02d}:{minutes:02d}:{int(seconds):02d}.{str(avg_time.microseconds)[:3]}"
 
-
-
-
 class NetWrapper:
 
     def __init__(self, model, loss_function, device='cpu', classification=True, config={}):
@@ -28,7 +25,10 @@ class NetWrapper:
         self.device = torch.device(device)
         self.classification = classification
         self.config = config
+        # TODO: if dim_targets == 2 then use roc_auc
         self.roc_auc = self.config['roc_auc'] if 'roc_auc' in self.config else False
+        
+        self.roc_auc = self.model.dim_target == 2
         
         self.evaluator = None
         print('config:', config)
@@ -60,6 +60,7 @@ class NetWrapper:
             if self.evaluator is not None:
                 auc_roc = evl_res['rocauc']
             else:
+                
                 if y_pred.shape[-1] > 1:
                     y_pred = torch.argmax(y_pred, dim=-1)
                 y_true = y_true.view(y_pred.shape)
@@ -86,7 +87,6 @@ class NetWrapper:
         y_pred = []
 
         for i, data in enumerate(train_loader):
-            
             if 'g_x' not in data and (data.x.shape[0] == 1 or data.batch[-1] == 0):
                 print('x shape:', data.x.shape)
                 continue

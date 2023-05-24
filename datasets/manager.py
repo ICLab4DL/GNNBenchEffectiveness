@@ -259,6 +259,24 @@ class GraphDatasetManager:
         return self._dim_target
 
     @property
+    def edge_attr_dim(self):
+        self._edge_attr_dim = None
+        if is_pyg_dataset(self.name):
+            if hasattr(self.dataset[0], 'edge_attr'):
+                if len(self.dataset[0].edge_attr.size()) == 1:
+                    self._edge_attr_dim = 1
+                else:
+                    self._edge_attr_dim = self.dataset[0].edge_attr.shape[1]
+        else:
+            if hasattr(self.dataset.data[0], 'edge_attr'):
+                if len(self.dataset.data[0].edge_attr.shape) == 1:
+                    self._edge_attr_dim = 1
+                else:
+                    self._edge_attr_dim = self.dataset.data[0].edge_attr.shape[1]
+                    
+        return self._edge_attr_dim
+    
+    @property
     def dim_features(self):
         # TODO: check the graph level features:
         if self.additional_graph_features is not None:
@@ -322,7 +340,7 @@ class GraphDatasetManager:
                 with open(add_features_path, 'rb') as f:
                     graph_feature = pk.load(f)
                     print('laod graph_features len: ', len(graph_feature))
-                    print('load graph_feature: ', name)
+                    print('load graph_feature name: ', name)
                     graph_features.append(graph_feature)
                 # remove from register_node_features.
                 self.graph_fea_reg.remove(name)
@@ -343,7 +361,7 @@ class GraphDatasetManager:
                     pk.dump(rest_graph_features[i], f)
                     print('dump graph features: ', ts[0])
 
-        print('aft:', len(graph_features), ' shape: ',
+        print('_add_graph_features aft:', len(graph_features), ' shape: ',
               graph_features[0][0].shape, graph_features[0][3].shape)
 
         graph_features = node_feature_utils.composite_graph_feature_list(

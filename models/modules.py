@@ -13,8 +13,9 @@ class ClassificationLoss(nn.Module):
         :param outputs:
         :return: loss and accuracy values
         """
-        # print('targets shape:', targets.shape)
         # print('outputs shape:', pred.shape)
+        # print('targets shape:', targets.shape)
+        
         loss = self.loss(pred, targets)
         accuracy = self._calculate_accuracy(pred, targets)
         return loss, accuracy
@@ -65,7 +66,6 @@ class MixDecoupleClassificationLoss(ClassificationLoss):
 
     def __name__(self):
         return "MixDecoupleClassificationLoss"
-
 
 class MulticlassClassificationLoss(ClassificationLoss):
     def __init__(self, reduction=None, weight=None):

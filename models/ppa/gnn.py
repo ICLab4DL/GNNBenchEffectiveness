@@ -20,6 +20,9 @@ class OGBGNN(torch.nn.Module):
 
         super(OGBGNN, self).__init__()
         
+        if 'gnn_type' in config:
+            gnn_type = config['gnn_type']
+        
         self.embeddings_dim = [
             config['hidden_units'][0]] + config['hidden_units']
         self.num_layer = len(self.embeddings_dim)

@@ -1,7 +1,7 @@
 model:
   - MolecularGraphMLP
 device:
-  - cuda:1
+  - cuda:0
 batch_size:
   - 128
 hidden_units:
@@ -20,8 +20,8 @@ activation:
 scheduler:
   - null
 loss:
-  - MulticlassClassificationLoss
-  # - BinaryClassificationLoss
+  # - MulticlassClassificationLoss
+  - BinaryClassificationLoss
 
 gradient_clipping:
   - null

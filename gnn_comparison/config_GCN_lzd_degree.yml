@@ -1,15 +1,25 @@
 model:
-  - OGBGNN
+  - GCN
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
+  # - 64
+num_layer:
+  - 2
+  - 3
+  - 4
+use_edge_attr:
+  - False
 learning_rate:
   - 0.001
 classifier_epochs:
   - 200
+# hidden_units:  # Note: GIN add a first layer that simply adds up all node features
+#   - 300
 hidden_units:  # Note: GIN add a first layer that simply adds up all node features
-  - [64, 64, 64, 64]
+  # - [64, 256, 64]
+  - [64, 300, 300, 64]
 layer_num:
   - 5
 optimizer:
@@ -38,38 +48,35 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 30
+      patience: 50
       use_loss: False
 shuffle:
   - True
 resume:
   - False
 
-# additional_features:
-#   # - use_random
-#   # - rand_id@dist:4
-#   - degree
-#   # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
-#   #        xxx without use_ is created by node_feature_register, e.g., degree;rand_id@total:3
-# # print different features.
+additional_features:
+  # - use_random
+  # - rand_id@dist:4
+  - degree
+  # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
+  #        xxx without use_ is created by node_feature_register, e.g., degree;rand_id@total:3
+# print different features.
 
 node_attribute:
-  - True
+  - False
 
 shuffle_feature:
   - False
 
 roc_auc:
-  - True
+  - False
 
 # sampler:
 #   - imbalanced
 
-# mol_split:
-#   - True
-
 use_10_fold:
   - True
 
-gnn_type:
-  - gcn
+mol_split:
+  - False

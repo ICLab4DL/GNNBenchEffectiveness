@@ -35,26 +35,25 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp'
 
-dt=0521
+dt=0524
 gpu=01
+model_set='GIN_lzd_degree'
+model_set='GIN_lzd_attr'
+
+
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
-
-model_set='GIN_lzd_attr'
-
-
 dats='MUTAG NCI1 PROTEINS DD'
+dats='DD'F
+dats='ogbg_molhiv ogbg-molbace'
+dats='REDDIT-BINARY IMDB-BINARY'
 
+
+model_set='GCN_lzd_degree'
+dats='AIDS DD MUTAG NCI1 PROTEINS'
 
 dats='CIFAR10 MNIST'
-
-
-dats='DD'
-model_set='GIN_lzd_attr'
-
-
-dats='ogbg_molhiv ogbg-molbace'
-model_set='GIN_lzd_degree'
+model_set='GCN_lzd_attr'
 
 for ms in ${model_set};do
 
@@ -62,17 +61,11 @@ conf_file=config_${ms}.yml
 
 for dat in ${dats};do
 
-echo 'running '${conf_file}
-
 tag=${ms}_${dat}
 
-# --mol_split True\
-# --ogb_evl True  \
-# --outer-folds 1 \
-# --inner-folds 1 \
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
---dataset-name ${dat} --result-folder results/result_GIN_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
+--dataset-name ${dat} --result-folder results/result_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'
 echo 'tail -f logs/'${gpu}_${dt}_${tag}'_nohup.log'

@@ -28,32 +28,27 @@ dat='ENZYMES'
 
 # dats='NCI1 ENZYMES'
 
-dats='PATTERN'
-dats='ogbg_molhiv'
-dats='CIFAR10'
-dats='COLLAB REDDIT-BINARY'
-dats='REDDIT-BINARY'
-dats='AIDS'
-
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
 
 
 
-dt=0521
+dt=0522
 gpu=01
 
-
 dats='ogbg-molbbbp'
-dats='ogbg_moltox21'
-dats='MUTAG NCI1 PROTEINS DD COLLAB REDDIT-BINARY'
-dats='IMDB-BINARY IMDB-MULTI'
-
-dats='ogbg_ppa'
-dats='DD ENZYMES'
-
 dats='ogbg-molbace ogbg_molhiv'
-model_set='Baseline_lzd_mlp'
+dats='ogbg_moltox21'
+dats='ogbg_ppa ogbg_molhiv'
+
+dats='CIFAR10 MNIST'
+
+
+dats='AIDS DD MUTAG NCI1 PROTEINS '
+
+dats='REDDIT-BINARY IMDB-BINARY'
+# model_set='Baseline_lzd_mlp_degree_binary'
+model_set='Baseline_lzd_mlp_degree'
 
 for ms in ${model_set};do
 

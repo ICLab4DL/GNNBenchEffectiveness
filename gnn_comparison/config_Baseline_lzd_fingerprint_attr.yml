@@ -1,7 +1,7 @@
 model:
   - MolecularFingerprint
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
 hidden_units:

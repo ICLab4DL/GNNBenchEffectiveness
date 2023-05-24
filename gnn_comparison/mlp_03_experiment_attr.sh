@@ -51,6 +51,9 @@ dats='ENZYMES DD PROTEINS'
 dats='AIDS'
 
 dats='ogbg-molbace ogbg_molhiv'
+
+dats='AIDS DD MUTAG NCI1 PROTEINS '
+
 model_set='Baseline_lzd_fingerprint_attr'
 
 for ms in ${model_set};do

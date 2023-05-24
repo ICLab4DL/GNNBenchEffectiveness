@@ -59,8 +59,10 @@ class EndToEndExperiment(Experiment):
                                                                 shuffle=shuffle)
         
         print('dataset dim features', dataset.dim_features)
+        print('dataset edge_attr_dim', dataset.edge_attr_dim)
         
-        model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target, config=self.model_config)
+        model = model_class(dim_features=dataset.dim_features, edge_attr_dim=dataset.edge_attr_dim, 
+                            dim_target=dataset.dim_target, config=self.model_config)
         # NOTE: add weight
         labels = dataset.get_labels()
         # labels = [i.y for i in train_loader.dataset]

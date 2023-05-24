@@ -9,6 +9,7 @@ from models.schedulers.ECCScheduler import ECCLR
 from models.utils.EarlyStopper import Patience, GLStopper
 from models.graph_classifiers.ModelAdapter import ModelAdapter, ModelMix, MolMix
 from models.graph_classifiers.GIN import GIN, EGNN
+from models.graph_classifiers.GCN import GCN
 from models.graph_classifiers.DiffPool import DiffPool
 from models.graph_classifiers.ECC import ECC
 from models.graph_classifiers.GraphSAGE import GraphSAGE
@@ -63,6 +64,7 @@ class Config:
         'Mix': ModelMix,
         'MolMix': MolMix,
         'GIN': GIN,
+        'GCN': GCN,
         'EGNN': EGNN,
         'OGBGNN': OGBGNN,
         'ECC': ECC,

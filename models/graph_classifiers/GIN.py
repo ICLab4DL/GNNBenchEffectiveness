@@ -11,9 +11,8 @@ from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool, globa
 
 from ogb.graphproppred.mol_encoder import AtomEncoder
 
-
 class GIN(torch.nn.Module):
-    def __init__(self, dim_features, dim_target, config):
+    def __init__(self, dim_features, edge_attr_dim, dim_target, config):
         super(GIN, self).__init__()
 
         self.config = config
@@ -25,6 +24,7 @@ class GIN(torch.nn.Module):
         self.nns = []
         self.convs = []
         self.linears = []
+        
 
         train_eps = config['train_eps']
         if config['aggregation'] == 'sum':
@@ -251,7 +251,7 @@ class MyAtomEncoder(torch.nn.Module):
             x_embedding += self.atom_embedding_list[i](x[:, i])
 
         return x_embedding
-
+    
 
 
 class EGNN(torch.nn.Module):
@@ -262,7 +262,11 @@ class EGNN(torch.nn.Module):
         self.dropout = config['dropout']
         self.embeddings_dim = config['hidden_dim']
         self.num_layers = config['layer_num']
-
+        if 'gnn_type' in config:
+            self.gnn_type = config['gnn_type']
+        else:
+            self.gnn_type = 'gin'
+            
         self.node_encoder = AtomEncoder(self.embeddings_dim)
         # self.ln = nn.Linear(dim_features, self.embeddings_dim)
         self.mol = True
@@ -272,9 +276,13 @@ class EGNN(torch.nn.Module):
         self.ln_degree = Linear(1, self.embeddings_dim)
 
         for i in range(self.num_layers):
-            self.convs.append(
-                EGINConv(self.embeddings_dim, True))
-
+            if self.gnn_type == 'gin':
+                self.convs.append(EGCNConv((self.embeddings_dim, True)))
+            elif self.gnn_type == 'gcn':
+                self.convs.append(EGCNConv((self.embeddings_dim, True)))
+            else:
+                raise ValueError('Undefined gnn type called {}'.format(self.gnn_type))
+                
             self.bns.append(torch.nn.BatchNorm1d(self.embeddings_dim))
 
         self.out =  nn.Sequential(
