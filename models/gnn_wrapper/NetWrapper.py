@@ -46,32 +46,42 @@ class NetWrapper:
             if y_pred.numel() == y_true.numel():
                 y_true = y_true.view(y_pred.shape)
             else:
-                y_pred = torch.argmax(y_pred, dim=-1).squeeze()
-                y_pred = y_pred.view(y_true.shape)
+                y_pred_argmax = torch.argmax(y_pred, dim=-1).squeeze()
+                y_pred_argmax = y_pred_argmax.view(y_true.shape)
                 
             y_true = np.float32(y_true.numpy())
-            y_pred = np.float32(y_pred.numpy().astype(np.float32))
+            y_pred_argmax = np.float32(y_pred_argmax.numpy().astype(np.float32))
             y_true[y_true < 0] = np.nan
             
-            input_dict = {"y_true": y_true, "y_pred": y_pred}
+            input_dict = {"y_true": y_true, "y_pred": y_pred_argmax}
             evl_res = self.evaluator.eval(input_dict)
             
         if self.roc_auc:
             if self.evaluator is not None:
                 auc_roc = evl_res['rocauc']
             else:
-                
                 if y_pred.shape[-1] > 1:
-                    y_pred = torch.argmax(y_pred, dim=-1)
-                y_true = y_true.view(y_pred.shape)
+                    y_pred_argmax = torch.argmax(y_pred, dim=-1)
+                y_true = y_true.view(y_pred_argmax.shape)
                 
-                auc_roc = roc_auc_score(y_true.numpy(), y_pred.numpy())
+                auc_roc = roc_auc_score(y_true.numpy(), y_pred_argmax.numpy())
+                
+        # TODO: cal accuracy:
+        if y_pred.shape[-1] > 1:
+            y_pred_argmax = torch.argmax(y_pred, dim=-1)
             
+        acc_all = 100. * (y_pred_argmax == y_true).sum().float() / y_true.size(0) # True/True
+        acc_all = acc_all.cpu().numpy().item()
+        
         if self.classification:
             if self.roc_auc:
-                return acc_all / len(data_loader.dataset), loss_all / len(data_loader.dataset), auc_roc
+                return acc_all, loss_all / len(data_loader.dataset), auc_roc
             else:
-                return acc_all / len(data_loader.dataset), loss_all / len(data_loader.dataset)
+                return acc_all, loss_all / len(data_loader.dataset)
+            # if self.roc_auc:
+            #     return acc_all / len(data_loader.dataset), loss_all / len(data_loader.dataset), auc_roc
+            # else:
+            #     return acc_all / len(data_loader.dataset), loss_all / len(data_loader.dataset)
         else:
             return None, loss_all / len(data_loader.dataset)
     
@@ -157,6 +167,7 @@ class NetWrapper:
                 try:
                     num_graphs = data.num_graphs
                 except TypeError:
+                    print('no num_graphs')
                     num_graphs = data.adj.size(0)
 
                 loss_all += loss.item() * num_graphs

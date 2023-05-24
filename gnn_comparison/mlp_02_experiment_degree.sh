@@ -33,7 +33,7 @@ model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix
 
 
 
-dt=0522
+dt=0524
 gpu=01
 
 dats='ogbg-molbbbp'
@@ -44,10 +44,14 @@ dats='ogbg_ppa ogbg_molhiv'
 dats='CIFAR10 MNIST'
 
 
-dats='AIDS DD MUTAG NCI1 PROTEINS '
 
 dats='REDDIT-BINARY IMDB-BINARY'
-# model_set='Baseline_lzd_mlp_degree_binary'
+
+
+dats='NCI1'
+model_set='Baseline_lzd_mlp_degree_binary'
+
+dats='AIDS DD MUTAG PROTEINS ENZYMES'
 model_set='Baseline_lzd_mlp_degree'
 
 for ms in ${model_set};do

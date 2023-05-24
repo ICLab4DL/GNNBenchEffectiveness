@@ -49,11 +49,14 @@ dats='ogbg_molhiv ogbg-molbace'
 dats='REDDIT-BINARY IMDB-BINARY'
 
 
-model_set='GCN_lzd_degree'
 dats='AIDS DD MUTAG NCI1 PROTEINS'
+
 
 dats='CIFAR10 MNIST'
 model_set='GCN_lzd_attr'
+
+dats='ENZYMES'
+model_set='GCN_lzd_degree'
 
 for ms in ${model_set};do
 

@@ -262,13 +262,13 @@ class GraphDatasetManager:
     def edge_attr_dim(self):
         self._edge_attr_dim = None
         if is_pyg_dataset(self.name):
-            if hasattr(self.dataset[0], 'edge_attr'):
+            if hasattr(self.dataset[0], 'edge_attr') and self.dataset[0].edge_attr is not None:
                 if len(self.dataset[0].edge_attr.size()) == 1:
                     self._edge_attr_dim = 1
                 else:
                     self._edge_attr_dim = self.dataset[0].edge_attr.shape[1]
         else:
-            if hasattr(self.dataset.data[0], 'edge_attr'):
+            if hasattr(self.dataset.data[0], 'edge_attr') and self.dataset.data[0].edge_attr is not None:
                 if len(self.dataset.data[0].edge_attr.shape) == 1:
                     self._edge_attr_dim = 1
                 else:

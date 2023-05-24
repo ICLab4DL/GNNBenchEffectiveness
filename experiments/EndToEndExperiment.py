@@ -119,7 +119,9 @@ class EndToEndExperiment(Experiment):
         weight = None
 
         print('--------- self model config:', self.model_config)
-        model = model_class(dim_features=dataset.dim_features, dim_target=dataset.dim_target,
+        model = model_class(dim_features=dataset.dim_features, 
+                            edge_attr_dim=dataset.edge_attr_dim,
+                            dim_target=dataset.dim_target,
                             config=self.model_config)
         net = NetWrapper(model, loss_function=loss_class(weight=weight), device=self.model_config['device'], config=self.model_config)
 

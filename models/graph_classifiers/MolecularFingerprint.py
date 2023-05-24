@@ -7,13 +7,14 @@ from models.graph_classifiers.GIN import MyAtomEncoder
 
 class MolecularGraphMLP(torch.nn.Module):
 
-    def __init__(self, dim_features, dim_target, config):
+    def __init__(self, dim_features, edge_attr_dim, dim_target, config):
         super(MolecularGraphMLP, self).__init__()
         hidden_dim = config['hidden_units']
         dropout = config['dropout'] if 'dropout' in config else 0.4
         print('dim_features: ', dim_features)
         print('hidden_dim: ', hidden_dim)
         print('dim_target: ', dim_target)
+        self.dim_target = dim_target
         print('dropout:', dropout)
         self.act_func = nn.ReLU
         if 'activation' in config and config['activation'] == 'sigmoid':
@@ -47,10 +48,11 @@ class MolecularGraphMLP(torch.nn.Module):
 
 class MolecularFingerprint(torch.nn.Module):
 
-    def __init__(self, dim_features, dim_target, config):
+    def __init__(self, dim_features, edge_attr_dim, dim_target, config):
         super(MolecularFingerprint, self).__init__()
         hidden_dim = config['hidden_units']
         print('finger dim_features:', dim_features)
+        self.dim_target = dim_target
         self.mlp = nn.Sequential(nn.BatchNorm1d(dim_features),
                                 nn.Linear(dim_features, hidden_dim), ReLU(),
                                 nn.Dropout(config['dropout']),

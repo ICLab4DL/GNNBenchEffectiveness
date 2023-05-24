@@ -11,7 +11,8 @@ class GCNConv(MessagePassing):
     def __init__(self, edge_attr_dim, emb_dim):
         super(GCNConv, self).__init__(aggr='add')
         self.linear = torch.nn.Linear(emb_dim, emb_dim)
-        self.edge_encoder = torch.nn.Linear(edge_attr_dim, emb_dim)
+        if edge_attr_dim is not None:
+            self.edge_encoder = torch.nn.Linear(edge_attr_dim, emb_dim)
 
     def forward(self, x, edge_index, edge_attr):
         
