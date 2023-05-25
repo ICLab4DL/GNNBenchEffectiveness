@@ -429,47 +429,47 @@ data_log_path_dict = {
         f'./results/result_GIN_0521_GIN_lzd_attr_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV',
         f'./results/result_0522_Baseline_lzd_mlp_MUTAG/MolecularGraphMLP_MUTAG_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV',
-        None, # GCN with attr
-        None # GCN with degree
+        'result_0524_GCN_lzd_attr_MUTAG/GCN_MUTAG_assessment/10_NESTED_CV', # GCN with attr,
+        'result_0524_GCN_lzd_degree_MUTAG/GCN_MUTAG_assessment/10_NESTED_CV' # GCN with degree
     ),
     'DD': (f'./results/result_0521_Baseline_lzd_fingerprint_attr_DD/MolecularFingerprint_DD_assessment/10_NESTED_CV',
            f'./results/result_GIN_0521_GIN_lzd_attr_DD/GIN_DD_assessment/10_NESTED_CV',
            f'./results/result_0522_Baseline_lzd_mlp_DD/MolecularGraphMLP_DD_assessment/10_NESTED_CV',
            f'./results/result_GIN_0521_GIN_lzd_degree_DD/GIN_DD_assessment/10_NESTED_CV',
-           None, # GCN with attr,
-           None # GCN with degree
+           'result_0524_GCN_lzd_attr_DD/GCN_DD_assessment/10_NESTED_CV', # GCN with attr,
+           'result_0524_GCN_lzd_degree_DD/GCN_DD_assessment/10_NESTED_CV' # GCN with degree
         ),
     'PROTEINS': (
         f'./results/result_0521_Baseline_lzd_fingerprint_attr_PROTEINS/MolecularFingerprint_PROTEINS_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_attr_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV',
         f'./results/result_0522_Baseline_lzd_mlp_PROTEINS/MolecularGraphMLP_PROTEINS_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        'result_0524_GCN_lzd_attr_PROTEINS/GCN_PROTEINS_assessment/10_NESTED_CV', # GCN with attr,
+        'result_0524_GCN_lzd_degree_PROTEINS/GCN_PROTEINS_assessment/10_NESTED_CV' # GCN with degree
         ),
     'ENZYMES': ( # class num = 6, no roc_auc
         f'./results/result_0516_Baseline_lzd_fingerprint_attr_ENZYMES/MolecularFingerprint_ENZYMES_assessment/10_NESTED_CV',
         f'./results/result_GIN_0404_GIN_attr_ENZYMES/GIN_ENZYMES_assessment/10_NESTED_CV',
         f'./results/result_0516_Baseline_lzd_mlp_ENZYMES/MolecularGraphMLP_ENZYMES_assessment/10_NESTED_CV',
         f'./results/result_GIN_0403_GIN_degree_ENZYMES/GIN_ENZYMES_assessment/10_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        'result_0524_GCN_lzd_attr_ENZYMES/GCN_ENZYMES_assessment/10_NESTED_CV', # GCN with attr,
+        'result_0524_GCN_lzd_degree_ENZYMES/GCN_ENZYMES_assessment/10_NESTED_CV' # GCN with degree
         ),
     'AIDS': (
         f'./results/result_0521_Baseline_lzd_fingerprint_attr_AIDS/MolecularFingerprint_AIDS_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_attr_AIDS/GIN_AIDS_assessment/10_NESTED_CV',
         f'./results/result_0522_Baseline_lzd_mlp_AIDS/MolecularGraphMLP_AIDS_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_AIDS/GIN_AIDS_assessment/10_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        'result_0524_GCN_lzd_attr_AIDS/GCN_AIDS_assessment/10_NESTED_CV', # GCN with attr,
+        'result_0524_GCN_lzd_degree_AIDS/GCN_AIDS_assessment/10_NESTED_CV' # GCN with degree
     ),
     'NCI1': (
-        f'./results/result_0524_Baseline_lzd_mlp_degree_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV',
+        f'./results/result_0524_Baseline_lzd_fingerprint_attr_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV',
         f'./results/result_0524_Baseline_lzd_mlp_degree_binary_NCI1/MolecularGraphMLP_NCI1_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_NCI1/GIN_NCI1_assessment/10_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        'result_0524_GCN_lzd_attr_NCI1/GCN_NCI1_assessment/10_NESTED_CV', # GCN with attr,
+        'result_0524_GCN_lzd_degree_NCI1/GCN_NCI1_assessment/10_NESTED_CV' # GCN with degree
     ),
     'ogbg_molhiv': (
         f'./results/result_0521_Baseline_lzd_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV',

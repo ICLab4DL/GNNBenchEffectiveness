@@ -45,7 +45,6 @@ dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
 dats='MUTAG NCI1 PROTEINS DD'
 dats='DD'F
-dats='ogbg_molhiv ogbg-molbace'
 dats='REDDIT-BINARY IMDB-BINARY'
 
 
@@ -56,6 +55,9 @@ dats='CIFAR10 MNIST'
 model_set='GCN_lzd_attr'
 
 dats='ENZYMES'
+
+
+dats='ogbg_molhiv ogbg-molbace'
 model_set='GCN_lzd_degree'
 
 for ms in ${model_set};do

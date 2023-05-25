@@ -33,6 +33,7 @@ class GINConv(MessagePassing):
     def update(self, aggr_out):
         return aggr_out
 
+
 ### GCN convolution along the graph structure
 class GCNConv(MessagePassing):
     def __init__(self, emb_dim):
@@ -41,8 +42,25 @@ class GCNConv(MessagePassing):
         self.linear = torch.nn.Linear(emb_dim, emb_dim)
         self.root_emb = torch.nn.Embedding(1, emb_dim)
         self.edge_encoder = torch.nn.Linear(7, emb_dim)
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(emb_dim, 2*emb_dim), torch.nn.BatchNorm1d(2*emb_dim), 
+                                torch.nn.ReLU(), torch.nn.Linear(2*emb_dim, emb_dim))
 
+    # def forward(self, x, edge_index, edge_attr):
+    #     x = x.squeeze()
+    #     edge_embedding = self.edge_encoder(edge_attr)
+    #     out = self.mlp((1 + 0) *x + self.propagate(edge_index, x=x, edge_attr=edge_embedding))
+
+    #     return out
+
+    # def message(self, x_j, edge_attr):
+    #     return F.relu(x_j + edge_attr)
+
+    # def update(self, aggr_out):
+    #     return aggr_out
+    
+    
     def forward(self, x, edge_index, edge_attr):
+        x = x.squeeze()
         x = self.linear(x)
         edge_embedding = self.edge_encoder(edge_attr)
 
@@ -54,7 +72,6 @@ class GCNConv(MessagePassing):
         deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
 
         norm = deg_inv_sqrt[row] * deg_inv_sqrt[col]
-
         return self.propagate(edge_index, x=x, edge_attr = edge_embedding, norm=norm) + F.relu(x + self.root_emb.weight) * 1./deg.view(-1,1)
 
     def message(self, x_j, edge_attr, norm):

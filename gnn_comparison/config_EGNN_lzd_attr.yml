@@ -65,6 +65,7 @@ roc_auc:
 
 # sampler:
 #   - imbalanced
-
+gnn_type:
+ - gin
 mol_split:
   - True

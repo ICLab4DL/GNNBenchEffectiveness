@@ -848,8 +848,6 @@ class OGBMoleculeDatasetManager(GraphDatasetManager):
         # else:
         #     print('not use mol split')
 
-
-
     
 from rdkit.Chem.Scaffolds import MurckoScaffold
 from rdkit import Chem

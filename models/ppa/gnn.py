@@ -9,8 +9,7 @@ from models.ppa.conv import GNN_node, GNN_node_Virtualnode
 from torch_scatter import scatter_mean
 
 class OGBGNN(torch.nn.Module):
-
-    def __init__(self, dim_features, dim_target, config, num_layer = 5, emb_dim = 300, 
+    def __init__(self, dim_features, edge_attr_dim, dim_target, config, num_layer = 5, emb_dim = 300, 
                     gnn_type = 'gin', virtual_node = False, residual = False, 
                     drop_ratio = 0.5, JK = "last", graph_pooling = "mean"):
         '''
@@ -19,7 +18,7 @@ class OGBGNN(torch.nn.Module):
         '''
 
         super(OGBGNN, self).__init__()
-        
+        self.dim_target = dim_target
         if 'gnn_type' in config:
             gnn_type = config['gnn_type']
         

@@ -28,14 +28,14 @@ class NetWrapper:
         # TODO: if dim_targets == 2 then use roc_auc
         self.roc_auc = self.config['roc_auc'] if 'roc_auc' in self.config else False
         
-        self.roc_auc = self.model.dim_target == 2
-        
         self.evaluator = None
         print('config:', config)
         if 'ogb_evl' in config:
             if config['ogb_evl']:
                 self.evaluator = Evaluator(config['dataset_name'].replace('_',  '-'))
                 print('!      loaded evaluator !')
+                
+        self.roc_auc = (self.model.dim_target == 2 or self.evaluator.eval_metric == 'rocauc')
     
     def _cal_evl(self, data_loader, y_true, y_pred, acc_all, loss_all):
         
@@ -45,15 +45,18 @@ class NetWrapper:
         if self.evaluator is not None:
             if y_pred.numel() == y_true.numel():
                 y_true = y_true.view(y_pred.shape)
-            else:
+                y_pred_argmax = y_pred
+            elif self.evaluator.num_tasks == 1:
                 y_pred_argmax = torch.argmax(y_pred, dim=-1).squeeze()
                 y_pred_argmax = y_pred_argmax.view(y_true.shape)
+            else:
+                y_pred_argmax = y_pred
                 
-            y_true = np.float32(y_true.numpy())
+            y_true_numpy = np.float32(y_true.numpy())
             y_pred_argmax = np.float32(y_pred_argmax.numpy().astype(np.float32))
-            y_true[y_true < 0] = np.nan
+            y_true_numpy[y_true_numpy < 0] = np.nan
             
-            input_dict = {"y_true": y_true, "y_pred": y_pred_argmax}
+            input_dict = {"y_true": y_true_numpy, "y_pred": y_pred_argmax}
             evl_res = self.evaluator.eval(input_dict)
             
         if self.roc_auc:
@@ -66,11 +69,20 @@ class NetWrapper:
                 
                 auc_roc = roc_auc_score(y_true.numpy(), y_pred_argmax.numpy())
                 
-        # TODO: cal accuracy:
-        if y_pred.shape[-1] > 1:
+        if self.evaluator is not None:
+            if self.evaluator.num_tasks == 1 and y_pred.shape[-1] > 1:
+                y_pred_argmax = torch.argmax(y_pred, dim=-1)
+            else:
+                y_pred_argmax = y_pred > 0.5
+        else:
             y_pred_argmax = torch.argmax(y_pred, dim=-1)
             
-        acc_all = 100. * (y_pred_argmax == y_true).sum().float() / y_true.size(0) # True/True
+        y_pred_argmax = y_pred_argmax.squeeze()
+        y_true = y_true.squeeze()
+        # print('y_pred_argmax shape:', y_pred_argmax.shape)
+        is_labeled = y_true == y_true
+        # print('is_labeled shape:', is_labeled.shape)
+        acc_all = 100. * (y_pred_argmax[is_labeled] == y_true[is_labeled]).sum().float() / y_true[is_labeled].size(0) # True/True
         acc_all = acc_all.cpu().numpy().item()
         
         if self.classification:

@@ -31,8 +31,8 @@ scheduler:
       step_size: 50
       gamma: 0.5
 loss:
-  - MulticlassClassificationLoss
-  # - BinaryClassificationLoss
+  # - MulticlassClassificationLoss
+  - BinaryClassificationLoss
 train_eps:
   # - true
   - false
@@ -80,3 +80,6 @@ use_10_fold:
 
 mol_split:
   - True
+
+ogb_evl:
+ - True

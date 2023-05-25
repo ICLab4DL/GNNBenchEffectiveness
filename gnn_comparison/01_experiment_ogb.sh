@@ -39,18 +39,24 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
 
-dt=0524
+dt=0525
 gpu=01
 dats='ogbg-molbbbp'
-dats='ogbg_moltox21'
 
 dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
 
 model_set='EGNN_lzd_attr EGNN_lzd_mix'
 
-dats='ogbg_ppa'
 
 model_set='GIN_lzd_attr_edge'
+
+
+dats='ogbg_moltox21'
+
+model_set='GCN_lzd_attr_edge'
+
+dats='ogbg_ppa'
+model_set='GCN_lzd_degree'
 
 for ms in ${model_set};do
 
@@ -61,7 +67,7 @@ echo 'running '${conf_file}
 
 tag=${ms}_${dat}
 
-# --mol_split False \
+--mol_split False \
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} \

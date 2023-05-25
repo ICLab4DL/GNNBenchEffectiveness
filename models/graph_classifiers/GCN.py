@@ -21,7 +21,7 @@ class GCNConv(MessagePassing):
         if edge_attr is not None:
             if len(edge_attr.size()) == 1:
                 edge_attr = edge_attr.view(-1,1)
-            edge_embedding = self.edge_encoder(edge_attr)
+            edge_embedding = self.edge_encoder(edge_attr.float())
         else:
             edge_embedding = 0
 

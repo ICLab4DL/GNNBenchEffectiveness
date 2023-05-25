@@ -44,7 +44,8 @@ shuffle:
   - True
 resume:
   - False
-
+use_edge_attr:
+  - True
 # additional_features:
 #   # - use_random
 #   # - rand_id@dist:4
