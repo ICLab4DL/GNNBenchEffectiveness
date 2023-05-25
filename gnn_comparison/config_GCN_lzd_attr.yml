@@ -76,8 +76,8 @@ roc_auc:
 # sampler:
 #   - imbalanced
 
-# mol_split:
-#   - True
-
 use_10_fold:
+  - False
+
+mol_split:
   - True
