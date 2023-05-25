@@ -52,7 +52,7 @@ dats='ogbg_moltox21'
 model_set='GCN_lzd_degree_tox21'
 
 dats='COLLAB REDDIT-BINARY REDDIT-BINARY IMDB-BINARY' # no attr
-dats='COLLAB'
+dats='IMDB-MULTI'
 
 model_set='GCN_lzd_degree'
 

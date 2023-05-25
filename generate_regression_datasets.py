@@ -484,16 +484,16 @@ data_log_path_dict = {
         f'./results/result_GIN_0409_EGNN_lzd_attr_ogbg_moltox21/EGNN_ogbg_moltox21_assessment/1_NESTED_CV',
         f'./results/result_0424_Baseline_lzd_mlp_mol_ogbg_moltox21/MolecularGraphMLP_ogbg_moltox21_assessment/1_NESTED_CV',
         f'./results/result_GIN_0410_GIN_lzd_degree_ogbg_moltox21/GIN_ogbg_moltox21_assessment/1_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        'results/result_0525_GCN_lzd_attr_tox21_ogbg_moltox21/GCN_ogbg_moltox21_assessment/1_NESTED_CV', # GCN with attr,
+        'results/result_0525_GCN_lzd_degree_tox21_ogbg_moltox21/GCN_ogbg_moltox21_assessment/1_NESTED_CV' # GCN with degree
     ),
     'ogbg-molbace': (
         f'./results/result_0521_Baseline_lzd_fingerprint_attr_ogbg-molbace/MolecularFingerprint_ogbg-molbace_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_attr_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV',
         f'./results/result_0521_Baseline_lzd_mlp_ogbg-molbace/MolecularGraphMLP_ogbg-molbace_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV',
-        None,
-        None
+        'results/result_0524_GCN_lzd_degree_ogbg-molbace/GCN_ogbg-molbace_assessment/10_NESTED_CV',
+        'results/result_0525_GCN_lzd_attr_ogbg-molbace/GCN_ogbg-molbace_assessment/10_NESTED_CV'
     ),
     'ogbg_ppa': ( # class num = 37, no roc_auc
         f'./results/result_0508_Baseline_lzd_mlp_edge_attr_ogbg_ppa/MolecularFingerprint_ogbg_ppa_assessment/1_NESTED_CV',
@@ -526,7 +526,7 @@ data_log_path_dict = {
         f'./results/result_0522_Baseline_lzd_mlp_degree_IMDB-BINARY/MolecularGraphMLP_IMDB-BINARY_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_IMDB-BINARY/GIN_IMDB-BINARY_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        'results/result_0525_GCN_lzd_degree_IMDB-BINARY/GCN_IMDB-BINARY_assessment/10_NESTED_CV' # GCN with degree
     ),
     'IMDB-MULTI': (
         None,
@@ -534,7 +534,7 @@ data_log_path_dict = {
         f'./results/result_0424_Baseline_lzd_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_IMDB-MULTI/GIN_IMDB-MULTI_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        None # running
     ),
     'COLLAB': ( # class num = 3
         None,
@@ -542,7 +542,7 @@ data_log_path_dict = {
         f'./results/result_0423_Baseline_lzd_mlp_COLLAB/MolecularGraphMLP_COLLAB_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_COLLAB/GIN_COLLAB_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        None # running
     ),
     'REDDIT-BINARY': (
         None, 
@@ -550,7 +550,7 @@ data_log_path_dict = {
         f'./results/result_0522_Baseline_lzd_mlp_degree_REDDIT-BINARY/MolecularGraphMLP_REDDIT-BINARY_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_REDDIT-BINARY/GIN_REDDIT-BINARY_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        None # running
     ),
 }
 
