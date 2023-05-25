@@ -82,8 +82,7 @@ class GNN_node(torch.nn.Module):
         edge_attr = edge_attr if self.use_edge_attr else None
         
         ### computing input node embedding
-
-        h_list = [self.node_encoder(x)]
+        h_list = [self.node_encoder(x.float())]
         for layer in range(self.num_layer):
             h = self.convs[layer](h_list[layer], edge_index, edge_attr)
             
