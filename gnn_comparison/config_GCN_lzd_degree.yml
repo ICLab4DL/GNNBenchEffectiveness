@@ -1,7 +1,7 @@
 model:
   - GCN
 device:
-  - cuda:1
+  - cuda:0
 batch_size:
   - 128
   # - 64
@@ -76,7 +76,7 @@ roc_auc:
 #   - imbalanced
 
 use_10_fold:
-  - False
+  - True
 
 mol_split:
-  - True
+  - False

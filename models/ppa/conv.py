@@ -45,19 +45,6 @@ class GCNConv(MessagePassing):
         self.mlp = torch.nn.Sequential(torch.nn.Linear(emb_dim, 2*emb_dim), torch.nn.BatchNorm1d(2*emb_dim), 
                                 torch.nn.ReLU(), torch.nn.Linear(2*emb_dim, emb_dim))
 
-    # def forward(self, x, edge_index, edge_attr):
-    #     x = x.squeeze()
-    #     edge_embedding = self.edge_encoder(edge_attr)
-    #     out = self.mlp((1 + 0) *x + self.propagate(edge_index, x=x, edge_attr=edge_embedding))
-
-    #     return out
-
-    # def message(self, x_j, edge_attr):
-    #     return F.relu(x_j + edge_attr)
-
-    # def update(self, aggr_out):
-    #     return aggr_out
-    
     
     def forward(self, x, edge_index, edge_attr):
         x = x.squeeze()

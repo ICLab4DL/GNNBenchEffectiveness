@@ -4,7 +4,7 @@ from datasets.tu_utils import parse_tu_data, create_graph_from_tu_data, get_data
 from datasets.sampler import RandomSampler, ImbalancedDatasetSampler
 from datasets.dataset import GraphDataset, GraphDatasetSubset
 from datasets.dataloader import DataLoader
-from datasets.data import Data
+from datasets.data import Data as MyData
 from datasets.synthetic_dataset_generator import *
 from models.modules import *
 from utils.encode_utils import NumpyEncoder
@@ -176,6 +176,7 @@ class GraphDatasetManager:
             
             self.dataset = SynDataset(name=f'{self.name}_{corr}', root='DATA')
             self._dim_target = self.dataset.num_tasks
+            self.targets = self.dataset.get_targets()
             # NOTE: fill __data_list__
             [_ for _ in self.dataset]
         else:
@@ -190,6 +191,7 @@ class GraphDatasetManager:
                 self._dim_target = targets.shape[-1]
             else:
                 self._dim_target = np.unique(targets).size
+            self.targets = targets
                 
         print('!!!! _dim_target: ', self._dim_target)
         print('dataset len: ', len(self.dataset))
@@ -419,8 +421,8 @@ class GraphDatasetManager:
                     
                 adjs.append(adj)
                 max_N = N if N > max_N else max_N
-        else: 
-            for d in self.dataset.data:
+        else:
+            for d in self.dataset:
                 adjs.append(d.to_numpy_array())
                 if max_N < d.N:
                     max_N = d.N
@@ -1132,19 +1134,20 @@ class TUDatasetManager(GraphDatasetManager):
 
             if G.number_of_nodes() > 1 and G.number_of_edges() > 0:
                 # TODO: convert to numpy : npy
-                
                 data = self._to_data(G)
                 # TODO save here:
-
                 dataset.append(data)
                 G.__class__()
                 graphs.append(G)
         
         # Save
         self._save_load_use_features(graphs=graphs)
-        
+        for d in dataset:
+            print('d type before save:', type(d))        
+            print(d.to_numpy_array())
+            break
         torch.save(dataset, self.processed_dir / f"{self.name}.pt")
-        print(f"saved: {self.processed_dir} / saved : {self.name}.pt")
+        print(f"saved: {self.processed_dir}/{self.name}.pt")
         
     def _save_load_use_features(self, graphs=None) -> list:
 
@@ -1249,7 +1252,7 @@ class TUDatasetManager(GraphDatasetManager):
         
         return res
 
-    def _to_data(self, G):
+    def _to_data(self, G) -> MyData:
         datadict = {}
         # embedding = None
         # if self.use_1hot:
@@ -1284,7 +1287,7 @@ class TUDatasetManager(GraphDatasetManager):
         target = G.get_target(classification=self.classification)
         datadict.update(y=target)
 
-        data = Data(**datadict)
+        data = MyData(**datadict)
 
         return data
 

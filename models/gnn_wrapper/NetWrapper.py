@@ -34,8 +34,8 @@ class NetWrapper:
             if config['ogb_evl']:
                 self.evaluator = Evaluator(config['dataset_name'].replace('_',  '-'))
                 print('!      loaded evaluator !')
-                
-        self.roc_auc = (self.model.dim_target == 2 or self.evaluator.eval_metric == 'rocauc')
+        
+        self.roc_auc = (self.model.dim_target == 2) or (self.evaluator is not None and self.evaluator.eval_metric == 'rocauc')
     
     def _cal_evl(self, data_loader, y_true, y_pred, acc_all, loss_all):
         
