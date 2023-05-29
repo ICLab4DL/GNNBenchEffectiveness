@@ -82,7 +82,6 @@ whole_assessment:
 
 _OUTER_RESULTS_FILENAME = 'outer_results.json'
 
-
 def get_test_acc(data_root_path, fold=10, as_whole=False, roc_auc=False):
     if data_root_path is None:
         return None if as_whole else [None for _ in range(fold)]
@@ -289,29 +288,40 @@ def get_E(Acc_MLP_avg_degree, Acc_GNN_degree, Acc_MLP_attr, Acc_GNN_attr, is_abs
     return (E_struct+E_attribute) * factor
 
 
-def get_new_E(Acc_MLP_attr, Acc_GNN_attr, Acc_MLP_avg_degree, Acc_GNN_degree, Y_num, is_abs=True):
-    factor = 0.5
+def get_new_E(Acc_MLP_attr, Acc_GNN_attr, Acc_MLP_avg_degree, Acc_GNN_degree,
+              Y_num, is_abs=True, is_roc=False, factor=0.5):
     # class_factor = np.log2(Y_num)
+    
+    if not is_roc:
+        Acc_MLP_avg_degree /= 100.0
+        Acc_GNN_degree /= 100.0
+    
     class_factor = 1.0
-
+    min_ab_struct = min(Acc_GNN_degree, Acc_MLP_avg_degree)
     if is_abs:
-        E_struct = abs(Acc_GNN_degree - Acc_MLP_avg_degree) * (100 -
-                                                               min(Acc_MLP_avg_degree, Acc_GNN_degree))/(100 - 100.0/Y_num) * class_factor
+        E_struct = abs(Acc_GNN_degree - Acc_MLP_avg_degree) / min_ab_struct / (Y_num -1) \
+            * (1 - min_ab_struct)/(1 - 1.0/Y_num) * class_factor
     else:
-        E_struct = (Acc_GNN_degree - Acc_MLP_avg_degree) * (100 -
-                                                            min(Acc_MLP_avg_degree, Acc_GNN_degree)) * Y_num / (100 - 100.0/Y_num)
-
+        E_struct = (Acc_GNN_degree - Acc_MLP_avg_degree) / min_ab_struct  / (Y_num -1) \
+            * (1 - min_ab_struct)/(1 - 1.0/Y_num) * class_factor
+    
     if Acc_MLP_attr is None:
         E_attribute = 0
         factor = 1
     else:
+        if not is_roc:
+            Acc_MLP_attr /= 100.0
+            Acc_GNN_attr /= 100.0
+            
+        min_ab_attr = min(Acc_MLP_attr, Acc_GNN_attr)
         if is_abs:
-            E_attribute = abs(Acc_GNN_attr - Acc_MLP_attr) * (
-                100 - min(Acc_MLP_attr, Acc_GNN_attr)) / (100 - 100.0/Y_num) * class_factor
+            E_attribute = abs(Acc_GNN_attr - Acc_MLP_attr) / min_ab_attr / (Y_num -1) \
+            * (1 - min_ab_attr) / (1 - 1.0/Y_num) * class_factor
         else:
-            E_attribute = (Acc_GNN_attr - Acc_MLP_attr) * (100 -
-                                                           min(Acc_MLP_attr, Acc_GNN_attr)) * Y_num / (100 - 100.0/Y_num)
-    return (E_struct+E_attribute) * factor
+            E_attribute = (Acc_GNN_attr - Acc_MLP_attr) / min_ab_attr / (Y_num -1) \
+            * (1 - min_ab_attr) / (1 - 1.0/Y_num) * class_factor
+            
+    return (E_struct+E_attribute) * factor, E_struct * factor
 
 # %%
 
@@ -381,7 +391,8 @@ def load_datasets(file_name):
 def generate_save_regression_dataset(dataset_name: str,
                                      MLP_log_path_attr=None, GNN_log_path_attr=None,
                                      MLP_log_path_degree=None, GNN_log_path_degree=None,
-                                     as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+                                     as_whole=False, return_E=False, dim_y=None, fold=10,
+                                     roc_auc=False, factor=1.0):
     data_names = [dataset_name]
 
     if return_E:
@@ -394,12 +405,13 @@ def generate_save_regression_dataset(dataset_name: str,
         GNN_test_acc_struct = get_test_acc(
             GNN_log_path_degree, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
 
-        print('MLP_test_acc_attr', MLP_test_acc_attr)
-        print('GNN_test_acc_attr', GNN_test_acc_attr)
-        print('MLP_test_acc_struct', MLP_test_acc_struct)
-        print('GNN_test_acc_struct', GNN_test_acc_struct)
-
-        return get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, GNN_test_acc_struct, dim_y)
+        print(f'{dataset_name}: MLP_test_acc_attr', MLP_test_acc_attr)
+        print(f'{dataset_name}: GNN_test_acc_attr', GNN_test_acc_attr)
+        print()
+        print(f'{dataset_name}: MLP_test_acc_struct', MLP_test_acc_struct)
+        print(f'{dataset_name}: GNN_test_acc_struct', GNN_test_acc_struct)
+        return get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, \
+                         GNN_test_acc_struct, dim_y, is_roc=roc_auc, factor=factor)
 
     datasets_obj = {}
     for k, v in DATASETS.items():
@@ -557,138 +569,139 @@ data_log_path_dict = {
 def get_path_by_name(name):
     return data_log_path_dict[name]
 
-def generate_mutag(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_mutag(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'MUTAG')
+    
     return generate_save_regression_dataset('MUTAG', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_DD(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_DD(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'DD')
     return generate_save_regression_dataset('DD', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_PROTEINS(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_PROTEINS(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'PROTEINS')
     return generate_save_regression_dataset('PROTEINS', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_ENZYMES(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_ENZYMES(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'ENZYMES')
     return generate_save_regression_dataset('ENZYMES', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_CIFAR10(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_CIFAR10(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'CIFAR10')
     return generate_save_regression_dataset('CIFAR10', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_MNIST(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_MNIST(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'MNIST')
     return generate_save_regression_dataset('MNIST', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_AIDS(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_AIDS(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'AIDS')
     return generate_save_regression_dataset('AIDS', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_NCI1(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_NCI1(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'NCI1')
     return generate_save_regression_dataset('NCI1', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_IMDB_B(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_IMDB_B(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'IMDB-BINARY')
     return generate_save_regression_dataset('IMDB-BINARY', MLP_log_path_attr=None, GNN_log_path_attr=None,
                                             MLP_log_path_degree=MLP_log_path_degree,
                                             GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_IMDB_M(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_IMDB_M(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'IMDB-MULTI')
     return generate_save_regression_dataset('IMDB-MULTI', MLP_log_path_attr=None, GNN_log_path_attr=None,
                                             MLP_log_path_degree=MLP_log_path_degree,
                                             GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_COLLAB(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_COLLAB(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'COLLAB')
     return generate_save_regression_dataset('COLLAB', MLP_log_path_attr=None, GNN_log_path_attr=None,
                                             MLP_log_path_degree=MLP_log_path_degree,
                                             GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_REDDITB(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_REDDITB(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'REDDIT-BINARY')
     return generate_save_regression_dataset('REDDIT-BINARY', MLP_log_path_attr=None, GNN_log_path_attr=None,
                                             MLP_log_path_degree=MLP_log_path_degree,
                                             GNN_log_path_degree=GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_HIV(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_HIV(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'ogbg_molhiv')
     return generate_save_regression_dataset('ogbg_molhiv', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_tox21(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_tox21(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'ogbg_moltox21')
     as_whole = True
     return generate_save_regression_dataset('ogbg_moltox21', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_bace(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_bace(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'ogbg-molbace')
     return generate_save_regression_dataset('ogbg-molbace', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
-def generate_ppa(as_whole=False, return_E=False, dim_y=None, fold=10):
-    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree = get_path_by_name(
+def generate_ppa(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False):
+    MLP_log_path_attr, GNN_log_path_attr, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
         'ogbg_ppa')
     as_whole = True
     return generate_save_regression_dataset('ogbg_ppa', MLP_log_path_attr, GNN_log_path_attr,
                                             MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
-                                            return_E=return_E, dim_y=dim_y, fold=fold)
+                                            return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc)
 
 
 _OUTER_RESULTS_FILENAME = 'outer_results.json'
