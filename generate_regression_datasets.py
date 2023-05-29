@@ -226,11 +226,8 @@ the ixj th sample : (D_i_split_j, E_i_j)
 
 # Check mutag
 # construct each E with each fold and
-
-
 def is_pyg_dataset(d_name: str):
     return d_name.startswith('ogb') or d_name.startswith('syn')
-
 
 def get_dense_adjs(dataset, dataset_name):
     adjs = []
@@ -564,6 +561,15 @@ data_log_path_dict = {
         None, # GCN with attr,
         None # running
     ),
+    # TODO: add synthetic dataset: rerun synthetic dataset
+    'syn1': (
+        None,
+        None,
+        f'./results/result_0522_Baseline_lzd_mlp_degree_syn1/MolecularGraphMLP_syn1_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_lzd_degree_syn1/GIN_syn1_assessment/10_NESTED_CV',
+        None, # GCN with attr,
+        None # running
+    ),
 }
 
 def get_path_by_name(name):
@@ -705,7 +711,6 @@ def generate_ppa(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=Fa
 
 
 _OUTER_RESULTS_FILENAME = 'outer_results.json'
-
 
 def get_outer_final(acc_log_path):
     # assessment_results.json
