@@ -11,6 +11,8 @@ from torch_geometric.nn import GINConv, global_add_pool, global_mean_pool, globa
 
 from ogb.graphproppred.mol_encoder import AtomEncoder
 
+
+
 class GIN(torch.nn.Module):
     def __init__(self, dim_features, edge_attr_dim, dim_target, config):
         super(GIN, self).__init__()
@@ -24,6 +26,7 @@ class GIN(torch.nn.Module):
         self.nns = []
         self.convs = []
         self.linears = []
+        self.dim_target = dim_target
         
 
         train_eps = config['train_eps']

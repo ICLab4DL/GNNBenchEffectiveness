@@ -581,5 +581,3 @@ def dump_Degree_syn(sample_num, class_num):
 sample_num = 2048
 class_num = 2
 dump_Degree_syn(sample_num, class_num)
-
-

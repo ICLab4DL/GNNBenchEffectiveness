@@ -176,9 +176,9 @@ class GraphDatasetManager:
             
             self.dataset = SynDataset(name=f'{self.name}_{corr}', root='DATA')
             self._dim_target = self.dataset.num_tasks
-            self.targets = self.dataset.get_targets()
             # NOTE: fill __data_list__
             [_ for _ in self.dataset]
+            self.targets = self.dataset.get_targets()
         else:
             self.dataset = GraphDataset(torch.load(
                 self.processed_dir / f"{self.name}.pt"))
@@ -1763,6 +1763,15 @@ class SynCC(SynManager):
 class SynCC(SynManager):
     name = "syn_cc"
     corr = "0.9"
+    _dim_features = 1
+    _dim_target = 10
+    max_num_nodes = 100
+    
+    
+
+class SynDegree(SynManager):
+    name = "syn_degree"
+    corr = "0.9_class10"
     _dim_features = 1
     _dim_target = 10
     max_num_nodes = 100

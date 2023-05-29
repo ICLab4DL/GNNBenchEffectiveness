@@ -1,7 +1,7 @@
 model:
   - GIN
 device:
-  - cuda:1
+  - cuda:0
 batch_size:
   - 128
   # - 64
@@ -42,7 +42,7 @@ early_stopper:
   -
     class: Patience
     args:
-      patience: 50
+      patience: 30
       use_loss: False
 shuffle:
   - True
