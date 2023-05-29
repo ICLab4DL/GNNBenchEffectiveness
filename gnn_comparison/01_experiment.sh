@@ -62,6 +62,8 @@ paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
 
 class_num='class10'
 
+class_num='class5'
+
 class_num='class2'
 
 
