@@ -39,7 +39,7 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
 
-dt=0529
+dt=0530
 gpu=01
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
@@ -61,6 +61,8 @@ dats='syn_degree'
 model_set='Baseline_lzd_mlp_degree'
 paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
 
+paras='0.1'
+
 
 class_num='class10'
 
@@ -78,7 +80,7 @@ for dat in ${dats};do
 for para in ${paras};do
 echo 'running '${conf_file}
 
-tag=${ms}_${dat}_${para}
+tag=${ms}_${dat}_${para}_${class_num}
 
 # --outer-folds 1 \
 # --inner-folds 1 \
