@@ -59,9 +59,9 @@ dats='syn_cc'
 
 dats='syn_degree'
 model_set='Baseline_lzd_mlp_degree'
-paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
 
 paras='0.1'
+paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
 
 
 class_num='class10'

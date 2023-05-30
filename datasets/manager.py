@@ -431,6 +431,7 @@ class GraphDatasetManager:
 
         feature_names = self.node_fea_reg.get_registered()
         node_features = []
+        
         additional_feature_path = lambda fea_name,fea_args: \
             os.path.join(self.processed_dir, f'{self.name}_add_{fea_name}_{fea_args}.pkl')
             
@@ -454,10 +455,11 @@ class GraphDatasetManager:
                 adjs, self.node_fea_reg)
             # TODO: save each
             for i, ts in enumerate(self.node_fea_reg.get_registered()):
-                add_features_path = additional_feature_path(ts[0], ts[-1])
+                add_features_path = os.path.join(self.processed_dir, f'{self.name}_add_{ts[0]}_{ts[-1]}.pkl')
                 node_features.append(rest_node_features[i])
                 with open(add_features_path, 'wb') as f:
                     pk.dump(rest_node_features[i], f)
+                    # dump node_feature:  DATA/syn_degree/processed/syn_degree_add_degree_{'name': 'syn_degree'}.pkl
                     print('dump node_feature: ', add_features_path)
 
         print('aft:', len(node_features),
