@@ -389,7 +389,7 @@ def generate_save_regression_dataset(dataset_name: str,
                                      MLP_log_path_attr=None, GNN_log_path_attr=None,
                                      MLP_log_path_degree=None, GNN_log_path_degree=None,
                                      as_whole=False, return_E=False, dim_y=None, fold=10,
-                                     roc_auc=False, factor=1.0):
+                                     roc_auc=False, factor=1.0, class_num=10):
     data_names = [dataset_name]
 
     if return_E:
@@ -562,15 +562,81 @@ data_log_path_dict = {
         None # running
     ),
     # TODO: add synthetic dataset: rerun synthetic dataset
-    'syn1': (
+    'syn_degree': (
         None,
         None,
-        f'./results/result_0522_Baseline_lzd_mlp_degree_syn1/MolecularGraphMLP_syn1_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_syn1/GIN_syn1_assessment/10_NESTED_CV',
+        # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
+        f'./results/result_0529_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0529_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
         None, # GCN with attr,
         None # running
     ),
+    
+    'syn_cc': (
+        None,
+        None,
+        # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
+        f'./results/result_0529_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0529_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
+        None, # GCN with attr,
+        None # running
+    ),
+    
 }
+
+
+
+
+
+def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False, class_num=2):
+    
+    def reconstruct_path(path, corr, class_num):
+        splits = path.split('/')
+        splits[2] = splits[2]+'_'+str(corr)+'_class'+str(class_num)
+        return os.path.join(*splits)
+    
+    generate_res = []
+    
+    for i in range(1, 10):
+        _, _, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
+            'syn_degree')
+        # reconstruct the path by corr and class_num
+        corr = int(i/10)
+        MLP_log_path_degree = reconstruct_path(MLP_log_path_degree, corr, class_num)
+        GNN_log_path_degree = reconstruct_path(GNN_log_path_degree, corr, class_num)
+        
+        generate_res.append(generate_save_regression_dataset('syn_degree', None, None,
+                                                MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                                return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc, class_num=class_num))
+        
+    return generate_res
+        
+        
+        
+def generate_syn_degree(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False, class_num=2):
+    
+    def reconstruct_path(path, corr, class_num):
+        splits = path.split('/')
+        splits[2] = splits[2]+'_'+str(corr)+'_class'+str(class_num)
+        return os.path.join(*splits)
+    
+    generate_res = []
+    
+    for i in range(2, 10):
+        _, _, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
+            'syn_degree')
+        # reconstruct the path by corr and class_num
+        corr = round(i/10.0, 1)
+        MLP_log_path_degree = reconstruct_path(MLP_log_path_degree, corr, class_num)
+        GNN_log_path_degree = reconstruct_path(GNN_log_path_degree, corr, class_num)
+        
+        generate_res.append(generate_save_regression_dataset('syn_degree', None, None,
+                                                MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                                return_E=return_E, dim_y=dim_y, fold=fold, roc_auc=roc_auc, class_num=class_num))
+        
+    return generate_res
+        
+    
 
 def get_path_by_name(name):
     return data_log_path_dict[name]
@@ -734,7 +800,8 @@ def get_outer_final(acc_log_path):
 
 def load_log_to_log_results(log_results, MLP_log_path_attr=None, GNN_log_path_attr=None,
                             MLP_log_path_degree=None, GNN_log_path_degree=None, 
-                            GCN_log_path_attr=None, GCN_log_path_degree=None):
+                            GCN_log_path_attr=None, GCN_log_path_degree=None,
+                            is_syn=False):
 
     name = MLP_log_path_degree.split('/')[2].split('_')[-1]
     print('data name:', name)
