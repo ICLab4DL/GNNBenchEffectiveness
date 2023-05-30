@@ -431,6 +431,8 @@ def generate_save_regression_dataset(dataset_name: str,
 
     save_datasets(cur_datasets, f'{pref}{dataset_name.lower()}_datasets.pkl')
 
+
+
 data_log_path_dict = {
     # replace to the latest with roc_auc:
     'MUTAG': (
@@ -485,8 +487,8 @@ data_log_path_dict = {
         f'./results/result_GIN_0521_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
         f'./results/result_0521_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0525_GCN_lzd_attr_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV', # GCN with attr,
+        f'./results/result_0524_GCN_lzd_degree_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV' # GCN with degree
     ),
     'ogbg_moltox21': (
         f'./results/result_GIN_0411_atomencoder_attr_ogbg_moltox21/AtomMLP_ogbg_moltox21_assessment/1_NESTED_CV',
@@ -509,8 +511,8 @@ data_log_path_dict = {
         f'./results/result_0508_GIN_lzd_degree_ogbg_ppa_/GIN_ogbg_ppa_assessment/1_NESTED_CV',
         f'./results/result_0507_Baseline_lzd_mlp_ogbg_ppa/MolecularGraphMLP_ogbg_ppa_assessment/1_NESTED_CV',
         f'./results/result_0508_GIN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0525_GCN_lzd_degree_ogbg_ppa/GCN_ogbg_ppa_assessment/1_NESTED_CV', # GCN with attr,
+        f'./results/result_0525_GCN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV' # GCN with degree
     ),
     'CIFAR10': (# class num = 10, no roc_auc
         f'./results/result_0510_Baseline_lzd_fingerprint_attr_CIFAR10/MolecularFingerprint_CIFAR10_assessment/10_NESTED_CV',
@@ -518,7 +520,7 @@ data_log_path_dict = {
         f'./results/result_0510_Baseline_lzd_mlp_CIFAR10/MolecularGraphMLP_CIFAR10_assessment/10_NESTED_CV',
         f'./results/result_GIN_0510_GIN_lzd_degree_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0524_GCN_lzd_degree_CIFAR10/GCN_CIFAR10_assessment/10_NESTED_CV' # GCN with degree
     ),
     'MNIST': (# class num = 10, no roc_auc
         f'./results/result_0510_Baseline_lzd_fingerprint_attr_MNIST/MolecularFingerprint_MNIST_assessment/10_NESTED_CV',
@@ -526,7 +528,7 @@ data_log_path_dict = {
         f'./results/result_0510_Baseline_lzd_mlp_MNIST/MolecularGraphMLP_MNIST_assessment/10_NESTED_CV',
         f'./results/result_GIN_0510_GIN_lzd_degree_MNIST/GIN_MNIST_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0524_GCN_lzd_degree_MNIST/GCN_MNIST_assessment/10_NESTED_CV'
     ),
 
     'IMDB-BINARY': (
@@ -543,7 +545,7 @@ data_log_path_dict = {
         f'./results/result_0424_Baseline_lzd_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_IMDB-MULTI/GIN_IMDB-MULTI_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0525_GCN_lzd_degree_IMDB-MULTI/GCN_IMDB-MULTI_assessment/10_NESTED_CV' 
     ),
     'COLLAB': ( # class num = 3
         None,
@@ -551,7 +553,7 @@ data_log_path_dict = {
         f'./results/result_0423_Baseline_lzd_mlp_COLLAB/MolecularGraphMLP_COLLAB_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_COLLAB/GIN_COLLAB_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0525_GCN_lzd_degree_COLLAB/GCN_COLLAB_assessment/10_NESTED_CV' 
     ),
     'REDDIT-BINARY': (
         None, 
@@ -559,7 +561,7 @@ data_log_path_dict = {
         f'./results/result_0522_Baseline_lzd_mlp_degree_REDDIT-BINARY/MolecularGraphMLP_REDDIT-BINARY_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_REDDIT-BINARY/GIN_REDDIT-BINARY_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0525_GCN_lzd_degree_REDDIT-BINARY/GCN_REDDIT-BINARY_assessment/10_NESTED_CV'
     ),
     # TODO: add synthetic dataset: rerun synthetic dataset
     'syn_degree': (
@@ -582,6 +584,8 @@ data_log_path_dict = {
         None # running
     ),
 }
+
+
 
 
 
