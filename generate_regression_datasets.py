@@ -566,8 +566,8 @@ data_log_path_dict = {
         None,
         None,
         # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
-        f'./results/result_0529_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
-        f'./results/result_0529_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0530_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0530_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
         None, # GCN with attr,
         None # running
     ),
@@ -576,8 +576,8 @@ data_log_path_dict = {
         None,
         None,
         # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
-        f'./results/result_0529_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
-        f'./results/result_0529_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0530_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0530_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
         None, # GCN with attr,
         None # running
     ),
