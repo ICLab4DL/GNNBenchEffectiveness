@@ -50,22 +50,23 @@ model_set='EGNN_lzd_attr EGNN_lzd_mix'
 
 
 
-model_set='GIN_lzd_degree'
 paras='0.1 0.2 0.3 0.4 0.5'
 paras='0.1 0.2'
 
 
-dt=0529
+dt=0530
 
-dats='syn_degree'
+
 paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
 
-class_num='class10'
 
 class_num='class5'
 
 class_num='class2'
 
+dats='syn_cc'
+model_set='GIN_lzd_degree'
+class_num='class10'
 
 for ms in ${model_set};do
 
