@@ -28,7 +28,6 @@ class GIN(torch.nn.Module):
         self.linears = []
         self.dim_target = dim_target
         
-
         train_eps = config['train_eps']
         if config['aggregation'] == 'sum':
             self.pooling = global_add_pool
