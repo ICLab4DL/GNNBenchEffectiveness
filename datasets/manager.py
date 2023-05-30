@@ -373,8 +373,7 @@ class GraphDatasetManager:
         if 'norm_feature' in self.config:
             if self.config['norm_feature']:
                 print('Need to normalize graph features !!!!!!!!!!!')
-                graph_features = my_utils.normalize(
-                    graph_features, along_axis=-1)
+                graph_features = my_utils.normalize(graph_features, along_axis=-1)
 
         # store in graph as graph not x, but g_x.
         # G6250
@@ -1400,7 +1399,6 @@ class SynDataset(InMemoryDataset):
         self.data, self.slices = self.collate(data)
         self.name = name
         self.root = root
-    
     
     def get_targets(self):
         if self.__data_list__[0].y.shape[0] > 1:
