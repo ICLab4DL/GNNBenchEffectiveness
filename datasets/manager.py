@@ -175,6 +175,9 @@ class GraphDatasetManager:
                 corr = config['dataset_para']
             
             self.dataset = SynDataset(name=f'{self.name}_{corr}', root='DATA')
+            # change name:
+            self.name = f'{self.name}_{corr}'
+            
             self._dim_target = self.dataset.num_tasks
             # NOTE: fill __data_list__
             [_ for _ in self.dataset]

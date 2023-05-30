@@ -581,10 +581,7 @@ data_log_path_dict = {
         None, # GCN with attr,
         None # running
     ),
-    
 }
-
-
 
 
 
