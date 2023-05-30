@@ -1,7 +1,7 @@
 model:
   - GCN
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
   # - 64
@@ -58,8 +58,8 @@ resume:
 additional_features:
   # - use_random
   # - rand_id@dist:4
-  - degree
-  # - allone
+  # - degree
+  - allone
   # - use_onehot
   # NOTE: use_xxx is created by prepareDataset, e.g., use_eigen, use_random, use_onehot, use_pagerank, etc.
   #        xxx without use_ is created by node_feature_register, e.g., degree;rand_id@total:3
