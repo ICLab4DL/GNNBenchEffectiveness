@@ -1,17 +1,14 @@
 model:
   - GCN
 device:
-  - cuda:0
+  - cuda:1
 batch_size:
   - 128
   # - 64
 num_layer:
-  - 2
-  - 3
   - 4
 use_edge_attr:
   - False
-  - True
 learning_rate:
   - 0.001
 classifier_epochs:
@@ -71,13 +68,13 @@ shuffle_feature:
   - False
 
 roc_auc:
-  - True
+  - False
 
 # sampler:
 #   - imbalanced
 
 use_10_fold:
-  - False
+  - True
 
 mol_split:
-  - True
+  - False
