@@ -429,13 +429,9 @@ def generate_save_regression_dataset(dataset_name: str,
     else:
         pref = 'new_10fold'
 
-<<<<<<< HEAD
     save_datasets(cur_datasets, f'{name_pre}{pref}{dataset_name.lower()}_datasets.pkl')
     
-=======
 
-
->>>>>>> 14ac2160f6287d615b0bf6042cb37035a2eb1f4d
 data_log_path_dict = {
     # replace to the latest with roc_auc:
     'MUTAG': (
@@ -581,15 +577,15 @@ data_log_path_dict = {
         None,
         None,
         # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
-        f'./results/result_0530_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0601_Baseline_lzd_mlp_degree_syn_cc/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
         f'./results/result_0530_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
         None, # GCN with attr,
         None # running
     ),
 }
 
-
-def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False, class_num=2):
+def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, 
+                    roc_auc=False, class_num=2, use_gcn=False):
     
     def reconstruct_path(path, corr, class_num):
         splits = path.split('/')
@@ -600,8 +596,11 @@ def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc
     
     for i in range(1, 10):
         _, _, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
-            'syn_degree')
+            'syn_cc')
         # reconstruct the path by corr and class_num
+        if use_gcn:
+            GNN_log_path_degree = GCN_log_path_degree
+            
         corr = int(i/10)
         MLP_log_path_degree = reconstruct_path(MLP_log_path_degree, corr, class_num)
         GNN_log_path_degree = reconstruct_path(GNN_log_path_degree, corr, class_num)
@@ -613,8 +612,7 @@ def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc
     return generate_res
         
         
-        
-def generate_syn_degree(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False, class_num=2):
+def generate_syn_degree(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False, class_num=2, use_gcn=False):
     
     def reconstruct_path(path, corr, class_num):
         splits = path.split('/')
@@ -627,6 +625,9 @@ def generate_syn_degree(as_whole=False, return_E=False, dim_y=None, fold=10, roc
         _, _, MLP_log_path_degree, GNN_log_path_degree, GCN_log_path_attr, GCN_log_path_degree  = get_path_by_name(
             'syn_degree')
         # reconstruct the path by corr and class_num
+        if use_gcn:
+            GNN_log_path_degree = GCN_log_path_degree
+            
         corr = round(i/10.0, 1)
         MLP_log_path_degree = reconstruct_path(MLP_log_path_degree, corr, class_num)
         GNN_log_path_degree = reconstruct_path(GNN_log_path_degree, corr, class_num)
