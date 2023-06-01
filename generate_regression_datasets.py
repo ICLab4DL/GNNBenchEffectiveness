@@ -389,7 +389,7 @@ def generate_save_regression_dataset(dataset_name: str,
                                      MLP_log_path_attr=None, GNN_log_path_attr=None,
                                      MLP_log_path_degree=None, GNN_log_path_degree=None,
                                      as_whole=False, return_E=False, dim_y=None, fold=10,
-                                     roc_auc=False, factor=1.0, class_num=10):
+                                     roc_auc=False, factor=1.0, class_num=10, name_pre="new_E_"):
     data_names = [dataset_name]
 
     if return_E:
@@ -427,10 +427,10 @@ def generate_save_regression_dataset(dataset_name: str,
     if as_whole:
         pref = 'whole_'
     else:
-        pref = 'new_'
+        pref = 'new_10fold'
 
-    save_datasets(cur_datasets, f'{pref}{dataset_name.lower()}_datasets.pkl')
-
+    save_datasets(cur_datasets, f'{name_pre}{pref}{dataset_name.lower()}_datasets.pkl')
+    
 data_log_path_dict = {
     # replace to the latest with roc_auc:
     'MUTAG': (
@@ -485,8 +485,8 @@ data_log_path_dict = {
         f'./results/result_GIN_0521_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
         f'./results/result_0521_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0525_GCN_lzd_attr_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV', # GCN with attr,
+        f'./results/result_0524_GCN_lzd_degree_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV' # GCN with degree
     ),
     'ogbg_moltox21': (
         f'./results/result_GIN_0411_atomencoder_attr_ogbg_moltox21/AtomMLP_ogbg_moltox21_assessment/1_NESTED_CV',
@@ -509,8 +509,8 @@ data_log_path_dict = {
         f'./results/result_0508_GIN_lzd_degree_ogbg_ppa_/GIN_ogbg_ppa_assessment/1_NESTED_CV',
         f'./results/result_0507_Baseline_lzd_mlp_ogbg_ppa/MolecularGraphMLP_ogbg_ppa_assessment/1_NESTED_CV',
         f'./results/result_0508_GIN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV',
-        None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0525_GCN_lzd_degree_ogbg_ppa/GCN_ogbg_ppa_assessment/1_NESTED_CV', # GCN with attr,
+        f'./results/result_0525_GCN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV' # GCN with degree
     ),
     'CIFAR10': (# class num = 10, no roc_auc
         f'./results/result_0510_Baseline_lzd_fingerprint_attr_CIFAR10/MolecularFingerprint_CIFAR10_assessment/10_NESTED_CV',
@@ -518,7 +518,7 @@ data_log_path_dict = {
         f'./results/result_0510_Baseline_lzd_mlp_CIFAR10/MolecularGraphMLP_CIFAR10_assessment/10_NESTED_CV',
         f'./results/result_GIN_0510_GIN_lzd_degree_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0524_GCN_lzd_degree_CIFAR10/GCN_CIFAR10_assessment/10_NESTED_CV' # GCN with degree
     ),
     'MNIST': (# class num = 10, no roc_auc
         f'./results/result_0510_Baseline_lzd_fingerprint_attr_MNIST/MolecularFingerprint_MNIST_assessment/10_NESTED_CV',
@@ -526,7 +526,7 @@ data_log_path_dict = {
         f'./results/result_0510_Baseline_lzd_mlp_MNIST/MolecularGraphMLP_MNIST_assessment/10_NESTED_CV',
         f'./results/result_GIN_0510_GIN_lzd_degree_MNIST/GIN_MNIST_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # GCN with degree
+        f'./results/result_0524_GCN_lzd_degree_MNIST/GCN_MNIST_assessment/10_NESTED_CV'
     ),
 
     'IMDB-BINARY': (
@@ -543,7 +543,7 @@ data_log_path_dict = {
         f'./results/result_0424_Baseline_lzd_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_IMDB-MULTI/GIN_IMDB-MULTI_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0525_GCN_lzd_degree_IMDB-MULTI/GCN_IMDB-MULTI_assessment/10_NESTED_CV' 
     ),
     'COLLAB': ( # class num = 3
         None,
@@ -551,7 +551,7 @@ data_log_path_dict = {
         f'./results/result_0423_Baseline_lzd_mlp_COLLAB/MolecularGraphMLP_COLLAB_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_COLLAB/GIN_COLLAB_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0525_GCN_lzd_degree_COLLAB/GCN_COLLAB_assessment/10_NESTED_CV' 
     ),
     'REDDIT-BINARY': (
         None, 
@@ -559,7 +559,7 @@ data_log_path_dict = {
         f'./results/result_0522_Baseline_lzd_mlp_degree_REDDIT-BINARY/MolecularGraphMLP_REDDIT-BINARY_assessment/10_NESTED_CV',
         f'./results/result_GIN_0521_GIN_lzd_degree_REDDIT-BINARY/GIN_REDDIT-BINARY_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0525_GCN_lzd_degree_REDDIT-BINARY/GCN_REDDIT-BINARY_assessment/10_NESTED_CV'
     ),
     # TODO: add synthetic dataset: rerun synthetic dataset
     'syn_degree': (
@@ -582,7 +582,6 @@ data_log_path_dict = {
         None # running
     ),
 }
-
 
 
 def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, roc_auc=False, class_num=2):
@@ -811,21 +810,31 @@ def load_log_to_log_results(log_results, MLP_log_path_attr=None, GNN_log_path_at
 
 
 # %%
-# as_whole = True
+as_whole = False
 
-# generate_mutag(as_whole)
-# generate_NCI1(as_whole)
-# generate_AIDS(as_whole)
-# generate_bace(as_whole)
-# generate_DD(as_whole)
-# generate_ENZYMES(as_whole)
-# generate_PROTEINS(as_whole)
-# generate_HIV(as_whole)
-# generate_tox21(as_whole)
-# generate_ppa(as_whole)
-# generate_IMDB_M(as_whole)
-# generate_IMDB_B(as_whole)
-# generate_REDDITB(as_whole)
-# generate_COLLAB(as_whole)
-# generate_CIFAR10(as_whole)
-# generate_MNIST(as_whole)
+
+
+
+if __name__ == '__main__':
+    
+    # generate_mutag(as_whole)
+    # generate_NCI1(as_whole)
+    # generate_AIDS(as_whole)
+    # generate_bace(as_whole)
+    
+    # generate_DD(as_whole)
+    # generate_ENZYMES(as_whole)
+    # generate_PROTEINS(as_whole)
+    # generate_HIV(as_whole)
+    # generate_tox21(as_whole)
+    
+    generate_ppa(as_whole)
+
+
+    # generate_IMDB_M(as_whole)
+    # generate_IMDB_B(as_whole)
+    # generate_REDDITB(as_whole)
+    # generate_COLLAB(as_whole)
+
+    # generate_MNIST(as_whole)
+    # generate_CIFAR10(as_whole)
