@@ -429,8 +429,13 @@ def generate_save_regression_dataset(dataset_name: str,
     else:
         pref = 'new_10fold'
 
+<<<<<<< HEAD
     save_datasets(cur_datasets, f'{name_pre}{pref}{dataset_name.lower()}_datasets.pkl')
     
+=======
+
+
+>>>>>>> 14ac2160f6287d615b0bf6042cb37035a2eb1f4d
 data_log_path_dict = {
     # replace to the latest with roc_auc:
     'MUTAG': (

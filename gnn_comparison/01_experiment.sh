@@ -53,21 +53,23 @@ model_set='EGNN_lzd_attr EGNN_lzd_mix'
 paras='0.1 0.2 0.3 0.4 0.5'
 paras='0.1 0.2'
 
-dt=0530
+dt=0601
+
+
+class_num='class5'
+class_num='class2'
+
+model_set='GCN_lzd_degree'
+
+model_set='GCN_lzd_allone'
+
+
 
 paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
 
-class_num='class5'
-F
-class_num='class2'
-
-model_set='GIN_lzd_degree'
-model_set='GCN_lzd_degree'
-
-
 dats='syn_cc'
-model_set='GCN_lzd_allone'
-class_num='class10'
+model_set='GIN_lzd_degree'
+class_num='class5'
 
 for ms in ${model_set};do
 

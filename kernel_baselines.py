@@ -4,7 +4,7 @@ import networkx as nx
 
 # load splits as datasets:
 import torch_geometric.utils as torch_utils
-    
+import torch
 
 import networkx as nx
 
@@ -67,7 +67,59 @@ data_names = []
 
 datasets_obj = {}
 
+
+def get_each_folder_syn(dataset, fold_id, batch_size=1):
     
+    fold_test = dataset.get_test_fold(fold_id, batch_size=batch_size, shuffle=True).dataset
+    fold_train, fold_val = dataset.get_model_selection_fold(fold_id, inner_idx=None,
+                                                                          batch_size=batch_size, shuffle=True)
+    
+    
+    
+    fold_train = fold_train.dataset
+    fold_val = fold_val.dataset
+    
+    # train_G = [pyg_utils.to_networkx(d, node_attrs=['x']) for d in fold_train.get_subset()]
+    # test_G = [pyg_utils.to_networkx(d, node_attrs=['x']) for d in fold_test.get_subset()]
+    # print('x: ',train_G[0].nodes[0]['x'])
+    
+    train_adjs, test_adjs = [], []
+    train_y, test_y = [], []
+    
+    def node_fea_to_dict(node_fea):
+        res = {}
+        for i in range(node_fea.shape[0]):
+            res[i] = node_fea[i]
+        return res
+    
+    if hasattr(fold_train, "get_subset"):
+        for d in fold_train.get_subset():
+
+            train_y.append(d.y.item())
+            train_adjs.append([d.to_numpy_array()])
+
+        for d in fold_test.get_subset():
+            test_y.append(d.y.item())
+            test_adjs.append([d.to_numpy_array()])
+            
+    else:
+        train_adjs = dataset.get_dense_adjs(fold_train)
+        test_adjs = dataset.get_dense_adjs(fold_test)
+        
+        for d in fold_train:
+            train_y.append(d.y)
+        # is_labeled = data.y == data.y
+        for d in fold_test:
+            test_y.append(d.y)
+            
+        train_y = torch.cat(train_y, dim=0)
+        test_y = torch.cat(test_y, dim=0)
+        
+    return train_adjs, test_adjs, train_y, test_y
+    # do not use val for kernel methods.
+#     for d in fold.dataset.get_subset():
+
+
 def get_each_folder(data_name, fold_id, batch_size=1):
     
     fold_test = datasets_obj[data_name].get_test_fold(fold_id, batch_size=batch_size, shuffle=True).dataset
@@ -184,7 +236,11 @@ def get_dense_adjs(dataset, dataset_name):
 def train_with_kernel(gk, dataset_name):
     res=[]
     for i in range(10):
-        G_train, G_test, y_train, y_test = get_each_folder(dataset_name, i)
+        if isinstance(dataset_name, str):
+            G_train, G_test, y_train, y_test = get_each_folder(dataset_name, i)
+        else:
+            G_train, G_test, y_train, y_test = get_each_folder_syn(dataset_name, i)
+            
         # G_train = [g for g in graph_from_networkx(G_train,node_labels_tag='x')]
         # G_test = [g for g in graph_from_networkx(G_test,node_labels_tag='x')]
         # print('G_train 10:',G_train[:10])
@@ -216,18 +272,54 @@ def train_with_kernel(gk, dataset_name):
 
 from grakel.kernels import ShortestPath, WeisfeilerLehman, SubgraphMatching
 
+# load syn cc datasets:
+
+
+def get_new_config():
+    return {'model': 'GIN', 'device': 'cuda:0', 'batch_size': 128, 'learning_rate': 0.001, 'classifier_epochs':
+    200, 'hidden_units': [64, 300, 300, 64], 'layer_num': 5, 'optimizer': 'Adam', 
+    'scheduler': {'class': 'StepLR', 'args': {'step_size': 50, 'gamma': 0.5}}, 
+    'loss': 'MulticlassClassificationLoss', 'train_eps': False, 'l2': 0.0, 'aggregation': 'mean', 'gradient_clipping': None, 
+    'dropout': 0.5, 'early_stopper': {'class': 'Patience', 'args': {'patience': 30, 'use_loss': False}},
+    'shuffle': True, 'resume': False,
+    'additional_features': 'degree', 'node_attribute': False,
+    'shuffle_feature': False, 'roc_auc': True, 'use_10_fold': True, 
+    'mol_split': False, 'dataset': 'syn_degree', 
+    'config_file': 'gnn_comparison/config_GIN_lzd_degree.yml', 
+    'experiment': 'endtoend', 
+    'result_folder': 'results/result_0530_GIN_lzd_degree_syn_degree_0.1_class2', 
+    'dataset_name': 'syn_degree', 'dataset_para': '0.1_class2', 'outer_folds': 10, 
+    'outer_processes': 2, 'inner_folds': 5, 'inner_processes': 1, 'debug': True, 'ogb_evl': False, 
+    'model_name': 'GIN', 'device': 'cuda:0', 'batch_size': 128,
+    'learning_rate': 0.001, 'classifier_epochs': 200,
+    'hidden_units': [64, 300, 300, 64], 'layer_num': 5,
+    'train_eps': False, 'l2': 0.0,
+    'aggregation': 'mean',
+    'gradient_clipping': None, 'dropout': 0.5, 
+    'shuffle': True, 'resume': False, 'additional_features': 'degree',
+    'node_attribute': False, 
+    'shuffle_feature': False, 'roc_auc': True, 'use_10_fold': True, 
+    'mol_split': False, 'dataset_name': 'syn_degree', 
+    'experiment': 'endtoend', 'result_folder': 'results/result_0530_GIN_lzd_degree_syn_degree_0.1_class2',
+    'dataset_para': '0.1_class2', 'outer_folds': 10, 
+    'outer_processes': 2, 'inner_folds': 5, 'inner_processes': 1, 'debug': True, 'ogb_evl': False}
+
+
 
 import sys
+
+
 if __name__ == '__main__':
-    data_name = sys.argv[-1]
-    print('dataset name: ', data_name)
-    data_names = [data_name]
-    for k, v in DATASETS.items():
-        if k not in data_names:
-            continue
-        print('loaded dataset, name:', k)
-        dat = v(use_node_attrs=True)
-        datasets_obj[k] = dat
-        
-    train_with_kernel(WeisfeilerLehman(n_iter=25), data_name)
+    cc_datasets = []
     
+    for i in range(9, 10):
+        configs = get_new_config()
+        corrs = round(i/10.0, 1)
+        print('corrs: ', corrs)
+        configs['dataset_para'] = f'{corrs}_class10'
+        cc_datasets.append(DATASETS['syn_cc'](config=configs))
+        
+                
+    for d in cc_datasets:
+        train_with_kernel(WeisfeilerLehman(n_iter=25), d)
+        
