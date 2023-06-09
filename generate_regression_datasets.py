@@ -415,13 +415,13 @@ def get_new_config():
 
 
 
-
-
 def generate_save_regression_dataset(dataset_name: str,
                                      MLP_log_path_attr=None, GNN_log_path_attr=None,
                                      MLP_log_path_degree=None, GNN_log_path_degree=None,
                                      as_whole=False, return_E=False, dim_y=None, fold=10,
-                                     roc_auc=False, factor=1.0, class_num=10, name_pre="new_E_", dataset=None):
+                                     roc_auc=False, factor=1.0, class_num=10, 
+                                     return_acc=False, 
+                                     name_pre="new_E_", dataset=None):
     data_names = [dataset_name]
 
     if return_E:
@@ -434,20 +434,34 @@ def generate_save_regression_dataset(dataset_name: str,
         GNN_test_acc_struct = get_test_acc(
             GNN_log_path_degree, fold=fold, as_whole=as_whole, roc_auc=roc_auc)
 
-        
-        
         print(f'{dataset_name}: MLP_test_acc_attr', MLP_test_acc_attr)
         print(f'{dataset_name}: GNN_test_acc_attr', GNN_test_acc_attr)
         print()
         print(f'{dataset_name}: MLP_test_acc_struct', MLP_test_acc_struct)
         print(f'{dataset_name}: GNN_test_acc_struct', GNN_test_acc_struct)
         if return_acc:
+            
+            if not as_whole:
+                return get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, \
+                GNN_test_acc_struct, dim_y, is_roc=roc_auc, factor=factor), \
+                    (MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, GNN_test_acc_struct)
+                    
+            Es = []
+            for i in range(len(MLP_test_acc_struct)):
+                Es.append(get_new_E(MLP_test_acc_attr[i], GNN_test_acc_attr[i], MLP_test_acc_struct[i], \
+                         GNN_test_acc_struct[i], dim_y, is_roc=roc_auc, factor=factor), \
+                             (MLP_test_acc_attr[i], GNN_test_acc_attr[i], MLP_test_acc_struct[i], GNN_test_acc_struct[i]))
+            return Es 
+        
+        if not as_whole:
             return get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, \
-                         GNN_test_acc_struct, dim_y, is_roc=roc_auc, factor=factor), \
-                             (MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, GNN_test_acc_struct)
-
-        return get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, \
                          GNN_test_acc_struct, dim_y, is_roc=roc_auc, factor=factor)
+        else:
+            Es = []
+            for i in range(len(MLP_test_acc_struct)):
+                Es.append(get_new_E(MLP_test_acc_attr, GNN_test_acc_attr, MLP_test_acc_struct, \
+                         GNN_test_acc_struct, dim_y, is_roc=roc_auc, factor=factor))
+            return Es
         
         
     if dataset is None:
@@ -472,6 +486,7 @@ def generate_save_regression_dataset(dataset_name: str,
         pref = 'new_10fold'
 
     save_datasets(cur_datasets, f'{name_pre}{pref}{dataset_name.lower()}_datasets.pkl')
+    print('save datasets:', f'{name_pre}{pref}{dataset_name.lower()}_datasets.pkl')
     
     
 data_log_path_dict = {
@@ -614,24 +629,25 @@ data_log_path_dict = {
         None, # GCN with attr,
         None # running
     ),
-    
     'syn_cc': (
         None,
         None,
         # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
-        f'./results/result_0601_Baseline_lzd_mlp_degree_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
-        f'./results/result_0531_GIN_lzd_degree_syn_cc/GIN_syn_cc_assessment/10_NESTED_CV',
+        # f'./results/result_0604_Baseline_lzd_mlp_cc_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
+        f'./results/result_0604_Baseline_lzd_mlp_degree_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
+        f'./results/result_0604_GIN_lzd_degree_syn_cc/GIN_syn_cc_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        None # running
+        f'./results/result_0604_GCN_lzd_degree_syn_cc/GCN_syn_cc_assessment/10_NESTED_CV' # running
     ),
 }
 
 def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10, 
-                    roc_auc=False, class_num=2, use_gcn=False, return_acc=False):
+                    roc_auc=False, class_num=5, use_gcn=False, return_acc=False):
     
-    def reconstruct_path(path, corr, class_num):
+    
+    def reconstruct_path(path, corr, class_num, pre_name=""):
         splits = path.split('/')
-        splits[2] = splits[2]+'_'+str(corr)+'_class'+str(class_num)
+        splits[2] = splits[2]+'_'+str(corr)+'_class'+str(class_num)+pre_name
         return os.path.join(*splits)
     
     generate_res = []
@@ -642,20 +658,28 @@ def generate_syn_cc(as_whole=False, return_E=False, dim_y=None, fold=10,
         # reconstruct the path by corr and class_num
         if use_gcn:
             GNN_log_path_degree = GCN_log_path_degree
-            
+
         corr = round(i/10.0, 1)
-        MLP_log_path_degree = reconstruct_path(MLP_log_path_degree, corr, class_num)
-        GNN_log_path_degree = reconstruct_path(GNN_log_path_degree, corr, class_num)
+        MLP_log_path_degree = reconstruct_path(MLP_log_path_degree, corr, class_num, "_final")
+        GNN_log_path_degree = reconstruct_path(GNN_log_path_degree, corr, class_num, "_final")
         
-        configs = get_new_config()
-        corrs = round(i/10.0, 1)
-        configs['dataset_para'] = f'{corrs}_class5'
-        dataset = DATASETS['syn_cc'](config=configs)
+        
+        if not return_E:
+            configs = get_new_config()
+            corrs = round(i/10.0, 1)
+            configs['dataset_para'] = f'{corrs}_class{class_num}_final'
+            dataset = DATASETS['syn_cc'](config=configs)
+        else:
+            dataset = None
+
         generate_res.append(generate_save_regression_dataset('syn_cc', None, None,
-                                                MLP_log_path_degree, GNN_log_path_degree, as_whole=as_whole,
+                                                MLP_log_path_degree, GNN_log_path_degree,  name_pre=f'{corrs}_class{class_num}_final',
+                                                as_whole=as_whole,
                                                 return_E=return_E, dim_y=dim_y, fold=fold,
                                                 roc_auc=roc_auc, class_num=class_num, dataset=dataset))
         
+    print('done')
+    
     return generate_res
         
         
@@ -687,7 +711,6 @@ def generate_syn_degree(as_whole=False, return_E=False, dim_y=None, fold=10, roc
         
     return generate_res
         
-    
 
 def get_path_by_name(name):
     return data_log_path_dict[name]
@@ -870,7 +893,8 @@ as_whole = False
 
 
 if __name__ == '__main__':
-    generate_syn_cc()
+    
+    generate_syn_cc(as_whole=as_whole, class_num=2)
     
     # generate_mutag(as_whole)
     # generate_NCI1(as_whole)

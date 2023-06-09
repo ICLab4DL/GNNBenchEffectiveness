@@ -39,7 +39,7 @@ dats='AIDS'
 
 model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
 
-dt=0601
+dt=0604
 gpu=01
 dats='ogbg-molbbbp'
 dats='ogbg_moltox21'
@@ -66,12 +66,12 @@ class_num='class5'
 
 class_num='class2'
 
-dats='syn_cc'
-model_set='Baseline_lzd_mlp_cc'
 paras='0.9'
 
+dats='syn_cc'
+model_set='Baseline_lzd_mlp_cc'
 paras='0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'
-class_num='class5'
+class_num='class2_final'
 
 
 for ms in ${model_set};do

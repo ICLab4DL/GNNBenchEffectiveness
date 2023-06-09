@@ -3,6 +3,25 @@ import argparse
 from datasets import *
 from datasets.manager import *
 
+DATASETS_used = {
+    'REDDIT-BINARY': RedditBinary,
+    'COLLAB': Collab,
+    'IMDB-BINARY': IMDBBinary,
+    'IMDB-MULTI': IMDBMulti,
+    'NCI1': NCI1,
+    'AIDS': AIDS,
+    'ENZYMES': Enzymes,
+    'PROTEINS': Proteins,
+    'DD': DD,
+    "MUTAG": Mutag,
+    'CIFAR10': CIFAR10,
+    'MNIST': MNIST,
+    'ogbg_molhiv':OGBHIV,
+    'ogbg_ppa':OGBPPA,
+    'ogbg_moltox21': OGBTox21,
+    'ogbg-molbace': OGBBACE
+}
+
 DATASETS = {
     'REDDIT-BINARY': RedditBinary,
     'REDDIT-MULTI-5K': Reddit5K,

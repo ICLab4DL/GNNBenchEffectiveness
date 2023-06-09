@@ -342,6 +342,7 @@ class GraphDatasetManager:
             add_features_path = os.path.join(
                 self.processed_dir, f'graphwise_{self.name}_add_{name}.pkl')
             if os.path.exists(add_features_path):
+                print('load exist graph feature path:', add_features_path)
                 with open(add_features_path, 'rb') as f:
                     graph_feature = pk.load(f)
                     print('laod graph_features len: ', len(graph_feature))
@@ -364,7 +365,7 @@ class GraphDatasetManager:
                 print('rest graph features: ', rest_graph_features[i][0].shape)
                 with open(add_features_path, 'wb') as f:
                     pk.dump(rest_graph_features[i], f)
-                    print('dump graph features: ', ts[0])
+                    print('dump graph features: ', ts[0], 'filepath: ', add_features_path)
 
         print('_add_graph_features aft:', len(graph_features), ' shape: ',
               graph_features[0][0].shape, graph_features[0][3].shape)
