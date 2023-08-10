@@ -198,7 +198,6 @@ class BaseGraphUtils:
     
     def init_batch_graph(graphs : Sequence[BaseGraph], sparse=False):
         assert len(graphs) > 0
-        # TODO: if same node_num then use BaseGraphBatch.
             
         g1 = graphs[0]
         
@@ -859,10 +858,8 @@ class LinkPredictorMy(torch.nn.Module):
         if self.emperical:
             U = self.expectation_sampling(pi)
         else:
-            # TODO: add one gumbel:
             U = torch.log(pi)
             U = U/self.tau
-        # TODO: replace the softmax to sigmoid???
         p_exp = torch.exp(U)
         p_sum = torch.sum(p_exp, dim=1)
 
@@ -1013,7 +1010,6 @@ class GenerativeGNN(nn.Module):
         print('pi shape: ', pi.shape)
         U = torch.log(pi) + gumbel_sampling(pi.shape)
         U = U/self.tau
-        # TODO: Gumbel softmax sampling:
         A = F.softmax(U, dim=2)
         self.A_opt = A
 
@@ -1106,7 +1102,6 @@ def update_A(z, W=None):
     # plot:
 
 
-    # TODO: Gumbel softmax sampling:
     A = F.softmax(U, dim=1)
     print('A : ', A[0, :])
 

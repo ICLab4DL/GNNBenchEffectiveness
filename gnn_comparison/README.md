@@ -24,16 +24,11 @@ To reproduce the experiments, first preprocess datasets as follows:
 
 Where `<name>` is the name of the dataset. Then, substitute the split (json) files with the ones provided in the `data_splits` folder.
 
-### 2022.09.21, generate following dataset to test. TODO: merge my datagraph class with his graph class.
 ```
 python PrepareDatasets.py DATA/CHEMICAL --dataset-name DD --use-degree --outer-k 10
-python Launch_Experiments.py --config-file config_BaselineChemical.yml --dataset-name DD --result-folder lzd --debug
 
 
 python PrepareDatasets.py DATA/CHEMICAL --dataset-name PROTEINS --use-degree --outer-k 10
-python Launch_Experiments.py --config-file config_BaselineChemical.yml --dataset-name DD --result-folder lzd --debug
-
-
 
 ```
 

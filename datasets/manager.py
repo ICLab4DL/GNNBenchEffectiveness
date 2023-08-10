@@ -226,9 +226,7 @@ class GraphDatasetManager:
             
             print('split counts:', len(self.splits))
             
-        # # TODO: if add more node features:
         if self.additional_features is not None:
-            # TODO: pass node function?
             # node register
             self._add_features()
 
@@ -259,7 +257,6 @@ class GraphDatasetManager:
     def dim_target(self):
         if not hasattr(self, "_dim_target") or self._dim_target is None:
             # not very efficient, but it works
-            # todo not general enough, we may just remove it
             self._dim_target = np.unique(self.dataset.get_targets()).size
         return self._dim_target
 
@@ -322,7 +319,6 @@ class GraphDatasetManager:
         return adjs
 
     def _add_graph_features(self):
-        # TODO: add graph-wise features:
         self.additional_graph_features = self.additional_graph_features.strip().split(',')
         graph_fea_reg = node_feature_utils.GraphFeaRegister()
         for feature_arg in self.additional_graph_features:
@@ -332,8 +328,6 @@ class GraphDatasetManager:
         adjs = self.get_dense_adjs(self.dataset)
         
 
-        # TODO: load from file if exist, if not exist, then save if it's the first fold test.
-        # TODO: save each feature type as separately, e.g., cycle4.pkl, degree.pkl, etc.
         feature_names = self.graph_fea_reg.get_registered()
         graph_features = []
         for ts in feature_names:
@@ -578,25 +572,7 @@ class GraphDatasetManager:
                 print('replaced value:', self.dataset.data[0].x)
                 print(self.dataset.data[0].x - pre_value)
                 
-                # # construct pairs
-                # pairs = []
-                # for i in range(0, len(shuf_idx), 2):
-                #     if i + 1 < len(shuf_idx):
-                #         pairs.append((shuf_idx[i], shuf_idx[i+1]))
-                
-                # print(f'shuffle feature!, total len: {node_num_total}, pair len: {len(pairs)}')
-                # # reconstruct:
-                # for (p1, p2) in pairs:
-                #     # swich p1 p2 in place
-                #     p1_node, p1_x_id = node_index[p1]
-                #     p2_node, p2_x_id = node_index[p2]
-                #     tmp = self.dataset.data[p1_node].x[p1_x_id]
-                #     self.dataset.data[p1_node].x[p1_x_id] = self.dataset.data[p2_node].x[p2_x_id]
-                #     self.dataset.data[p2_node].x[p2_x_id] = tmp
-                # TODO: how to check correctness???????
-                # TODO: dump to file:
-                
-                
+           
         print('added feature done!')
 
     def _save_load_use_features(self, graphs=None):

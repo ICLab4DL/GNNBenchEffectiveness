@@ -95,7 +95,6 @@ class Batch(data.Batch):
         batch = data.Batch.from_data_list(copy_data, follow_batch=follow_batch)
         batch['laplacians'] = laplacians
         batch['v_plus'] = v_plus
-        # TODO: 2022.10.20, implement graph-wise features.
         if len(batch_graph_features) > 0:
             N = len(batch_graph_features)
             batch['g_x'] = torch.stack(batch_graph_features, dim=0).reshape(N, -1)

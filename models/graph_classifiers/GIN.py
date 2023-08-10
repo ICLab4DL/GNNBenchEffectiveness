@@ -59,7 +59,6 @@ class GIN(torch.nn.Module):
             x, edge_index, batch = data.x, data.edge_index, data.batch
 
         out = 0
-        # TODO: batch normalization:
         # x = self.batch0(x)
         for layer in range(self.no_layers):
             if layer == 0:

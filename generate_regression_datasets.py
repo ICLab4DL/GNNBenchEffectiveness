@@ -66,8 +66,8 @@ each folder:
 "gradient_clipping": null, "dropout": 0.5, "early_stopper": {"class": "Patience", 
 "args": {"patience": 50, "use_loss": false}}, "shuffle": true, "resume": false, "additional_features": "degree", 
 "node_attribute": false, "shuffle_feature": false, "roc_auc": false, "mol_split": false, "dataset": "syn_cc",
-"config_file": "gnn_comparison/config_GIN_lzd_degree.yml", "experiment": "endtoend", 
-"result_folder": "results/result_0422_GIN_lzd_degree_syn_cc_0.1", "dataset_name": "syn_cc",
+"config_file": "gnn_comparison/config_GIN_degree.yml", "experiment": "endtoend", 
+"result_folder": "results/result_0422_GIN_degree_syn_cc_0.1", "dataset_name": "syn_cc",
 "dataset_para": "0.1", "outer_folds": 10, "outer_processes": 2, "inner_folds": 5, "inner_processes": 1, 
 "debug": true, "ogb_evl": false}, "TR_score": 16.183574925298277, "VL_score": 21.505376272304083, 
 "TR_roc_auc": -1, "VL_roc_auc": -1}, "OUTER_TR": 14.774557204254199, "OUTER_TS": 11.003236511378612,
@@ -220,12 +220,7 @@ def plot_E(es, ax=None, title='E=(E_struct+E_attr)/2'):
     ax.set_title(title)
 
 
-"""
-the ixj th sample : (D_i_split_j, E_i_j)
-"""
 
-# Check mutag
-# construct each E with each fold and
 def is_pyg_dataset(d_name: str):
     return d_name.startswith('ogb') or d_name.startswith('syn')
 
@@ -257,32 +252,6 @@ def get_dense_adjs(dataset, dataset_name):
             adjs = [d.to_numpy_array() for d in dataset]
 
     return adjs
-
-
-def get_E(Acc_MLP_avg_degree, Acc_GNN_degree, Acc_MLP_attr, Acc_GNN_attr, is_abs=True):
-    factor = 0.5
-    if Acc_MLP_avg_degree is None:
-        E_struct = 0
-        factor = 1
-    else:
-        if is_abs:
-            E_struct = (abs(Acc_GNN_degree - Acc_MLP_avg_degree) / min(Acc_MLP_avg_degree,
-                        Acc_GNN_degree)) * (100 - min(Acc_GNN_degree, Acc_MLP_avg_degree))
-        else:
-            E_struct = ((Acc_GNN_degree - Acc_MLP_avg_degree) / min(Acc_MLP_avg_degree,
-                        Acc_GNN_degree)) * (100 - min(Acc_GNN_degree, Acc_MLP_avg_degree))
-
-    if Acc_MLP_attr is None:
-        E_attribute = 0
-        factor = 1
-    else:
-        if is_abs:
-            E_attribute = (abs(Acc_GNN_attr - Acc_MLP_attr) / min(Acc_MLP_attr,
-                           Acc_GNN_attr)) * (100 - min(Acc_GNN_attr, Acc_MLP_attr))
-        else:
-            E_attribute = ((Acc_GNN_attr - Acc_MLP_attr) / min(Acc_MLP_attr,
-                           Acc_GNN_attr)) * (100 - min(Acc_GNN_attr, Acc_MLP_attr))
-    return (E_struct+E_attribute) * factor
 
 
 def get_new_E(Acc_MLP_attr, Acc_GNN_attr, Acc_MLP_avg_degree, Acc_GNN_degree,
@@ -322,7 +291,6 @@ def get_new_E(Acc_MLP_attr, Acc_GNN_attr, Acc_MLP_avg_degree, Acc_GNN_degree,
 
 # %%
 
-
 def E_datasets(dataset,
                MLP_log_path_attr=None, GNN_log_path_attr=None,
                MLP_log_path_struct=None, GNN_log_path_struct=None, fold=10, as_whole=False, roc_auc=False):
@@ -360,7 +328,6 @@ def E_datasets(dataset,
             labels = [d.y for d in train_loader.dataset] + \
                 [d.y for d in val_loader.dataset]
             feas = extract_features(adjs=adjs, labels=labels)
-            # e = get_E(MLP_test_acc_struct[i], GNN_test_acc_struct[i],  MLP_test_acc_attr[i], GNN_test_acc_attr[i])
             e = get_new_E(MLP_test_acc_attr[i], GNN_test_acc_attr[i],
                           MLP_test_acc_struct[i], GNN_test_acc_struct[i], dataset._dim_target)
 
@@ -394,9 +361,9 @@ def get_new_config():
     'additional_features': 'degree', 'node_attribute': False,
     'shuffle_feature': False, 'roc_auc': True, 'use_10_fold': True, 
     'mol_split': False, 'dataset': 'syn_degree', 
-    'config_file': 'gnn_comparison/config_GIN_lzd_degree.yml', 
+    'config_file': 'gnn_comparison/config_GIN_degree.yml', 
     'experiment': 'endtoend', 
-    'result_folder': 'results/result_0530_GIN_lzd_degree_syn_degree_0.1_class2', 
+    'result_folder': 'results/result_0530_GIN_degree_syn_degree_0.1_class2', 
     'dataset_name': 'syn_degree', 'dataset_para': '0.1_class2', 'outer_folds': 10, 
     'outer_processes': 2, 'inner_folds': 5, 'inner_processes': 1, 'debug': True, 'ogb_evl': False, 
     'model_name': 'GIN', 'device': 'cuda:0', 'batch_size': 128,
@@ -409,7 +376,7 @@ def get_new_config():
     'node_attribute': False, 
     'shuffle_feature': False, 'roc_auc': True, 'use_10_fold': True, 
     'mol_split': False, 'dataset_name': 'syn_degree', 
-    'experiment': 'endtoend', 'result_folder': 'results/result_0530_GIN_lzd_degree_syn_degree_0.1_class2',
+    'experiment': 'endtoend', 'result_folder': 'results/result_0530_GIN_degree_syn_degree_0.1_class2',
     'dataset_para': '0.1_class2', 'outer_folds': 10, 
     'outer_processes': 2, 'inner_folds': 5, 'inner_processes': 1, 'debug': True, 'ogb_evl': False}
 
@@ -492,152 +459,151 @@ def generate_save_regression_dataset(dataset_name: str,
 data_log_path_dict = {
     # replace to the latest with roc_auc:
     'MUTAG': (
-        f'./results/result_0521_Baseline_lzd_fingerprint_attr_MUTAG/MolecularFingerprint_MUTAG_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_attr_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV',
-        f'./results/result_0522_Baseline_lzd_mlp_MUTAG/MolecularGraphMLP_MUTAG_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV',
-        './results/result_0524_GCN_lzd_attr_MUTAG/GCN_MUTAG_assessment/10_NESTED_CV', # GCN with attr,
-        './results/result_0524_GCN_lzd_degree_MUTAG/GCN_MUTAG_assessment/10_NESTED_CV' # GCN with degree
+        f'./results/result_0521_Baseline_fingerprint_attr_MUTAG/MolecularFingerprint_MUTAG_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_attr_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV',
+        f'./results/result_0522_Baseline_mlp_MUTAG/MolecularGraphMLP_MUTAG_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_MUTAG/GIN_MUTAG_assessment/10_NESTED_CV',
+        './results/result_0524_GCN_attr_MUTAG/GCN_MUTAG_assessment/10_NESTED_CV', # GCN with attr,
+        './results/result_0524_GCN_degree_MUTAG/GCN_MUTAG_assessment/10_NESTED_CV' # GCN with degree
     ),
-    'DD': (f'./results/result_0521_Baseline_lzd_fingerprint_attr_DD/MolecularFingerprint_DD_assessment/10_NESTED_CV',
-           f'./results/result_GIN_0521_GIN_lzd_attr_DD/GIN_DD_assessment/10_NESTED_CV',
-           f'./results/result_0522_Baseline_lzd_mlp_DD/MolecularGraphMLP_DD_assessment/10_NESTED_CV',
-           f'./results/result_GIN_0521_GIN_lzd_degree_DD/GIN_DD_assessment/10_NESTED_CV',
-           './results/result_0524_GCN_lzd_attr_DD/GCN_DD_assessment/10_NESTED_CV', # GCN with attr,
-           './results/result_0524_GCN_lzd_degree_DD/GCN_DD_assessment/10_NESTED_CV' # GCN with degree
+    'DD': (f'./results/result_0521_Baseline_fingerprint_attr_DD/MolecularFingerprint_DD_assessment/10_NESTED_CV',
+           f'./results/result_GIN_0521_GIN_attr_DD/GIN_DD_assessment/10_NESTED_CV',
+           f'./results/result_0522_Baseline_mlp_DD/MolecularGraphMLP_DD_assessment/10_NESTED_CV',
+           f'./results/result_GIN_0521_GIN_degree_DD/GIN_DD_assessment/10_NESTED_CV',
+           './results/result_0524_GCN_attr_DD/GCN_DD_assessment/10_NESTED_CV', # GCN with attr,
+           './results/result_0524_GCN_degree_DD/GCN_DD_assessment/10_NESTED_CV' # GCN with degree
         ),
     'PROTEINS': (
-        f'./results/result_0521_Baseline_lzd_fingerprint_attr_PROTEINS/MolecularFingerprint_PROTEINS_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_attr_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV',
-        f'./results/result_0522_Baseline_lzd_mlp_PROTEINS/MolecularGraphMLP_PROTEINS_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV',
-        './results/result_0524_GCN_lzd_attr_PROTEINS/GCN_PROTEINS_assessment/10_NESTED_CV', # GCN with attr,
-        './results/result_0524_GCN_lzd_degree_PROTEINS/GCN_PROTEINS_assessment/10_NESTED_CV' # GCN with degree
+        f'./results/result_0521_Baseline_fingerprint_attr_PROTEINS/MolecularFingerprint_PROTEINS_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_attr_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV',
+        f'./results/result_0522_Baseline_mlp_PROTEINS/MolecularGraphMLP_PROTEINS_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_PROTEINS/GIN_PROTEINS_assessment/10_NESTED_CV',
+        './results/result_0524_GCN_attr_PROTEINS/GCN_PROTEINS_assessment/10_NESTED_CV', # GCN with attr,
+        './results/result_0524_GCN_degree_PROTEINS/GCN_PROTEINS_assessment/10_NESTED_CV' # GCN with degree
         ),
     'ENZYMES': ( # class num = 6, no roc_auc
-        f'./results/result_0516_Baseline_lzd_fingerprint_attr_ENZYMES/MolecularFingerprint_ENZYMES_assessment/10_NESTED_CV',
+        f'./results/result_0516_Baseline_fingerprint_attr_ENZYMES/MolecularFingerprint_ENZYMES_assessment/10_NESTED_CV',
         f'./results/result_GIN_0404_GIN_attr_ENZYMES/GIN_ENZYMES_assessment/10_NESTED_CV',
-        f'./results/result_0516_Baseline_lzd_mlp_ENZYMES/MolecularGraphMLP_ENZYMES_assessment/10_NESTED_CV',
+        f'./results/result_0516_Baseline_mlp_ENZYMES/MolecularGraphMLP_ENZYMES_assessment/10_NESTED_CV',
         f'./results/result_GIN_0403_GIN_degree_ENZYMES/GIN_ENZYMES_assessment/10_NESTED_CV',
-        './results/result_0524_GCN_lzd_attr_ENZYMES/GCN_ENZYMES_assessment/10_NESTED_CV', # GCN with attr,
-        './results/result_0524_GCN_lzd_degree_ENZYMES/GCN_ENZYMES_assessment/10_NESTED_CV' # GCN with degree
+        './results/result_0524_GCN_attr_ENZYMES/GCN_ENZYMES_assessment/10_NESTED_CV', # GCN with attr,
+        './results/result_0524_GCN_degree_ENZYMES/GCN_ENZYMES_assessment/10_NESTED_CV' # GCN with degree
         ),
     'AIDS': (
-        f'./results/result_0521_Baseline_lzd_fingerprint_attr_AIDS/MolecularFingerprint_AIDS_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_attr_AIDS/GIN_AIDS_assessment/10_NESTED_CV',
-        f'./results/result_0522_Baseline_lzd_mlp_AIDS/MolecularGraphMLP_AIDS_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_AIDS/GIN_AIDS_assessment/10_NESTED_CV',
-        './results/result_0524_GCN_lzd_attr_AIDS/GCN_AIDS_assessment/10_NESTED_CV', # GCN with attr,
-        './results/result_0524_GCN_lzd_degree_AIDS/GCN_AIDS_assessment/10_NESTED_CV' # GCN with degree
+        f'./results/result_0521_Baseline_fingerprint_attr_AIDS/MolecularFingerprint_AIDS_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_attr_AIDS/GIN_AIDS_assessment/10_NESTED_CV',
+        f'./results/result_0522_Baseline_mlp_AIDS/MolecularGraphMLP_AIDS_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_AIDS/GIN_AIDS_assessment/10_NESTED_CV',
+        './results/result_0524_GCN_attr_AIDS/GCN_AIDS_assessment/10_NESTED_CV', # GCN with attr,
+        './results/result_0524_GCN_degree_AIDS/GCN_AIDS_assessment/10_NESTED_CV' # GCN with degree
     ),
     'NCI1': (
-        f'./results/result_0524_Baseline_lzd_fingerprint_attr_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV',
-        f'./results/result_0524_Baseline_lzd_mlp_degree_binary_NCI1/MolecularGraphMLP_NCI1_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_NCI1/GIN_NCI1_assessment/10_NESTED_CV',
-        './results/result_0524_GCN_lzd_attr_NCI1/GCN_NCI1_assessment/10_NESTED_CV', # GCN with attr,
-        './results/result_0524_GCN_lzd_degree_NCI1/GCN_NCI1_assessment/10_NESTED_CV' # GCN with degree
+        f'./results/result_0524_Baseline_fingerprint_attr_NCI1/MolecularFingerprint_NCI1_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_attr_NCI1/GIN_NCI1_assessment/10_NESTED_CV',
+        f'./results/result_0524_Baseline_mlp_degree_binary_NCI1/MolecularGraphMLP_NCI1_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_NCI1/GIN_NCI1_assessment/10_NESTED_CV',
+        './results/result_0524_GCN_attr_NCI1/GCN_NCI1_assessment/10_NESTED_CV', # GCN with attr,
+        './results/result_0524_GCN_degree_NCI1/GCN_NCI1_assessment/10_NESTED_CV' # GCN with degree
     ),
     'ogbg_molhiv': (
-        f'./results/result_0521_Baseline_lzd_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
-        f'./results/result_0521_Baseline_lzd_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
-        f'./results/result_0525_GCN_lzd_attr_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV', # GCN with attr,
-        f'./results/result_0524_GCN_lzd_degree_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV' # GCN with degree
+        f'./results/result_0521_Baseline_fingerprint_attr_ogbg_molhiv/MolecularFingerprint_ogbg_molhiv_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_attr_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
+        f'./results/result_0521_Baseline_mlp_ogbg_molhiv/MolecularGraphMLP_ogbg_molhiv_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_ogbg_molhiv/GIN_ogbg_molhiv_assessment/10_NESTED_CV',
+        f'./results/result_0525_GCN_attr_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV', # GCN with attr,
+        f'./results/result_0524_GCN_degree_ogbg_molhiv/GCN_ogbg_molhiv_assessment/10_NESTED_CV' # GCN with degree
     ),
     'ogbg_moltox21': (
         f'./results/result_GIN_0411_atomencoder_attr_ogbg_moltox21/AtomMLP_ogbg_moltox21_assessment/1_NESTED_CV',
-        f'./results/result_GIN_0409_EGNN_lzd_attr_ogbg_moltox21/EGNN_ogbg_moltox21_assessment/1_NESTED_CV',
-        f'./results/result_0424_Baseline_lzd_mlp_mol_ogbg_moltox21/MolecularGraphMLP_ogbg_moltox21_assessment/1_NESTED_CV',
-        f'./results/result_GIN_0410_GIN_lzd_degree_ogbg_moltox21/GIN_ogbg_moltox21_assessment/1_NESTED_CV',
-        './results/result_0525_GCN_lzd_attr_tox21_ogbg_moltox21/GCN_ogbg_moltox21_assessment/1_NESTED_CV', # GCN with attr,
-        './results/result_0525_GCN_lzd_degree_tox21_ogbg_moltox21/GCN_ogbg_moltox21_assessment/1_NESTED_CV' # GCN with degree
+        f'./results/result_GIN_0409_EGNN_attr_ogbg_moltox21/EGNN_ogbg_moltox21_assessment/1_NESTED_CV',
+        f'./results/result_0424_Baseline_mlp_mol_ogbg_moltox21/MolecularGraphMLP_ogbg_moltox21_assessment/1_NESTED_CV',
+        f'./results/result_GIN_0410_GIN_degree_ogbg_moltox21/GIN_ogbg_moltox21_assessment/1_NESTED_CV',
+        './results/result_0525_GCN_attr_tox21_ogbg_moltox21/GCN_ogbg_moltox21_assessment/1_NESTED_CV', # GCN with attr,
+        './results/result_0525_GCN_degree_tox21_ogbg_moltox21/GCN_ogbg_moltox21_assessment/1_NESTED_CV' # GCN with degree
     ),
     'ogbg-molbace': (
-        f'./results/result_0521_Baseline_lzd_fingerprint_attr_ogbg-molbace/MolecularFingerprint_ogbg-molbace_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_attr_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV',
-        f'./results/result_0521_Baseline_lzd_mlp_ogbg-molbace/MolecularGraphMLP_ogbg-molbace_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV',
-        './results/result_0524_GCN_lzd_degree_ogbg-molbace/GCN_ogbg-molbace_assessment/10_NESTED_CV',
-        './results/result_0525_GCN_lzd_attr_ogbg-molbace/GCN_ogbg-molbace_assessment/10_NESTED_CV'
+        f'./results/result_0521_Baseline_fingerprint_attr_ogbg-molbace/MolecularFingerprint_ogbg-molbace_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_attr_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV',
+        f'./results/result_0521_Baseline_mlp_ogbg-molbace/MolecularGraphMLP_ogbg-molbace_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_ogbg-molbace/GIN_ogbg-molbace_assessment/10_NESTED_CV',
+        './results/result_0524_GCN_degree_ogbg-molbace/GCN_ogbg-molbace_assessment/10_NESTED_CV',
+        './results/result_0525_GCN_attr_ogbg-molbace/GCN_ogbg-molbace_assessment/10_NESTED_CV'
     ),
     'ogbg_ppa': ( # class num = 37, no roc_auc
-        f'./results/result_0508_Baseline_lzd_mlp_edge_attr_ogbg_ppa/MolecularFingerprint_ogbg_ppa_assessment/1_NESTED_CV',
-        f'./results/result_0508_GIN_lzd_degree_ogbg_ppa_/GIN_ogbg_ppa_assessment/1_NESTED_CV',
-        f'./results/result_0507_Baseline_lzd_mlp_ogbg_ppa/MolecularGraphMLP_ogbg_ppa_assessment/1_NESTED_CV',
-        f'./results/result_0508_GIN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV',
-        f'./results/result_0525_GCN_lzd_degree_ogbg_ppa/GCN_ogbg_ppa_assessment/1_NESTED_CV', # GCN with attr,
-        f'./results/result_0525_GCN_lzd_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV' # GCN with degree
+        f'./results/result_0508_Baseline_mlp_edge_attr_ogbg_ppa/MolecularFingerprint_ogbg_ppa_assessment/1_NESTED_CV',
+        f'./results/result_0508_GIN_degree_ogbg_ppa_/GIN_ogbg_ppa_assessment/1_NESTED_CV',
+        f'./results/result_0507_Baseline_mlp_ogbg_ppa/MolecularGraphMLP_ogbg_ppa_assessment/1_NESTED_CV',
+        f'./results/result_0508_GIN_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV',
+        f'./results/result_0525_GCN_degree_ogbg_ppa/GCN_ogbg_ppa_assessment/1_NESTED_CV', # GCN with attr,
+        f'./results/result_0525_GCN_attr_edge_ogbg_ppa/OGBGNN_ogbg_ppa_assessment/1_NESTED_CV' # GCN with degree
     ),
     'CIFAR10': (# class num = 10, no roc_auc
-        f'./results/result_0510_Baseline_lzd_fingerprint_attr_CIFAR10/MolecularFingerprint_CIFAR10_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0510_GIN_lzd_attr_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV',
-        f'./results/result_0510_Baseline_lzd_mlp_CIFAR10/MolecularGraphMLP_CIFAR10_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0510_GIN_lzd_degree_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV',
+        f'./results/result_0510_Baseline_fingerprint_attr_CIFAR10/MolecularFingerprint_CIFAR10_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0510_GIN_attr_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV',
+        f'./results/result_0510_Baseline_mlp_CIFAR10/MolecularGraphMLP_CIFAR10_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0510_GIN_degree_CIFAR10/GIN_CIFAR10_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        f'./results/result_0524_GCN_lzd_degree_CIFAR10/GCN_CIFAR10_assessment/10_NESTED_CV' # GCN with degree
+        f'./results/result_0524_GCN_degree_CIFAR10/GCN_CIFAR10_assessment/10_NESTED_CV' # GCN with degree
     ),
     'MNIST': (# class num = 10, no roc_auc
-        f'./results/result_0510_Baseline_lzd_fingerprint_attr_MNIST/MolecularFingerprint_MNIST_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0510_GIN_lzd_attr_MNIST/GIN_MNIST_assessment/10_NESTED_CV',
-        f'./results/result_0510_Baseline_lzd_mlp_MNIST/MolecularGraphMLP_MNIST_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0510_GIN_lzd_degree_MNIST/GIN_MNIST_assessment/10_NESTED_CV',
+        f'./results/result_0510_Baseline_fingerprint_attr_MNIST/MolecularFingerprint_MNIST_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0510_GIN_attr_MNIST/GIN_MNIST_assessment/10_NESTED_CV',
+        f'./results/result_0510_Baseline_mlp_MNIST/MolecularGraphMLP_MNIST_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0510_GIN_degree_MNIST/GIN_MNIST_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        f'./results/result_0524_GCN_lzd_degree_MNIST/GCN_MNIST_assessment/10_NESTED_CV'
+        f'./results/result_0524_GCN_degree_MNIST/GCN_MNIST_assessment/10_NESTED_CV'
     ),
 
     'IMDB-BINARY': (
         None,
         None,
-        f'./results/result_0522_Baseline_lzd_mlp_degree_IMDB-BINARY/MolecularGraphMLP_IMDB-BINARY_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_IMDB-BINARY/GIN_IMDB-BINARY_assessment/10_NESTED_CV',
+        f'./results/result_0522_Baseline_mlp_degree_IMDB-BINARY/MolecularGraphMLP_IMDB-BINARY_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_IMDB-BINARY/GIN_IMDB-BINARY_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        './results/result_0525_GCN_lzd_degree_IMDB-BINARY/GCN_IMDB-BINARY_assessment/10_NESTED_CV' # GCN with degree
+        './results/result_0525_GCN_degree_IMDB-BINARY/GCN_IMDB-BINARY_assessment/10_NESTED_CV' # GCN with degree
     ),
     'IMDB-MULTI': (
         None,
         None, 
-        f'./results/result_0424_Baseline_lzd_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV',
+        f'./results/result_0424_Baseline_mlp_IMDB-MULTI/MolecularGraphMLP_IMDB-MULTI_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_IMDB-MULTI/GIN_IMDB-MULTI_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        f'./results/result_0525_GCN_lzd_degree_IMDB-MULTI/GCN_IMDB-MULTI_assessment/10_NESTED_CV' 
+        f'./results/result_0525_GCN_degree_IMDB-MULTI/GCN_IMDB-MULTI_assessment/10_NESTED_CV' 
     ),
     'COLLAB': ( # class num = 3
         None,
         None,
-        f'./results/result_0423_Baseline_lzd_mlp_COLLAB/MolecularGraphMLP_COLLAB_assessment/10_NESTED_CV',
+        f'./results/result_0423_Baseline_mlp_COLLAB/MolecularGraphMLP_COLLAB_assessment/10_NESTED_CV',
         f'./results/result_GIN_0313_only_degree_COLLAB/GIN_COLLAB_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        f'./results/result_0525_GCN_lzd_degree_COLLAB/GCN_COLLAB_assessment/10_NESTED_CV' 
+        f'./results/result_0525_GCN_degree_COLLAB/GCN_COLLAB_assessment/10_NESTED_CV' 
     ),
     'REDDIT-BINARY': (
         None, 
         None,
-        f'./results/result_0522_Baseline_lzd_mlp_degree_REDDIT-BINARY/MolecularGraphMLP_REDDIT-BINARY_assessment/10_NESTED_CV',
-        f'./results/result_GIN_0521_GIN_lzd_degree_REDDIT-BINARY/GIN_REDDIT-BINARY_assessment/10_NESTED_CV',
+        f'./results/result_0522_Baseline_mlp_degree_REDDIT-BINARY/MolecularGraphMLP_REDDIT-BINARY_assessment/10_NESTED_CV',
+        f'./results/result_GIN_0521_GIN_degree_REDDIT-BINARY/GIN_REDDIT-BINARY_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        f'./results/result_0525_GCN_lzd_degree_REDDIT-BINARY/GCN_REDDIT-BINARY_assessment/10_NESTED_CV'
+        f'./results/result_0525_GCN_degree_REDDIT-BINARY/GCN_REDDIT-BINARY_assessment/10_NESTED_CV'
     ),
-    # TODO: add synthetic dataset: rerun synthetic dataset
     'syn_degree': (
         None,
         None,
-        # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
-        f'./results/result_0530_Baseline_lzd_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
-        f'./results/result_0530_GIN_lzd_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
+        # result_0529_Baseline_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
+        f'./results/result_0530_Baseline_mlp_degree_syn_degree/MolecularGraphMLP_syn_degree_assessment/10_NESTED_CV',
+        f'./results/result_0530_GIN_degree_syn_degree/GIN_syn_degree_assessment/10_NESTED_CV',
         None, # GCN with attr,
         None # running
     ),
     'syn_cc': (
         None,
         None,
-        # result_0529_Baseline_lzd_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
-        # f'./results/result_0604_Baseline_lzd_mlp_cc_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
-        f'./results/result_0604_Baseline_lzd_mlp_degree_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
-        f'./results/result_0604_GIN_lzd_degree_syn_cc/GIN_syn_cc_assessment/10_NESTED_CV',
+        # result_0529_Baseline_mlp_degree_syn_degree_0.x_classy/, x,y are parameters
+        # f'./results/result_0604_Baseline_mlp_cc_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
+        f'./results/result_0604_Baseline_mlp_degree_syn_cc/MolecularGraphMLP_syn_cc_assessment/10_NESTED_CV',
+        f'./results/result_0604_GIN_degree_syn_cc/GIN_syn_cc_assessment/10_NESTED_CV',
         None, # GCN with attr,
-        f'./results/result_0604_GCN_lzd_degree_syn_cc/GCN_syn_cc_assessment/10_NESTED_CV' # running
+        f'./results/result_0604_GCN_degree_syn_cc/GCN_syn_cc_assessment/10_NESTED_CV' # running
     ),
 }
 

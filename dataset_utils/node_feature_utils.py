@@ -43,7 +43,6 @@ def graph_cycle_feature(adj, k:str="4"):
        
 @xargs
 def node_cycle_feature(adj, k=4):
-    # TODO: make it only calculate once for the same dataset?
     
     nx_g = nx.from_numpy_array(adj)
     cycles = nx.cycle_basis(nx_g)
@@ -353,7 +352,6 @@ def graph_avgDN_feature(adj):
     avgD = mean_avg / N
     return np.array(avgD).astype(np.float32).reshape(1)
 
-# TODO, d), graph feature pipeline.
 
 def add_graph_features(graph_features, cons_fea_func, c_dim=0):
     """input:

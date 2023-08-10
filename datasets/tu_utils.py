@@ -141,8 +141,6 @@ def create_graph_from_nx(nx_graph:nx.Graph, label) -> Graph:
     for (n1, n2) in nx_graph.edges:
         G.add_edge(n1, n2, label=None, attrs=None)
     
-    #TODO: if has node attr or edge attr:
-    
     return G
     
     

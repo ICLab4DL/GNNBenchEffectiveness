@@ -1,1 +1,0 @@
-kill $(ps aux | grep 'python -u /li_zhengdao/github/GenerativeGNN/main.py' | awk '{print $2}')

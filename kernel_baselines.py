@@ -285,9 +285,9 @@ def get_new_config():
     'additional_features': 'degree', 'node_attribute': False,
     'shuffle_feature': False, 'roc_auc': True, 'use_10_fold': True, 
     'mol_split': False, 'dataset': 'syn_degree', 
-    'config_file': 'gnn_comparison/config_GIN_lzd_degree.yml', 
+    'config_file': 'gnn_comparison/config_GIN_degree.yml', 
     'experiment': 'endtoend', 
-    'result_folder': 'results/result_0530_GIN_lzd_degree_syn_degree_0.1_class2', 
+    'result_folder': 'results/result_0530_GIN_degree_syn_degree_0.1_class2', 
     'dataset_name': 'syn_degree', 'dataset_para': '0.1_class2', 'outer_folds': 10, 
     'outer_processes': 2, 'inner_folds': 5, 'inner_processes': 1, 'debug': True, 'ogb_evl': False, 
     'model_name': 'GIN', 'device': 'cuda:0', 'batch_size': 128,
@@ -300,7 +300,7 @@ def get_new_config():
     'node_attribute': False, 
     'shuffle_feature': False, 'roc_auc': True, 'use_10_fold': True, 
     'mol_split': False, 'dataset_name': 'syn_degree', 
-    'experiment': 'endtoend', 'result_folder': 'results/result_0530_GIN_lzd_degree_syn_degree_0.1_class2',
+    'experiment': 'endtoend', 'result_folder': 'results/result_0530_GIN_degree_syn_degree_0.1_class2',
     'dataset_para': '0.1_class2', 'outer_folds': 10, 
     'outer_processes': 2, 'inner_folds': 5, 'inner_processes': 1, 'debug': True, 'ogb_evl': False}
 

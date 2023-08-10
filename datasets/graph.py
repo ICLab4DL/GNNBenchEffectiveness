@@ -33,9 +33,6 @@ class Graph(nx.Graph):
     def get_x(self, use_node_attrs=False, use_node_degree=False, use_one=False, use_shared=False, 
               use_1hot=False, use_random_normal=False, use_pagerank=False, use_eigen=False, 
               use_deepwalk=False):
-        """
-        only load node attrs ! 2023.01.30, lzd
-        """
         
         features = []
 

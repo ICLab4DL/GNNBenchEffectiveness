@@ -21,38 +21,26 @@ dat='DD'
 dat='NCI1'
 dat='ENZYMES'
 
-
-# conf_file='config_Adapter.yml'
-
-# degree + attributes:
-
-# dats='NCI1 ENZYMES'
-
-
-model_set='GIN_lzd_attr GIN_lzd_mix GIN_lzd_degree Baseline_lzd_mlp EGNN_lzd_mix'
-
-
-
-dt=0524
-gpu=01
-
+dats='PATTERN'
+dats='ogbg_molhiv'
+dats='CIFAR10'
+dats='COLLAB REDDIT-BINARY'
+dats='REDDIT-BINARY'
+dats='AIDS'
 dats='ogbg-molbbbp'
-dats='ogbg-molbace ogbg_molhiv'
 dats='ogbg_moltox21'
-dats='ogbg_ppa ogbg_molhiv'
-
-dats='CIFAR10 MNIST'
+dats='ogbg_moltox21 ogbg-molbace ogbg_molhiv'
 
 
+model_set='GIN_attr GIN_mix GIN_degree Baseline_mlp EGNN_mix'
+model_set='EGNN_attr EGNN_mix'
+model_set='GCN_degree GIN_degree'
 
-dats='REDDIT-BINARY IMDB-BINARY'
 
-
-dats='NCI1'
-model_set='Baseline_lzd_mlp_degree_binary'
-
-dats='AIDS DD MUTAG PROTEINS ENZYMES'
-model_set='Baseline_lzd_mlp_degree'
+gpu=01
+dt=0605
+model_set='GIN_degree'
+dats='MUTAG NCI1 PROTEINS DD'
 
 for ms in ${model_set};do
 
@@ -61,20 +49,22 @@ conf_file=config_${ms}.yml
 for dat in ${dats};do
 
 echo 'running '${conf_file}
+
 tag=${ms}_${dat}
-# --mol_split True \
+
+# NOTE: if use ogb dataset, set following parameters:
 # --outer-folds 1 \
 # --inner-folds 1 \
 # --ogb_evl True \
+# --mol_split True \
 
 nohup python3 -u Launch_Experiments.py --config-file gnn_comparison/${conf_file} \
 --dataset-name ${dat} \
+--dataset_para ${para} \
 --result-folder results/result_${dt}_${tag} --debug > logs/${gpu}_${dt}_${tag}_nohup.log 2>&1 &
 
 echo '    check log:'
 echo 'tail -f logs/'${gpu}_${dt}_${tag}'_nohup.log'
 
-
 done
-
 done

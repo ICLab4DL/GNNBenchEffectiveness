@@ -22,14 +22,10 @@ class MolecularGraphMLP(torch.nn.Module):
         self.bn1 = nn.BatchNorm1d(dim_features)
         self.mlp = torch.nn.Sequential(torch.nn.Linear(dim_features, hidden_dim), self.act_func(),
                                        nn.Dropout(dropout),
-                                    #    torch.nn.Linear(hidden_dim, hidden_dim), nn.Sigmoid(),
-                                    #    nn.Dropout(dropout),
                                        torch.nn.Linear(hidden_dim, dim_target),  self.act_func())
 
     def forward(self, data):
-        # TODO: use graph-wise feature: g_x 
         if 'g_x' in data:
-            # print('using g_x:', data['g_x'][:20],data['g_x'][20:-1] )
             if data['g_x'].dim() == 1:
                 h_g = data['g_x'].unsqueeze(dim=1)
             else:
