@@ -579,8 +579,6 @@ class MyGINConv(nn.Module):
         
         out = self.ln(out)
         return out
-        
-      
 
 class LSDGINNet(nn.Module):
     def __init__(self, args, in_dim, hid_dim, out_dim, layer_num, dropout=0.6, last_linear=True,

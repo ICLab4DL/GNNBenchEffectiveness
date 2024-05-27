@@ -4,7 +4,7 @@
 ## Prepare Datasets:
 
 - `mkdir DATA`
-- set the dataset name in `run_real_experiment.sh`, then `bash run_real_experiment.sh` will automatically download the dataset in ./DATA and run the benchmark, but if you only need to download, you could run `prepare_experiment.sh`.
+- `cd gnn_comparison/`, then set the dataset name in `gnn_comparison/run_real_experiment.sh`, then `bash run_real_experiment.sh` will automatically download the dataset in ./DATA and run the benchmark, but if you only need to download, you could run `prepare_experiment.sh`.
 - **NOTE**, some bash parameters are required to set in `run_real_experiment.sh`, such as `dats` (dataset names), `model_set` (models to run, corresponding to each running config file *.yml), etc. You could run in parallel by setting `dats` and `model_set` to multiple values, but we suggest to run one by one to avoid memory issues.
 
 ## Configuration of benchmark, all config files are in gnn_comparison/*.yml.

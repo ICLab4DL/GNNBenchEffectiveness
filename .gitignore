@@ -9,6 +9,7 @@ dataset/
 *.pkl
 *.zip
 *.tar.gz
+.DS_Store
 
 graphsage-simple
 graphsage-simple/*

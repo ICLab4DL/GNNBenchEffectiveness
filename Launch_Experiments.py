@@ -33,8 +33,6 @@ if __name__ == "__main__":
     else:
         datasets = list(DATASETS.keys())
         
-        # ['IMDB-MULTI', 'IMDB-BINARY', 'PROTEINS', 'NCI1', 'ENZYMES', 'DD',
-                    # 'REDDIT-BINARY', 'REDDIT-MULTI-5K', 'COLLAB', 'REDDIT-MULTI-12K']
 
     config_file = args.config_file
     experiment = args.experiment
