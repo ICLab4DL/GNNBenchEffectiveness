@@ -1,6 +1,6 @@
 # Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs
 
-This repository supports our paper titled "Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs," which has been accepted by IJCAI 2024. You can access the paper [here](xxxx).
+This repository supports our paper titled "Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs," which has been accepted by IJCAI 2024. You can access the paper [here](https://arxiv.org/abs/2407.04999).
 
 ## Prepare Datasets:
 
