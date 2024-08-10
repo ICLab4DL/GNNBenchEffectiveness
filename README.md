@@ -1,6 +1,7 @@
 # Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs
 
-This repository supports our paper titled "Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs," which has been accepted by IJCAI 2024. You can access the paper [here](https://arxiv.org/abs/2407.04999).
+This repository supports our paper titled "Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs," which has been accepted by IJCAI 2024. You can access the paper and get bibtex [here](https://www.ijcai.org/proceedings/2024/237).
+
 
 ## Prepare Datasets:
 
@@ -61,4 +62,4 @@ All configuration files are located in the `gnn_comparison/*.yml` directory.
 - Generate datasets using `generate_regression_datasets.py`.
 - Run regression analysis in `regressor.ipynb`.
 
-For further details and updates, please refer to our [paper](xxxx).
+For further details, please refer to our paper [here](https://www.ijcai.org/proceedings/2024/237).
