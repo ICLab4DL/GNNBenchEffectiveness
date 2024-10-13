@@ -2,6 +2,24 @@
 
 This repository supports our paper titled "Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs," which has been accepted by IJCAI 2024. You can access the paper and get bibtex [here](https://www.ijcai.org/proceedings/2024/237).
 
+If any code or the datasets are useful in your research, please cite the following paper:
+```
+@inproceedings{ijcai2024p237,
+  title     = {Rethinking the Effectiveness of Graph Classification Datasets in Benchmarks for Assessing GNNs},
+  author    = {Li, Zhengdao and Cao, Yong and Shuai, Kefan and Miao, Yiming and Hwang, Kai},
+  booktitle = {Proceedings of the Thirty-Third International Joint Conference on
+               Artificial Intelligence, {IJCAI-24}},
+  publisher = {International Joint Conferences on Artificial Intelligence Organization},
+  editor    = {Kate Larson},
+  pages     = {2144--2152},
+  year      = {2024},
+  month     = {8},
+  note      = {Main Track},
+  doi       = {10.24963/ijcai.2024/237},
+  url       = {https://doi.org/10.24963/ijcai.2024/237},
+}
+```
+
 
 ## Prepare Datasets:
 
